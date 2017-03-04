@@ -1,10 +1,10 @@
-// ---------------------------------------------------------------------------------------
+// ........................................................................................................
 //
 // handling different object-oriented input techniques by dispatching input events to them
 //
 // by xiangchen@acm.org, 2017/03
 //
-// ---------------------------------------------------------------------------------------
+// ........................................................................................................
 
 var XAC = XAC || {};
 
@@ -27,11 +27,13 @@ XAC.mouseup = function(e) {
 };
 
 XAC.dispatchInputEvents = function(e, type) {
-    var hits = rayCast(e.clientX, e.clientY, XAC.objects);
-    for (var hit of hits) {
+    if (type == XAC.MOUSEDOWN) {
+        XAC._activeHits = rayCast(e.clientX, e.clientY, XAC.objects);
+    }
+
+    for (var hit of XAC._activeHits) {
         var inputTechnique = XAC.inputTechniques[hit.object];
         if (inputTechnique != undefined) {
-            inputTechnique.mousedown(e, hit);
             switch (type) {
                 case XAC.MOUSEDOWN:
                     inputTechnique.mousedown(e, hit);
@@ -41,6 +43,7 @@ XAC.dispatchInputEvents = function(e, type) {
                     break;
                 case XAC.MOUSEUP:
                     inputTechnique.mouseup(e, hit);
+                    XAC._activeHits.remove(hit);
                     break;
             }
         }
@@ -51,4 +54,5 @@ $(document).ready(function() {
     $(document.body).on('mousedown', XAC.mousedown);
     $(document.body).on('mousemove', XAC.mousemove);
     $(document.body).on('mouseup', XAC.mouseup);
+    XAC._activeHits = [];
 });
