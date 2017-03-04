@@ -1,7 +1,7 @@
 /*------------------------------------------------------------------------------------*
  *
  * graphics-related library, based on three.js
- * 
+ *
  * by xiang 'anthony' chen, xiangchen@acm.org
  *
  *------------------------------------------------------------------------------------*/
@@ -14,8 +14,8 @@ function rayCast(x, y, objs) {
 	var vector = new THREE.Vector3();
 	vector.set((x / window.innerWidth) * 2 - 1, -(y / window.innerHeight) * 2 + 1, 0.5);
 	var projector = new THREE.Projector();
-	vector.unproject(camera);
-	rayCaster.ray.set(camera.position, vector.sub(camera.position).normalize());
+	vector.unproject(XAC.camera);
+	rayCaster.ray.set(XAC.camera.position, vector.sub(XAC.camera.position).normalize());
 	return rayCaster.intersectObjects(objs);
 }
 

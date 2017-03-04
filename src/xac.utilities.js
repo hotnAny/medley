@@ -12,6 +12,34 @@ function log(msg) {
 	console.log(msg);
 }
 
+// //
+// // longer log
+// //
+// function llog() {
+// 	var strLog = "";
+// 	for (var i = 0; i < arguments.length; i++) {
+// 		if (typeof arguments[i] === 'object') {
+// 			if (Array.isArray(arguments[i])) {
+// 				if (arguments[i].length > 0 && arguments[i][0].length > 0) {
+// 					for (var j = 0; j < arguments[i].length; j++) {
+// 						log(arguments[i][j]);
+// 					}
+// 				} else {
+// 					strLog += arguments[i] + '\n';
+// 				}
+// 			} else {
+// 				for (key in arguments[i]) {
+// 					log(typeof arguments[i][key])
+// 					strLog += key + ': ' + arguments[i][key] + '\n';
+// 				}
+// 			}
+// 		} else {
+// 			strLog += arguments[i] + ' '
+// 		}
+// 	}
+// 	console.log(strLog)
+// }
+
 //
 //	load models from stl binary/ascii data
 //
@@ -39,6 +67,8 @@ XAC.loadStl = function(data) {
 	XAC.mouseCtrls.target = new THREE.Vector3(0, 0, 0);
 
 	// store the object
-	objects.push(object);
+	XAC.objects.push(object);
 
+	// XXX
+	XAC.inputTechniques[object] = new MEDLEY.PaintInput(XAC.scene);
 }
