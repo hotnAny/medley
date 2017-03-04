@@ -72,3 +72,28 @@ XAC.loadStl = function(data) {
 	// XXX
 	XAC.inputTechniques[object] = new MEDLEY.PaintInput(XAC.scene);
 }
+
+_balls = [];
+
+function addABall(pt, clr, radius) {
+	clr = clr == undefined ? 0xff0000 : clr;
+	radius = radius == undefined ? 1 : radius;
+
+	var geometry = new THREE.SphereGeometry(radius, 10, 10);
+	var material = new THREE.MeshBasicMaterial({
+		color: clr
+	});
+	var ball = new THREE.Mesh(geometry, material);
+	ball.position.set(pt.x, pt.y, pt.z);
+
+	_balls.push(ball);
+	XAC.scene.add(ball);
+
+	return ball;
+}
+
+function removeBalls() {
+	for (var i = _balls.length - 1; i >= 0; i--) {
+		XAC.scene.remove(_balls[i]);
+	}
+}
