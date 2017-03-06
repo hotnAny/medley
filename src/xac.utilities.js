@@ -43,7 +43,7 @@ function log(msg) {
 //
 //	load models from stl binary/ascii data
 //
-XAC.loadStl = function(data) {
+XAC.loadStl = function(data, onStlLoaded) {
 	var stlLoader = new THREE.STLLoader();
 	var geometry = stlLoader.parse(data);
 	var object = new THREE.Mesh(geometry, MATERIALNORMAL);
@@ -53,10 +53,10 @@ XAC.loadStl = function(data) {
 	var ctr = getBoundingBoxCenter(object);
 
 	// reposition the ground & grid
-	XAC.ground.position.y -= dims[1] * 0.55;
+	XAC.ground.position.y -= dims[1];
 
 	XAC.scene.remove(XAC.grid);
-	XAC.grid = XAC.drawGrid(dims[1] * 0.55);
+	XAC.grid = XAC.drawGrid(dims[1]);
 	XAC.scene.add(XAC.grid);
 
 	// relocate the camera
@@ -69,31 +69,7 @@ XAC.loadStl = function(data) {
 	// store the object
 	XAC.objects.push(object);
 
-	// XXX
-	XAC.inputTechniques[object] = new MEDLEY.PaintInput(XAC.scene);
-}
-
-_balls = [];
-
-function addABall(pt, clr, radius) {
-	clr = clr == undefined ? 0xff0000 : clr;
-	radius = radius == undefined ? 1 : radius;
-
-	var geometry = new THREE.SphereGeometry(radius, 10, 10);
-	var material = new THREE.MeshBasicMaterial({
-		color: clr
-	});
-	var ball = new THREE.Mesh(geometry, material);
-	ball.position.set(pt.x, pt.y, pt.z);
-
-	_balls.push(ball);
-	XAC.scene.add(ball);
-
-	return ball;
-}
-
-function removeBalls() {
-	for (var i = _balls.length - 1; i >= 0; i--) {
-		XAC.scene.remove(_balls[i]);
+	if(onStlLoaded != undefined) {
+		onStlLoaded(object);
 	}
 }
