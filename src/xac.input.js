@@ -36,7 +36,9 @@ XAC.dispatchInputEvents = function(e, type) {
         if (inputTechnique != undefined) {
             switch (type) {
                 case XAC.MOUSEDOWN:
-                    inputTechnique.mousedown(e, hit);
+                    if(inputTechnique.mousedown(e, hit) == false) {
+                        XAC._activeHits.remove(hit);
+                    }
                     break;
                 case XAC.MOUSEMOVE:
                     inputTechnique.mousemove(e, hit);
