@@ -12,7 +12,7 @@ XAC.MOUSEDOWN = 0;
 XAC.MOUSEMOVE = 1;
 XAC.MOUSEUP = 2;
 
-XAC.inputTechniques = {};
+// XAC.inputTechniques = {};
 
 XAC.mousedown = function(e) {
     XAC.dispatchInputEvents(e, XAC.MOUSEDOWN);
@@ -32,19 +32,20 @@ XAC.dispatchInputEvents = function(e, type) {
     }
 
     for (var hit of XAC._activeHits) {
-        var inputTechnique = XAC.inputTechniques[hit.object];
-        if (inputTechnique != undefined) {
+        for (eventHandler of hit.object.eventHandlers) {
+            // var inputTechnique = XAC.inputTechniques[hit.object];
+            // if (inputTechnique != undefined) {
             switch (type) {
                 case XAC.MOUSEDOWN:
-                    if(inputTechnique.mousedown(e, hit) == false) {
+                    if (eventHandler.mousedown(e, hit) == false) {
                         XAC._activeHits.remove(hit);
                     }
                     break;
                 case XAC.MOUSEMOVE:
-                    inputTechnique.mousemove(e, hit);
+                    eventHandler.mousemove(e, hit);
                     break;
                 case XAC.MOUSEUP:
-                    inputTechnique.mouseup(e, hit);
+                    eventHandler.mouseup(e, hit);
                     XAC._activeHits.remove(hit);
                     break;
             }

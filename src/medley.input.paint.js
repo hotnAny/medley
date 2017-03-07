@@ -1,25 +1,31 @@
+//	........................................................................................................
+//
+//
+//
+//	........................................................................................................
+
 var MEDLEY = MEDLEY || {};
 
 MEDLEY.PaintInput = function(scene) {
     this._info = 'medley paint input';
-    this._radiusPaint = 1;
+    this._radiusPaint = 0.5;
     this._colorPaint = 0xfffa90;
     this._isDown = false;
+    this._callbacks = [];
 }
 
 MEDLEY.PaintInput.prototype = {
     constructor: MEDLEY.PaintInput
 };
 
+MEDLEY.PaintInput.prototype.addSubscriber = function(callback) {
+    this._callbacks.push(callback);
+}
+
 MEDLEY.PaintInput.prototype.mousedown = function(e, hit) {
     if (e.which != LEFTMOUSE || this._isDown) {
         return false;
     }
-
-    // log([hit.point, v1, v2, v3])
-    //
-    // _balls.remove(addABall(hit.point, this._colorPaint, this._radiusPaint));
-    // addATriangle(v1, v2, v3, 0xffffff)
 
     this._isDown = true;
     this._object = hit.object;
@@ -75,29 +81,19 @@ MEDLEY.PaintInput.prototype.mousemove = function(e) {
 };
 
 MEDLEY.PaintInput.prototype.mouseup = function(e) {
-    // extend each point with its normal
-    var diagnal = this._maxPoint.distanceTo(this._minPoint);
-    var numPoints = this._points.length;
-    for (var i = 0; i < numPoints; i++) {
-        var p = this._points[i].clone().add(this._normals[i].clone().multiplyScalar(diagnal));
-        this._points.push(p);
-        // addABall(p, this._colorPaint, this._radiusPaint);
-    }
+    var info = {
+        object: this._object,
+        points: this._points,
+        normals: this._normals,
+        minPoint: this._minPoint,
+        maxPoint: this._maxPoint
+    };
 
-    // find fitting plane
-    var params = XAC.findPlaneToFitPoints(this._points);
-    var plane = new XAC.Plane(diagnal * 2, diagnal * 2, XAC.MATERIALCONTRAST);
-    var ctrPlane = new THREE.Vector3().addVectors(this._minPoint, this._maxPoint).divideScalar(2);
-    plane.fitTo(ctrPlane, params.A,params.B, params.C);
-    // addABall(this._minPoint, 0xff0000, this._radiusPaint * 2);
-    // addABall(this._maxPoint, 0x00ff00, this._radiusPaint * 2);
-    // addABall(ctrPlane, 0x0000ff, this._radiusPaint * 2);
-    XAC.scene.add(plane.m);
+    for (callback of this._callbacks) {
+        callback(info);
+    }
 
     this._isDown = false;
 
-    setTimeout(function() {
-        XAC.scene.remove(plane.m);
-        removeBalls();
-    }, 1000);
+    return;
 };

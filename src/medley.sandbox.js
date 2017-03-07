@@ -1,7 +1,13 @@
 var MEDLEY = MEDLEY || {};
 
 function onStlLoaded(object) {
-    XAC.inputTechniques[object] = new MEDLEY.PaintInput(XAC.scene);
+    object.eventHandlers = [];
+
+    var paintInput = new MEDLEY.PaintInput(XAC.scene);
+    object.eventHandlers.push(paintInput);
+    paintInput.addSubscriber(MEDLEY.initPlacementWithPainting);
+
+    // XAC.inputTechniques[object] = new MEDLEY.PaintInput(XAC.scene);
 
     if(object.geometry.isBufferGeometry) {
         object.geometry = new THREE.Geometry().fromBufferGeometry(object.geometry);
