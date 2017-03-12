@@ -20,7 +20,8 @@ var COLORFOCUS = 0xE82C0C; // color to really draw users' focus
 XAC.MATERIALNORMAL = new THREE.MeshPhongMaterial({
 	color: COLORNORMAL,
 	transparent: true,
-	opacity: 0.75
+	opacity: 0.75,
+	side: THREE.DoubleSide
 });
 
 XAC.MATERIALCONTRAST = new THREE.MeshPhongMaterial({
@@ -96,7 +97,7 @@ XAC.ThickLine = function(p1, p2, r, mat) {
 	this._m = this._line.m;
 
 	this._dir = p2.clone().sub(p1);
-	XAC.rotateObjTo(this._m, this._dir);
+	rotateObjTo(this._m, this._dir);
 	var ctr = p1.clone().add(p2).multiplyScalar(0.5);
 	this._m.position.copy(ctr);
 
@@ -107,9 +108,9 @@ XAC.ThickLine.prototype.update = function(p1, p2, r) {
 	var h = p1.distanceTo(p2);
 	this._line.update(r, h, undefined, true);
 
-	XAC.rotateObjTo(this._m, this._dir, true);
+	rotateObjTo(this._m, this._dir, true);
 	this._dir = p2.clone().sub(p1);
-	XAC.rotateObjTo(this._m, this._dir);
+	rotateObjTo(this._m, this._dir);
 
 	var ctr = p1.clone().add(p2).multiplyScalar(0.5);
 	this._m.position.copy(ctr);
@@ -118,7 +119,7 @@ XAC.ThickLine.prototype.updateEfficiently = function(p1, p2, r) {
 	var dir = p2.clone().sub(p1);
 	if (dir.length() > XAC.EPSILON && this._dir.length() > XAC.EPSILON) {
 		// rotate back
-		XAC.rotateObjTo(this._m, this._dir, true);
+		rotateObjTo(this._m, this._dir, true);
 
 		// scale
 		var yScale = dir.length() / this._dir.length();
@@ -127,7 +128,7 @@ XAC.ThickLine.prototype.updateEfficiently = function(p1, p2, r) {
 		scaleAlongVector(this._m, yScale, new THREE.Vector3(0, 1, 0));
 
 		// rotate
-		XAC.rotateObjTo(this._m, dir);
+		rotateObjTo(this._m, dir);
 
 		this._r = r;
 		this._dir = dir;

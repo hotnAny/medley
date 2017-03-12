@@ -46,7 +46,7 @@ function log(msg) {
 XAC.loadStl = function(data, onStlLoaded) {
 	var stlLoader = new THREE.STLLoader();
 	var geometry = stlLoader.parse(data);
-	var object = new THREE.Mesh(geometry, MATERIALNORMAL);
+	var object = new THREE.Mesh(geometry, XAC.MATERIALNORMAL);
 	XAC.scene.add(object);
 
 	var dims = getBoundingBoxDimensions(object);
