@@ -17,11 +17,16 @@ var COLORCONTRAST = 0xD1D6E7; // is the contrast of the COLORNORMAL
 var COLORHIGHLIGHT = 0xFFFA90;
 var COLORFOCUS = 0xE82C0C; // color to really draw users' focus
 
+// XAC.MATERIALNORMAL = new THREE.MeshBasicMaterial({
+// 	color: 0x000000,
+// 	wireframe: true,
+// 	side: THREE.DoubleSide
+// });
+
 XAC.MATERIALNORMAL = new THREE.MeshPhongMaterial({
 	color: COLORNORMAL,
 	transparent: true,
 	opacity: 0.75,
-	side: THREE.DoubleSide
 });
 
 XAC.MATERIALCONTRAST = new THREE.MeshPhongMaterial({
