@@ -8,8 +8,8 @@ var MEDLEY = MEDLEY || {};
 
 // XXX
 MEDLEY._matobjSelected = {
-    radius: 1, // mm
-    dim: 1
+    radius: 0.5, // mm
+    dim: 2
 };
 
 //
@@ -19,9 +19,10 @@ MEDLEY.initPlacementWithPainting = function(info) {
 
     // find cross plane
     var paramsCross = XAC.findPlaneToFitPoints(info.points);
-    // var planeCross = new XAC.Plane(diagnal * 2, diagnal * 2, XAC.MATERIALCONTRAST);
-    // planeCross.fitTo(ctrPlane, paramsCross.A, paramsCross.B, paramsCross.C);
-    // XAC.scene.add(planeCross.m);
+    var nmlCrossPlane = new THREE.Vector3(paramsCross.A, paramsCross.B, paramsCross.C).normalize();
+    var planeCross = new XAC.Plane(diagnal * 2, diagnal * 2, XAC.MATERIALCONTRAST);
+    planeCross.fitTo(ctrPlane, paramsCross.A, paramsCross.B, paramsCross.C);
+    XAC.scene.add(planeCross.m);
 
     // find normal plane
     var pointsExtended = [];
@@ -34,11 +35,6 @@ MEDLEY.initPlacementWithPainting = function(info) {
     var planeNormal = new XAC.Plane(diagnal * 2, diagnal * 2, XAC.MATERIALHIGHLIGHT);
     planeNormal.fitTo(ctrPlane, paramsNormal.A, paramsNormal.B, paramsNormal.C);
     XAC.scene.add(planeNormal.m);
-
-    setTimeout(function() {
-        // XAC.scene.remove(planeCross.m);
-        XAC.scene.remove(planeNormal.m);
-    }, 500);
 
     if (MEDLEY._matobjSelected != undefined) {
         var embeddable = new MEDLEY.Embeddable(MEDLEY._matobjSelected);
@@ -68,16 +64,32 @@ MEDLEY.initPlacementWithPainting = function(info) {
                 // embeddable.generateGeometry(info.points);
 
                 // impose ranges for each point
-                embeddable.points0 = info.points;
+                info.object.material.side = THREE.DoubleSide;
+                info.object.material.needsUpdate = true;
+                embeddable.points0 = [];
                 embeddable.points1 = [];
                 for (var i = 0; i < info.points.length; i++) {
                     var rayCaster = new THREE.Raycaster();
                     var nml = info.normals[i].multiplyScalar(-1).normalize();
-                    rayCaster.ray.set(info.points[i].clone().add(nml.clone().multiplyScalar(0.1)), nml);
+                    rayCaster.ray.set(info.points[i].clone().add(nml.clone().multiplyScalar(0.01)), nml);
                     var hits = rayCaster.intersectObjects([info.object]);
-                    _balls.remove(addABall(hits[0].point, 0xff0000, 1));
-                    embeddable.points1.push(hits[0].point);
+                    // _balls.remove(addABall(hits[0].point, 0xff0000, 1));
+                    if (hits.length > 0) {
+                        embeddable.points0.push(info.points[i]);
+                        embeddable.points1.push(hits[0].point);
+                    }
                 }
+                info.object.material.side = THREE.FrontSide;
+                info.object.material.needsUpdate = true;
+
+                // XXX
+                var t = 0.5;
+                var points = [];
+                for (var i = 0; i < embeddable.points0.length; i++) {
+                    points.push(embeddable.points0[i].multiplyScalar(1 - t).add(embeddable.points1[i].multiplyScalar(
+                        t)));
+                }
+                embeddable.generateGeometry(points);
 
                 // ghost object for manipulation
                 // var ghostArrow = ...
@@ -94,13 +106,40 @@ MEDLEY.initPlacementWithPainting = function(info) {
                 // });
                 break;
             case 2:
-                //
+                // 1. find bounding Cylinder
+                var projOnNormal = XAC.project(info.points, nmlCrossPlane);
+                var height = projOnNormal[1] - projOnNormal[0];
+                var projOnCrossPlane = [];
+                var zAxis = new THREE.Vector3(0, 0, -1);
+                var angleToRotate = nmlCrossPlane.angleTo(zAxis);
+            	var axisToRotate = new THREE.Vector3().crossVectors(nmlCrossPlane, zAxis).normalize();
+                for (var i = 0; i < info.points.length; i++) {
+                    var proj = getProjection(info.points[i], paramsCross.A, paramsCross.B,
+                        paramsCross.C, paramsCross.D);
+                    proj.applyAxisAngle(axisToRotate, angleToRotate);
+                    log(proj)
+                    projOnCrossPlane.push(proj);
+                    _balls.remove(addABall(proj, 0x00ffff, 1));
+                }
+                var enclosingCircle = makeCircle(projOnCrossPlane);
+                // log(enclosingCircle)
+                var centerEnclosing = new THREE.Vector3(enclosingCircle.x, enclosingCircle.y, projOnCrossPlane[0].z);
+                centerEnclosing.applyAxisAngle(axisToRotate, -angleToRotate);
+                // rotateVectorTo(centerEnclosing, new THREE.Vector3(paramsCross.A, paramsCross.B,
+                    // paramsCross.C));
+                _balls.remove(addABall(centerEnclosing, 0x0000ff, 1.5));
                 break;
             case 3:
                 //
                 break;
         }
     }
+
+    // remove any temp visualization stuff
+    setTimeout(function() {
+        XAC.scene.remove(planeCross.m);
+        XAC.scene.remove(planeNormal.m);
+    }, 500);
 };
 
 //
