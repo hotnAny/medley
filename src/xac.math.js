@@ -62,6 +62,27 @@ numeric.fromBlocks = function(blocks) {
 //
 //  other math-related useful functions
 //
+XAC.project = function(points, axis) {
+    var min = 1000;
+    var max = -1000;
+
+    for (var i = 0; i < points.length; i++) {
+        var val = axis.dot(points[i]);
+        min = Math.min(min, val);
+        max = Math.max(val, max);
+    }
+
+    return [min, max];
+};
+
+//
+//	get the projection coordinates of a point on a given plane parameterized by ax+by+cz+d=0
+//
+function getProjection(v, a, b, c, d) {
+    var t = -(a * v.x + b * v.y + c * v.z + d) / (a * a + b * b + c * c);
+    return new THREE.Vector3(v.x + a * t, v.y + b * t, v.z + c * t);
+}
+
 
 //
 //  testing whether a triangle and a box intersect in 3D space,
@@ -76,22 +97,10 @@ XAC.testTriBoxIntersection = function(va, vb, vc, nml, bbox) {
     var boxMin = [bbox.min.x, bbox.min.y, bbox.min.z];
     var boxMax = [bbox.max.x, bbox.max.y, bbox.max.z];
 
-    var project = function(points, axis) {
-    	var min = 1000;
-    	var max = -1000;
-
-    	for(var i=0; i<points.length; i++) {
-    		var val = axis.dot(points[i]);
-    		min = Math.min(min, val);
-    		max = Math.max(val, max);
-    	}
-
-    	return [min, max];
-    };
 
 
     for (var i = 0; i < 3; i++) {
-        minmax = project([va, vb, vc], boxNormals[i]);
+        minmax = XAC.project([va, vb, vc], boxNormals[i]);
         if (minmax[1] < boxMin[i] || minmax[0] > boxMax[i]) {
             return false;
         }
@@ -113,7 +122,7 @@ XAC.testTriBoxIntersection = function(va, vb, vc, nml, bbox) {
     }
 
     var triOffset = nml.dot(va);
-    minmax = project(boxVertices, nml);
+    minmax = XAC.project(boxVertices, nml);
     if (minmax[1] < triOffset || minmax[0] > triOffset) {
         return false;
     }
@@ -128,8 +137,8 @@ XAC.testTriBoxIntersection = function(va, vb, vc, nml, bbox) {
     for (var i = 0; i < 3; i++) {
         for (var j = 0; j < 3; j++) {
             var axis = new THREE.Vector3().crossVectors(triEdges[i], boxNormals[j]);
-            var boxMinmax = project(boxVertices, axis);
-            var triMinmax = project([va, vb, vc], axis);
+            var boxMinmax = XAC.project(boxVertices, axis);
+            var triMinmax = XAC.project([va, vb, vc], axis);
             if (boxMinmax[1] < triMinmax[0] || boxMinmax[0] > triMinmax[1]) {
                 return false;
             }
@@ -168,8 +177,8 @@ XAC.onSameSide = function(p1, p2, a, b) {
 
     var isSameSide = false;
     // if at least one point is not on ab
-    if(cp1.length() != 0 || cp2.length != 0)
-         isSameSide = cp1.dot(cp2) > 0;
+    if (cp1.length() != 0 || cp2.length != 0)
+        isSameSide = cp1.dot(cp2) > 0;
     // if both points are on ab
     else
         isSameSide = true;
@@ -190,35 +199,35 @@ XAC.isInTriangle = function(v, va, vb, vc) {
 //  force an input val to be between vmin and vmax
 //
 XAC.clamp = function(val, vmin, vmax) {
-	if(vmin > vmax) {
-		var vtmp = vmin;
-		vmin = vmax;
-		vmax = vtmp;
-	}
-	val = Math.max(vmin, val);
-	val = Math.min(val, vmax);
-	return val;
+    if (vmin > vmax) {
+        var vtmp = vmin;
+        vmin = vmax;
+        vmax = vtmp;
+    }
+    val = Math.max(vmin, val);
+    val = Math.min(val, vmax);
+    return val;
 }
 
 //
 // get triangle area
 //
 XAC.triangleArea = function(va, vb, vc) {
-	var ab = vb.clone().sub(va);
-	var ac = vc.clone().sub(va);
+    var ab = vb.clone().sub(va);
+    var ac = vc.clone().sub(va);
 
-	var x1 = ab.x,
-		x2 = ab.y,
-		x3 = ab.z,
-		y1 = ac.x,
-		y2 = ac.y,
-		y3 = ac.z;
+    var x1 = ab.x,
+        x2 = ab.y,
+        x3 = ab.z,
+        y1 = ac.x,
+        y2 = ac.y,
+        y3 = ac.z;
 
-	return 0.5 * Math.sqrt(
-		Math.pow((x2 * y3 - x3 * y2), 2) +
-		Math.pow((x3 * y1 - x1 * y3), 2) +
-		Math.pow((x1 * y2 - x2 * y1), 2)
-	);
+    return 0.5 * Math.sqrt(
+        Math.pow((x2 * y3 - x3 * y2), 2) +
+        Math.pow((x3 * y1 - x1 * y3), 2) +
+        Math.pow((x1 * y2 - x2 * y1), 2)
+    );
 }
 
 /*
@@ -227,23 +236,23 @@ XAC.triangleArea = function(va, vb, vc) {
 	svd related: http://www.mathworks.com/help/matlab/ref/svd.html
 */
 XAC.findPlaneToFitPoints = function(points) {
-	var G = [];
+    var G = [];
 
-	for (var i = 0; i < points.length; i++) {
-		G.push([points[i].x, points[i].y, points[i].z, 1]);
-	}
+    for (var i = 0; i < points.length; i++) {
+        G.push([points[i].x, points[i].y, points[i].z, 1]);
+    }
 
-	var usv = numeric.svd(G);
+    var usv = numeric.svd(G);
 
-	var a = usv.V[0][3];
-	var b = usv.V[1][3];
-	var c = usv.V[2][3];
-	var d = usv.V[3][3];
+    var a = usv.V[0][3];
+    var b = usv.V[1][3];
+    var c = usv.V[2][3];
+    var d = usv.V[3][3];
 
-	return {
-		A: a,
-		B: b,
-		C: c,
-		D: d
-	};
+    return {
+        A: a,
+        B: b,
+        C: c,
+        D: d
+    };
 }
