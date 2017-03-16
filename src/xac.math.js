@@ -256,3 +256,166 @@ XAC.findPlaneToFitPoints = function(points) {
         D: d
     };
 }
+
+//
+//  test whether a triangle intersects with a cylinder
+//
+//  - va, vb, vc: vertices of the triangle
+//  - c: center of the cylinder
+//  - nml: normal of the cylinder (normalized vector of the axis)
+//  - h, r: height and radius of the cylinder
+//
+XAC.testTriCylIntersection = function(va, vb, vc, c, nml, h, r) {
+    nml = nml.normalize();
+    var vertices = [va, vb, vc];
+
+    // a triangle intersects with a cylinder if
+    // 1) cylinder's axis intersects with triangle; or
+    var paramPlane = XAC.getPlaneFromPointVectors(va, new THREE.Vector3().subVectors(vb, va), new THREE
+        .Vector3().subVectors(vc, va));
+    var intersection = XAC.findLinePlaneIntersection(c, c.clone().add(nml),
+        paramPlane.A, paramPlane.B, paramPlane.C, paramPlane.D);
+    if (intersection != undefined && c.distanceTo(intersection) < h / 2 && XAC.isInTriangle(
+            intersection, va, vb, vc)) {
+        return true;
+    }
+
+    // 2) at least one edge intersects with cylinder
+    var top = c.clone().add(nml.clone().multiplyScalar(h / 2));
+    var bottom = c.clone().add(nml.clone().multiplyScalar(-h / 2));
+    var heightProj = XAC.project([bottom, top], nml);
+    for (var i = 0; i < vertices.length; i++) {
+        v1 = vertices[i];
+        v2 = vertices[(i + 1) % vertices.length];
+
+        // v1v2's projection on cylinder's axis falls into the height range
+        var proj = XAC.project([v1, v2], nml);
+        if (proj[0] > heightProj[1] || proj[1] < heightProj[0]) {
+            continue;
+        }
+
+        // v1v2's distance to cylinder's axis smaller than radius
+        var dist = XAC.distanceBetweenLineSegments(v1, v2, bottom, top);
+        if (dist < r) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+//
+//  find intersection between a line and a plane
+//  - p0, p1 represent the line segment
+//  - a, b, c, d represent the plane
+//  ref: http://geomalgorithms.com/a05-_intersect-1.html
+//
+XAC.findLinePlaneIntersection = function(p0, p1, a, b, c, d) {
+    var pointNormal = XAC.pointNormalOfPlane(a, b, c, d);
+
+    // a b c d represent a plane
+    if (pointNormal != undefined) {
+        var v0 = pointNormal.point;
+        var n = pointNormal.normal;
+        var u = p1.clone().sub(p0);
+        if (n.dot(u) != 0) {
+            var w = p0.clone().sub(v0);
+            var s1 = -n.dot(w) / n.dot(u);
+            return v0.clone().add(new THREE.Vector3().addVectors(w, u.clone().multiplyScalar(s1)));
+        }
+    }
+    // a b c d represent a point (0, 0, 0, 0)
+    else if (p0.dot(p1) == 0) {
+        return new THREE.Vector3(0, 0, 0);
+    }
+}
+
+//
+//  get the point-normal representation of a plane (a, b, c, d)
+//
+XAC.pointNormalOfPlane = function(a, b, c, d) {
+    var x, y, z;
+    if (a != 0) {
+        y = a * (Math.random() + 0.5);
+        z = a * (Math.random() + 0.5);
+        x = -(b * y + c * z + d) / a;
+    } else if (b != 0) {
+        x = b * (Math.random() + 0.5);
+        z = b * (Math.random() + 0.5);
+        y = -(c * z + d) / b;
+    } else if (c != 0) {
+        x = c * (Math.random() + 0.5);
+        y = c * (Math.random() + 0.5);
+        z = -d / c;
+    } else {
+        console.error([a, b, c, d]);
+        return;
+    }
+
+    return {
+        point: new THREE.Vector3(x, y, z),
+        normal: new THREE.Vector3(a, b, c).normalize()
+    }
+}
+
+
+//
+//	get a plance from a point and two vectors
+//
+XAC.getPlaneFromPointVectors = function(pt, v1, v2) {
+    var cp = new THREE.Vector3().crossVectors(v1, v2);
+
+    var a = cp.x;
+    var b = cp.y;
+    var c = cp.z;
+    var d = -a * pt.x - b * pt.y - c * pt.z;
+
+    return {
+        A: a,
+        B: b,
+        C: c,
+        D: d
+    };
+}
+
+XAC.getPlaneFromPointNormal = function(p, nml) {
+    return {
+        A: nml.x,
+        B: nml.y,
+        C: nml.z,
+        D: -p.dot(nml)
+    };
+}
+
+//
+//  get distance between two line segments u1u2 and v1v2
+//
+XAC.distanceBetweenLineSegments = function(u1, u2, v1, v2) {
+    var u1u2 = u2.clone().sub(u1);
+    var paramsu = XAC.getPlaneFromPointNormal(u1, u1u2);
+    var projv1 = getProjection(v1, paramsu.A, paramsu.B, paramsu.C, paramsu.D);
+    var projv2 = getProjection(v2, paramsu.A, paramsu.B, paramsu.C, paramsu.D);
+
+    var v1v2 = v2.clone().sub(v1);
+    var paramsv = XAC.getPlaneFromPointNormal(v1, v1v2);
+    var proju1 = getProjection(u1, paramsv.A, paramsv.B, paramsv.C, paramsv.D);
+    var proju2 = getProjection(u2, paramsv.A, paramsv.B, paramsv.C, paramsv.D);
+
+    return Math.max(
+        XAC.distanceBetweenPointLineSegment(u1, projv1, projv2),
+        XAC.distanceBetweenPointLineSegment(v1, proju1, proju2));
+}
+
+//
+//  get distance between a point p and a line segment v1v2
+//
+XAC.distanceBetweenPointLineSegment = function(p, v1, v2) {
+    var axis = v2.clone().sub(v1).normalize();
+    var projections = [axis.dot(v1), axis.dot(p), axis.dot(v2)];
+    if ((projections[0] - projections[1]) * (projections[1] - projections[2]) >= 0) {
+        var t = (projections[0] - projections[1]) / (projections[0] - projections[2]);
+        return Math.sqrt(Math.pow(p.distanceTo(v1), 2) - Math.pow(v1.distanceTo(v2) * t, 2));
+    } else {
+        return Math.min(p.distanceTo(v1), p.distanceTo(v2));
+    }
+}
