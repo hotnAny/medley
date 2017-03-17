@@ -82,7 +82,7 @@ XAC.project = function(points, axis) {
 //
 //	get the projection coordinates of a point on a given plane parameterized by ax+by+cz+d=0
 //
-function getProjection(v, a, b, c, d) {
+XAC.getProjection = function(v, a, b, c, d) {
     var t = -(a * v.x + b * v.y + c * v.z + d) / (a * a + b * b + c * c);
     return new THREE.Vector3(v.x + a * t, v.y + b * t, v.z + c * t);
 }
@@ -100,8 +100,6 @@ XAC.testTriBoxIntersection = function(va, vb, vc, nml, bbox) {
     var boxNormals = [new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 1)];
     var boxMin = [bbox.min.x, bbox.min.y, bbox.min.z];
     var boxMax = [bbox.max.x, bbox.max.y, bbox.max.z];
-
-
 
     for (var i = 0; i < 3; i++) {
         minmax = XAC.project([va, vb, vc], boxNormals[i]);
@@ -397,13 +395,13 @@ XAC.getPlaneFromPointNormal = function(p, nml) {
 XAC.distanceBetweenLineSegments = function(u1, u2, v1, v2) {
     var u1u2 = u2.clone().sub(u1);
     var paramsu = XAC.getPlaneFromPointNormal(u1, u1u2);
-    var projv1 = getProjection(v1, paramsu.A, paramsu.B, paramsu.C, paramsu.D);
-    var projv2 = getProjection(v2, paramsu.A, paramsu.B, paramsu.C, paramsu.D);
+    var projv1 = XAC.getProjection(v1, paramsu.A, paramsu.B, paramsu.C, paramsu.D);
+    var projv2 = XAC.getProjection(v2, paramsu.A, paramsu.B, paramsu.C, paramsu.D);
 
     var v1v2 = v2.clone().sub(v1);
     var paramsv = XAC.getPlaneFromPointNormal(v1, v1v2);
-    var proju1 = getProjection(u1, paramsv.A, paramsv.B, paramsv.C, paramsv.D);
-    var proju2 = getProjection(u2, paramsv.A, paramsv.B, paramsv.C, paramsv.D);
+    var proju1 = XAC.getProjection(u1, paramsv.A, paramsv.B, paramsv.C, paramsv.D);
+    var proju2 = XAC.getProjection(u2, paramsv.A, paramsv.B, paramsv.C, paramsv.D);
 
     return Math.max(
         XAC.distanceBetweenPointLineSegment(u1, projv1, projv2),
@@ -425,20 +423,27 @@ XAC.distanceBetweenPointLineSegment = function(p, v1, v2) {
 }
 
 //
-//  whether a point p is inside a polygon that consists of an array of points
+//  in 2d (xy space): whether a point p is inside a polygon that consists of an array of points
 //
 XAC.testPointInPolygon = function(p, poly) {
-    var cp0 = undefined;
+    var cnt = 0;
+    var eps = 1e-6
     for (var i = 0; i < poly.length; i++) {
         var p1 = poly[i];
         var p2 = poly[(i + 1) % poly.length];
-        var p1p2 = p1.clone().sub(p2);
-        var cp = p1p2.cross(p.clone().sub(p1));
-        if(cp0 == undefined) {
-            cp0 = cp;
-        } else if(cp.dot(cp0) < 0) {
-            return false;
+
+        if ((p1.x - p.x) * (p2.x - eps * Math.sign(p2.x - p1.x) - p.x) <= 0 && (p1.y > p.y || p2.y > p.y)) {
+            // log([p1, p2])
+            cnt++;
         }
     }
-    return true;
+
+    return cnt % 2 == 1;
+}
+
+//
+//
+//
+XAC.pointOnLineSide = function(p, p1, p2) {
+    return Math.sign((p2.x - p1.x) * (p.y - p1.y) - (p2.y - p1.y) * (p.x - p1.x));
 }
