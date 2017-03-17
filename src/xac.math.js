@@ -4,6 +4,10 @@
 //
 //  by xiangchen@acm.org, 03/2017
 //
+//  NOTE:
+//  - some are extension of numeric.js
+//  - based on three.js's vector data structure
+//
 // .................................................................
 
 //
@@ -418,4 +422,23 @@ XAC.distanceBetweenPointLineSegment = function(p, v1, v2) {
     } else {
         return Math.min(p.distanceTo(v1), p.distanceTo(v2));
     }
+}
+
+//
+//  whether a point p is inside a polygon that consists of an array of points
+//
+XAC.testPointInPolygon = function(p, poly) {
+    var cp0 = undefined;
+    for (var i = 0; i < poly.length; i++) {
+        var p1 = poly[i];
+        var p2 = poly[(i + 1) % poly.length];
+        var p1p2 = p1.clone().sub(p2);
+        var cp = p1p2.cross(p.clone().sub(p1));
+        if(cp0 == undefined) {
+            cp0 = cp;
+        } else if(cp.dot(cp0) < 0) {
+            return false;
+        }
+    }
+    return true;
 }
