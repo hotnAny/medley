@@ -1,6 +1,9 @@
 //	........................................................................................................
 //
+//  medley placement
+//      - automatically placing embeddables based on user input
 //
+//  by xiangchen@acm.org, 03/2017
 //
 //	........................................................................................................
 
@@ -12,6 +15,8 @@ MEDLEY._matobjSelected = {
     dim: 2
 };
 
+//
+//  initialize placement based on the painting technique (xac.input.painting.js)
 //
 MEDLEY.initPlacementWithPainting = function(info) {
     var diagnal = info.maxPoint.distanceTo(info.minPoint);
@@ -42,10 +47,10 @@ MEDLEY.initPlacementWithPainting = function(info) {
             case 0:
                 break;
             case 1:
-                MEDLEY.init1dPlacement(info);
+                MEDLEY._init1dPlacement(info);
                 break;
             case 2:
-                MEDLEY.init2dPlacement(info);
+                MEDLEY._init2dPlacement(info);
                 break;
             case 3:
                 //
@@ -60,7 +65,10 @@ MEDLEY.initPlacementWithPainting = function(info) {
     }, 500);
 };
 
-MEDLEY.init1dPlacement = function(info) {
+//
+//  initialize placement of 1d material based on user painting
+//
+MEDLEY._init1dPlacement = function(info) {
     // generative material
     embeddable.generateGeometry = function(points) {
         if (this._geometry == undefined) {
@@ -109,7 +117,10 @@ MEDLEY.init1dPlacement = function(info) {
     embeddable.generateGeometry(points);
 }
 
-MEDLEY.init2dPlacement = function(info) {
+//
+//  initialize placement of 2d material based on user painting
+//
+MEDLEY._init2dPlacement = function(info) {
     //
     //
     // 1. find enclosing cylinder

@@ -1,5 +1,13 @@
+//	........................................................................................................
 //
+//  three js extensions, v0.0
 //
+//  by xiangchen@acm.org, 03/2017
+//
+//	........................................................................................................
+
+//
+//  highlight a face by adding a triangle covering it
 //
 THREE.Geometry.prototype.highlightFace = function(face, color, scene) {
     var v1 = this.vertices[face.a];
@@ -28,7 +36,7 @@ THREE.Geometry.prototype.highlightFace = function(face, color, scene) {
 }
 
 //
-//
+//  compute faces' centroids
 //
 THREE.Geometry.prototype.computeCentroids = function() {
     for (var i = 0; i < this.faces.length; i++) {
@@ -46,12 +54,12 @@ THREE.Geometry.prototype.computeCentroids = function() {
     }
 }
 
-/*
-	creating a list of neighbours (edge sharing) for each triangle
-
-	known issues:
-	- each triangle should have exactly 3 neighbors. however, some have 4 due to triangle redundance; some have only 2 due to unmanifold structure
-*/
+//
+//	creating a list of neighbours (edge sharing) for each triangle
+//
+//	known issues:
+//	- each triangle should have exactly 3 neighbors. however, some have 4 due to triangle redundance; some //    have only 2 due to unmanifold structure
+//
 THREE.Geometry.prototype.createNeighborList = function(octree) {
     var eps = 1e-6;
     for (var i = 0; i < this.faces.length; i++) {
@@ -61,29 +69,16 @@ THREE.Geometry.prototype.createNeighborList = function(octree) {
             continue;
         }
 
-        // var va = this.vertices[f.a].clone(); //.applyMatrix4(obj.matrixWorld);
-        // var vb = this.vertices[f.b].clone(); //.applyMatrix4(obj.matrixWorld);
-        // var vc = this.vertices[f.c].clone(); //.applyMatrix4(obj.matrixWorld);
-        //
-        // var ctr = new THREE.Vector3().addVectors(va, vb).add(vc).divideScalar(3);
-
         if (f.centroid == undefined) {
             this.computeCentroids();
         }
 
         var ctr = f.centroid.clone();
-        /* use octree to filter close-by faces */
+
+        // use octree to filter close-by faces
         var elms = octree.search(ctr, 1);
-        // addABall(ctr, 0xffffff, 1)
         f.neighbors = [];
         var vlist = [f.a, f.b, f.c];
-
-        // for later use - finding neighbors
-        // f.collected = false;
-
-        // f.area = triangleArea(va, vb, vc);
-
-        // this.highlightFace(f, 0xffff00, XAC.scene);
 
         for (var j = 0; j < elms.length; j++) {
             var ff = elms[j].faces; //.centroid.clone();
@@ -95,8 +90,6 @@ THREE.Geometry.prototype.createNeighborList = function(octree) {
                 eps) {
                 continue;
             }
-
-            // this.highlightFace(ff, 0xff0000, XAC.scene);
 
             // searching for pairs of vertices that correspond to the shared edge of neighboring triangles
             var numPairs = 0;
@@ -115,6 +108,5 @@ THREE.Geometry.prototype.createNeighborList = function(octree) {
                 f.neighbors.push(ff);
             }
         }
-
     }
 }
