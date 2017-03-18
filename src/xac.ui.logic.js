@@ -8,7 +8,8 @@
 
 var XAC = XAC || {};
 
-$(document.body).append(panel);
+// NOTE removed for now
+// $(document.body).append(panel);
 
 var initPanel = function() {
 	$(document).on('dragover', function(e) {
