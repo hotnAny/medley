@@ -54,6 +54,31 @@ $(document).ready(function() {
 
     XAC.wheelDisabled = false;
 
+    //
+    //  octree
+    //
+    XAC.octree = new THREE.Octree({
+        // automatic, no need to specify
+        // radius: 100,
+
+        // when undeferred = true, objects are inserted immediately
+        // instead of being deferred until next octree.update() call
+        // this may decrease performance as it forces a matrix update
+        undeferred: true,
+
+        // set the max depth of tree
+        depthMax: Infinity,
+
+        // max number of objects before nodes split or merge
+        objectsThreshold: 8,
+
+        // percent between 0 and 1 that nodes will overlap each other
+        // helps insert objects that lie over more than one node
+        //   overlapPct: 0.5,
+
+        // pass the scene to visualize the octree
+        // scene: XAC.scene
+    });
 
     //
     // draw ground
@@ -139,6 +164,7 @@ $(document).ready(function() {
         requestAnimationFrame(render);
         XAC.mouseCtrls.update();
         XAC.stats.update();
+        XAC.octree.update();
         XAC.lights[0].position.copy(XAC.camera.position);
         XAC.renderer.render(XAC.scene, XAC.camera);
     };

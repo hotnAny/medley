@@ -110,6 +110,8 @@ MEDLEY.init1dPlacement = function(info) {
 }
 
 MEDLEY.init2dPlacement = function(info) {
+    //
+    //
     // 1. find enclosing cylinder
     var nmlCrossPlane = new THREE.Vector3(info.paramsCross.A, info.paramsCross.B, info.paramsCross.C).normalize();
     var projOnNormal = XAC.project(info.points, nmlCrossPlane);
@@ -118,21 +120,27 @@ MEDLEY.init2dPlacement = function(info) {
     var zAxis = new THREE.Vector3(0, 0, -1);
     var angleToRotate = nmlCrossPlane.angleTo(zAxis);
     var axisToRotate = new THREE.Vector3().crossVectors(nmlCrossPlane, zAxis).normalize();
+    var projPoints = [];
     for (var i = 0; i < info.points.length; i++) {
-        var proj = getProjection(info.points[i], info.paramsCross.A, info.paramsCross.B,
+        var proj = XAC.getProjection(info.points[i], info.paramsCross.A, info.paramsCross.B,
             info.paramsCross.C, info.paramsCross.D);
-        proj.applyAxisAngle(axisToRotate, angleToRotate);
-        projOnCrossPlane.push(proj);
         // _balls.remove(addABall(proj, 0x00ffff, 1));
+        // projPoints.push(proj);
+        proj.applyAxisAngle(axisToRotate, angleToRotate);
+        projOnCrossPlane.push(proj.clone());
+        // _balls.remove(addABall(proj, 0x00ffff,  0.5));
     }
     var enclosingCircle = makeCircle(projOnCrossPlane);
-    log(enclosingCircle)
+    // log(enclosingCircle)
     var centerEnclosing = new THREE.Vector3(enclosingCircle.x, enclosingCircle.y,
         projOnCrossPlane[0].z);
     centerEnclosing.applyAxisAngle(axisToRotate, -angleToRotate);
+    // centerEnclosing.add(nmlCrossPlane.clone())
     // _balls.remove(addABall(centerEnclosing, 0x0000ff, 1.5));
     var radiusEnclosing = enclosingCircle.r;
 
+    //
+    //
     // 2. find enclosing triangles
     var facesEnclosed = [];
     var vertices = info.object.geometry.vertices;
@@ -142,9 +150,55 @@ MEDLEY.init2dPlacement = function(info) {
         var v2 = vertices[face.b];
         var v3 = vertices[face.c];
 
-        if(XAC.testTriCylIntersection(v1, v2, v3, centerEnclosing, nmlCrossPlane.clone(), heightEnclosing, radiusEnclosing)) {
+        if (XAC.testTriCylIntersection(v1, v2, v3, centerEnclosing, nmlCrossPlane.clone(),
+                heightEnclosing, radiusEnclosing)) {
+            facesEnclosed.push(face);
             addATriangle(v1, v2, v3, 0xffff00);
+            // * Math.exp(1 + nmlCrossPlane.dot(face.normal))
+            // log(nmlCrossPlane.dot(face.normal));
         }
+    }
+
+    //
+    //
+    // 3. remesh selected area
+    var facesRemeshed = [];
+    var facesOnBoundary = [];
+    for (face of facesEnclosed) {
+        // is it inside the selected points (boundary)?
+        // if so directly add to remesh set
+        var isInside = true;
+        var vindices = [face.a, face.b, face.c];
+        for (var i = 0; i < vindices.length; i++) {
+            var p = XAC.getProjection(vertices[vindices[i]], info.paramsCross.A, info.paramsCross.B,
+                info.paramsCross.C, info.paramsCross.D);
+            p.applyAxisAngle(axisToRotate, angleToRotate);
+
+            if (!XAC.testPointInPolygon(p, projOnCrossPlane)) {
+                isInside = false;
+                // _balls.remove(addABall(p, 0xff0000, 0.5));
+                break;
+            }
+        }
+
+        // XXX
+        var v1 = vertices[face.a];
+        var v2 = vertices[face.b];
+        var v3 = vertices[face.c];
+        if (isInside) {
+            facesRemeshed.push(face);
+            // XXX
+            addATriangle(v1, v2, v3, 0xff00ff);
+        }
+
+        // break;
+
+        // if not, is it intersecting with the selected points (boundary)?
+        // record relative coordinate on each edge that intersects with the boundary
+    }
+
+    for (face of facesOnBoundary) {
+        // internally remesh, then add to remesh set
     }
 }
 

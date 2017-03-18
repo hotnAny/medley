@@ -27,26 +27,63 @@ $(document).ready(function() {
     // var v2 = new THREE.Vector3(-1, 0, 0);
     // log(XAC.distanceBetweenLineSegments(u1, u2, v1, v2));
 
-    var p = new THREE.Vector3(0, 0, 2);
-    var v1 = new THREE.Vector3(2, 0, 0);
-    var v2 = new THREE.Vector3(4, -2, 0);
-    log(XAC.distanceBetweenPointLineSegment(p, v1, v2));
+    // var p = new THREE.Vector3(0, 0, 2);
+    // var v1 = new THREE.Vector3(2, 0, 0);
+    // var v2 = new THREE.Vector3(4, -2, 0);
+    // log(XAC.distanceBetweenPointLineSegment(p, v1, v2));
+
+    // var poly = [
+    //     new THREE.Vector3(1, 0, 0),
+    //     new THREE.Vector3(2, 0, 0),
+    //     new THREE.Vector3(2, 1, 0),
+    //     new THREE.Vector3(3, 2, 0),
+    //     new THREE.Vector3(2, 3, 0),
+    //     new THREE.Vector3(0, 2, 0),
+    //     new THREE.Vector3(-1, 1, 0),
+    //     new THREE.Vector3(0, -1, 0)
+    // ];
+    // log(XAC.testPointInPolygon(new THREE.Vector3(0, 1, 0), poly));
+    // log(XAC.testPointInPolygon(new THREE.Vector3(1, 3, 0), poly));
 });
 
 function onStlLoaded(object) {
-    object.eventHandlers = [];
-
-    var paintInput = new MEDLEY.PaintInput(XAC.scene);
-    object.eventHandlers.push(paintInput);
-    paintInput.addSubscriber(MEDLEY.initPlacementWithPainting);
-
-    // XAC.inputTechniques[object] = new MEDLEY.PaintInput(XAC.scene);
-
+    //
+    // geometry processing
     if (object.geometry.isBufferGeometry) {
+        time();
         object.geometry = new THREE.Geometry().fromBufferGeometry(object.geometry);
-        log('buffergeometry converted.')
+        time('[loading object] buffergeometry converted');
     }
 
     object.geometry.computeFaceNormals();
     object.geometry.computeVertexNormals();
+    object.geometry.computeCentroids();
+    time('[loading object] computing normals');
+
+    if (XAC.octree != undefined) {
+        XAC.octree.add(object, {
+            useFaces: true
+        });
+        XAC.octree.update();
+        time('[loading object] added object to octree');
+        XAC.octree.setVisibility(false);
+    }
+
+    object.geometry.createNeighborList(XAC.octree);
+    time('[loading object] created neighbor list for each face');
+    object.on(XAC.MOUSEDOWN, function(hit){
+        hit.object.geometry.highlightFace(hit.face, 0xff00ff, XAC.scene);
+        log(hit.face.neighbors)
+        for(neighbor of hit.face.neighbors) {
+            hit.object.geometry.highlightFace(neighbor, 0xffff00, XAC.scene);
+        }
+    });
+
+    //
+    // input
+    object.inputTechniques = [];
+
+    var paintInput = new MEDLEY.PaintInput(XAC.scene);
+    object.inputTechniques.push(paintInput);
+    paintInput.addSubscriber(MEDLEY.initPlacementWithPainting);
 }

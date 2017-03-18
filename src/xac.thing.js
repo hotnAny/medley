@@ -16,7 +16,7 @@ var COLORNORMAL = 0xDB5B8A; // the normal color
 var COLORCONTRAST = 0xD1D6E7; // is the contrast of the COLORNORMAL
 var COLORHIGHLIGHT = 0xFFFA90;
 var COLORFOCUS = 0xE82C0C; // color to really draw users' focus
-
+//
 // XAC.MATERIALNORMAL = new THREE.MeshBasicMaterial({
 // 	color: 0x000000,
 // 	wireframe: true,

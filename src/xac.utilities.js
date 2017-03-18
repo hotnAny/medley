@@ -12,33 +12,18 @@ function log(msg) {
 	console.log(msg);
 }
 
-// //
-// // longer log
-// //
-// function llog() {
-// 	var strLog = "";
-// 	for (var i = 0; i < arguments.length; i++) {
-// 		if (typeof arguments[i] === 'object') {
-// 			if (Array.isArray(arguments[i])) {
-// 				if (arguments[i].length > 0 && arguments[i][0].length > 0) {
-// 					for (var j = 0; j < arguments[i].length; j++) {
-// 						log(arguments[i][j]);
-// 					}
-// 				} else {
-// 					strLog += arguments[i] + '\n';
-// 				}
-// 			} else {
-// 				for (key in arguments[i]) {
-// 					log(typeof arguments[i][key])
-// 					strLog += key + ': ' + arguments[i][key] + '\n';
-// 				}
-// 			}
-// 		} else {
-// 			strLog += arguments[i] + ' '
-// 		}
-// 	}
-// 	console.log(strLog)
-// }
+//
+//
+//
+function time(desc) {
+	var t = new Date().getTime();
+	if (XAC.t != undefined && desc != undefined) {
+		console.info(desc + ': ' + (t - XAC.t) + ' ms');
+	}
+	XAC.t = t;
+	return t;
+}
+
 
 //
 //	load models from stl binary/ascii data
@@ -69,7 +54,7 @@ XAC.loadStl = function(data, onStlLoaded) {
 	// store the object
 	XAC.objects.push(object);
 
-	if(onStlLoaded != undefined) {
+	if (onStlLoaded != undefined) {
 		onStlLoaded(object);
 	}
 }

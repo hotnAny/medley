@@ -2,6 +2,8 @@
 //
 //  extensions for javascript array class
 //
+//	by xiangchen@acm.org, 03/2017
+//
 //	........................................................................................................
 
 Array.prototype.clone = function() {
@@ -164,6 +166,6 @@ Array.prototype.diff = function(arr) {
 			diffArr.push(this[i]);
 		}
 	}
-	
+
 	return diffArr;
 }
