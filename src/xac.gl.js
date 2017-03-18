@@ -6,9 +6,9 @@
 //
 //	........................................................................................................
 
-/*
- *	function for performing raycasting
- */
+//
+//	function for performing raycasting
+//
 function rayCast(x, y, objs) {
 	var rayCaster = new THREE.Raycaster();
 	var vector = new THREE.Vector3();
@@ -19,9 +19,9 @@ function rayCast(x, y, objs) {
 	return rayCaster.intersectObjects(objs);
 }
 
-/*
-	scale an object around its center by factor
-*/
+//
+//	scale an object around its center by factor
+//
 function scaleAroundCenter(obj, factor) {
 	// find true center point
 	var ctr0 = getCenter(gettg(obj).vertices);
@@ -38,9 +38,9 @@ function scaleAroundCenter(obj, factor) {
 	obj.position.add(ctr0.clone().sub(ctr1));
 }
 
-/*
-	scale an object along the plane ┴ to dir
-*/
+//
+//	scale an object along the plane ┴ to dir
+//
 function scaleAroundVector(obj, factor, dir) {
 	// have different scales for the rest of the two axes
 	if (Array.isArray(factor)) {
@@ -54,18 +54,17 @@ function scaleAroundVector(obj, factor, dir) {
 	}
 }
 
-/*
-	scale an object/geometry/vector along dir
-*/
+//
+//	scale an object/geometry/vector along dir
+//
 function scaleAlongVector(obj, factor, dir) {
 	scaleWithVector(obj, [1, factor, 1], dir);
 }
 
-// TODO: clean up unused methods
 
-/*
-	this method is implemented based on geometry rather than mesh
-*/
+//
+//	this method is implemented based on geometry rather than mesh
+//
 function scaleWithVector(obj, factors, dir) {
 	// var ctr0 = obj.geometry.center();
 	var ctr0 = gettg(obj).center();
@@ -85,9 +84,9 @@ function scaleWithVector(obj, factors, dir) {
 	obj.geometry.translate(offset.x, offset.y, offset.z);
 }
 
-/*
-	rotate an object towards a given direction
-*/
+//
+//	rotate an object towards a given direction
+//
 function rotateObjTo(obj, dir, isReversed) {
 	var yUp = new THREE.Vector3(0, 1, 0);
 	var angleToRotate = yUp.angleTo(dir);
@@ -96,9 +95,9 @@ function rotateObjTo(obj, dir, isReversed) {
 }
 
 
-/*
-	rotate the geometry towards a given direction
-*/
+//
+//	rotate the geometry towards a given direction
+//
 function rotateGeoTo(geo, dir, isReversed) {
 	var mr = new THREE.Matrix4();
 	var yUp = new THREE.Vector3(0, 1, 0);
@@ -109,9 +108,9 @@ function rotateGeoTo(geo, dir, isReversed) {
 }
 
 
-/*
-	rotate a vector towards a given direction
-*/
+//
+//	rotate a vector towards a given direction
+//
 function rotateVectorTo(v, dir) {
 	var yUp = new THREE.Vector3(0, 1, 0);
 	var angleToRotate = yUp.angleTo(dir);
@@ -119,6 +118,9 @@ function rotateVectorTo(v, dir) {
 	v.applyAxisAngle(axisToRotate, angleToRotate);
 }
 
+//
+//	TODO: migrate this to xac.three.js
+//
 function markVertexNeighbors(obj) {
 	removeBalls();
 
@@ -154,9 +156,9 @@ function markVertexNeighbors(obj) {
 	}
 }
 
-/*
-	get the geometry from a mesh with transformation matrix applied
-*/
+//
+//	get the geometry from a mesh with transformation matrix applied
+//
 function gettg(mesh) {
 	mesh.updateMatrixWorld();
 	var gt = mesh.geometry.clone();
@@ -164,12 +166,18 @@ function gettg(mesh) {
 	return gt;
 }
 
+//
+//	apply the transfomrational matrix of a mesh to a given vector
+//
 function getTransformedVector(v, mesh) {
 	var vt = v.clone();
 	vt.applyMatrix4(mesh.matrixWorld);
 	return vt;
 }
 
+//
+//	get bounding cylinder of an object along a given direction
+//
 function getBoundingCylinder(obj, dir) {
 	var ctr = getBoundingBoxCenter(obj);
 	var h = getDimAlong(obj, dir);
@@ -180,7 +188,6 @@ function getBoundingCylinder(obj, dir) {
 	var d = -a * ctr.x - b * ctr.y - c * ctr.z;
 
 	var gt = gettg(obj);
-	// ctr = getProjection(ctr, a, b, c, d);
 	var r = 0;
 	var vMax;
 	for (var i = gt.vertices.length - 1; i >= 0; i--) {
@@ -206,6 +213,9 @@ function getBoundingCylinder(obj, dir) {
 	};
 }
 
+//
+//	get the bounding box (as a mesh) of an object
+//
 function getBoundingBoxMesh(obj, material) {
 	var params = getBoundingBoxEverything(obj);
 	var g = new THREE.BoxGeometry(params.lenx, params.leny, params.lenz);
@@ -215,6 +225,9 @@ function getBoundingBoxMesh(obj, material) {
 	return bbox;
 }
 
+//
+//	get all the information about the bounding box of an object
+//
 function getBoundingBoxEverything(obj) {
 	var gt = gettg(obj);
 	gt.computeBoundingBox();
@@ -239,6 +252,9 @@ function getBoundingBoxEverything(obj) {
 	};
 }
 
+//
+//	get the center of an object's bounding box
+//
 function getBoundingBoxCenter(obj) {
 	var g = obj.geometry;
 	g.computeBoundingBox();
@@ -248,14 +264,18 @@ function getBoundingBoxCenter(obj) {
 	return new THREE.Vector3(x, y, z);
 }
 
+//
+//	get the center of an object's bounding box using three js helper
+//
 function getBoundingBoxHelperCenter(obj) {
 	var bbox = new THREE.BoundingBoxHelper(obj, 0x00ff00);
 	bbox.update();
-	// 	scene.add(bbox);
-	// 	addABall(bbox.object.position, 0x00ffff, 5);
 	return bbox.object.position;
 }
 
+//
+//	get the dimensions of an object's bounding box
+//
 function getBoundingBoxDimensions(obj) {
 	var g = gettg(obj); // obj.geometry;
 	g.computeBoundingBox();
@@ -267,23 +287,35 @@ function getBoundingBoxDimensions(obj) {
 	return [lx, ly, lz];
 }
 
+//
+//	get the volume of an object's bounding box
+//
 function getBoundingBoxVolume(obj) {
 	var dims = getBoundingBoxDimensions(obj);
 	return dims[0] * dims[1] * dims[2];
 }
 
+//
+//	get the radius of an object's bounding sphere
+//
 function getBoundingSphereRadius(obj) {
 	var gt = gettg(obj);
 	gt.computeBoundingSphere();
 	return gt.boundingSphere.radius;
 }
 
+//
+//	get an object's dimension along a given direction
+//
 function getDimAlong(obj, dir) {
 	var gt = gettg(obj);
 	var range = project(gt.vertices, dir);
 	return range[1] - range[0];
 }
 
+//
+//	get an object's extrems along a given direction
+//
 function getEndPointsAlong(obj, dir) {
 	var ctr = getBoundingBoxHelperCenter(obj);
 	var ctrVal = dir.dot(ctr);
@@ -340,46 +372,46 @@ function getEndPointsAlong2(obj, dir) {
 	return endPoints;
 }
 
-function removeDisconnectedComponents(pt, pts, dist) {
-	var ctr = getCenter(pts);
-	var axis = ctr.clone().sub(pt);
-	var midDist = axis.length();
-	axis.normalize();
-	var minPosDist = Infinity;
-	var maxNegDist = -Infinity;
+// function removeDisconnectedComponents(pt, pts, dist) {
+// 	var ctr = getCenter(pts);
+// 	var axis = ctr.clone().sub(pt);
+// 	var midDist = axis.length();
+// 	axis.normalize();
+// 	var minPosDist = Infinity;
+// 	var maxNegDist = -Infinity;
+//
+//
+// 	var toKeep = [];
+// 	for (var i = pts.length - 1; i >= 0; i--) {
+// 		// determine the sign of the dist measure
+// 		var dToPt = (pts[i].clone().sub(pt)).dot(axis);
+// 		var sign = dToPt < midDist ? 1 : -1;
+//
+// 		// measure the abs dist to ctr
+// 		var d = (pts[i].clone().sub(ctr)).dot(axis);
+//
+// 		// add a distance threshold so that only nearby points are selected
+// 		if (sign > 0 && Math.abs(d) > dist) {
+// 			minPosDist = Math.min(Math.abs(d), minPosDist);
+// 			toKeep.push(pts[i]);
+// 			// addABall(pts[i], 0x00ff00)
+// 		} else {
+// 			maxNegDist = Math.max(-Math.abs(d), maxNegDist);
+// 			// addABall(pts[i], 0x0000ff)
+// 		}
+// 	}
+//
+// 	// if there is a 'gap', discard the set of far away points
+// 	if (minPosDist != Infinity && maxNegDist != -Infinity && minPosDist - maxNegDist > dist) {
+// 		return toKeep;
+// 	} else {
+// 		return pts;
+// 	}
+// }
 
-
-	var toKeep = [];
-	for (var i = pts.length - 1; i >= 0; i--) {
-		// determine the sign of the dist measure
-		var dToPt = (pts[i].clone().sub(pt)).dot(axis);
-		var sign = dToPt < midDist ? 1 : -1;
-
-		// measure the abs dist to ctr
-		var d = (pts[i].clone().sub(ctr)).dot(axis);
-
-		// add a distance threshold so that only nearby points are selected
-		if (sign > 0 && Math.abs(d) > dist) {
-			minPosDist = Math.min(Math.abs(d), minPosDist);
-			toKeep.push(pts[i]);
-			// addABall(pts[i], 0x00ff00)
-		} else {
-			maxNegDist = Math.max(-Math.abs(d), maxNegDist);
-			// addABall(pts[i], 0x0000ff)
-		}
-	}
-
-	// if there is a 'gap', discard the set of far away points
-	if (minPosDist != Infinity && maxNegDist != -Infinity && minPosDist - maxNegDist > dist) {
-		return toKeep;
-	} else {
-		return pts;
-	}
-}
-
-function computeFaceNormal(u, v, w) {
-	var uv = v.clone().sub(u);
-	var vw = w.clone().sub(v);
-	var nml = new THREE.Vector3().crossVectors(uv, vw);
-	return nml;
-}
+// function computeFaceNormal(u, v, w) {
+// 	var uv = v.clone().sub(u);
+// 	var vw = w.clone().sub(v);
+// 	var nml = new THREE.Vector3().crossVectors(uv, vw);
+// 	return nml;
+// }

@@ -6,6 +6,9 @@
 //
 //	........................................................................................................
 
+//
+//	return a replica of this array
+//
 Array.prototype.clone = function() {
 	var arr = [];
 	for (var i = 0; i < this.length; i++) {
@@ -14,6 +17,9 @@ Array.prototype.clone = function() {
 	return arr;
 }
 
+//
+//	perform element-wise arithmetic addition
+//
 Array.prototype.add = function(arr, sign) {
 	if (arr == undefined) return;
 	sign = sign || 1;
@@ -24,6 +30,9 @@ Array.prototype.add = function(arr, sign) {
 	return this;
 }
 
+//
+//	arithmetically add a scalar to all elements of this array
+//
 Array.prototype.addScalar = function(s) {
 	for (var i = 0; i < this.length; i++) {
 		this[i] += s;
@@ -31,10 +40,16 @@ Array.prototype.addScalar = function(s) {
 	return this;
 }
 
+//
+//	perform element-wise arithmetic subtraction
+//
 Array.prototype.sub = function(arr) {
 	return this.add(arr, -1);
 }
 
+//
+//	multiply a scalar to all elements of this array
+//
 Array.prototype.times = function(s) {
 	for (var i = 0; i < this.length; i++) {
 		this[i] *= s;
@@ -42,6 +57,9 @@ Array.prototype.times = function(s) {
 	return this;
 }
 
+//
+//	replace this array's elements with the input array's elements
+//
 Array.prototype.copy = function(arr) {
 	this.splice(0, this.length);
 	for (var i = 0; i < arr.length; i++) {
@@ -49,6 +67,9 @@ Array.prototype.copy = function(arr) {
 	}
 }
 
+//
+//	remove an element from this array, using an optional compare function
+//
 Array.prototype.remove = function(elm, compFunc) {
 	var toRemove = [];
 	for (var i = this.length - 1; i >= 0; i--) {
@@ -69,10 +90,16 @@ Array.prototype.remove = function(elm, compFunc) {
 	}
 }
 
+//
+//	remove an element at a given index
+//
 Array.prototype.removeAt = function(idx) {
 	if (idx >= 0) return this.splice(idx, 1);
 }
 
+//
+//	stitch the elements using the given separator into a string
+//
 Array.prototype.stitch = function(sep) {
 	var str = '';
 	for (var i = this.length - 1; i >= 0; i--) {
@@ -81,6 +108,9 @@ Array.prototype.stitch = function(sep) {
 	return str;
 }
 
+//
+//	return the dimension of this array
+//
 Array.prototype.dimension = function() {
 	var dim = [];
 	var arr = this;
@@ -91,6 +121,9 @@ Array.prototype.dimension = function() {
 	return dim;
 }
 
+//
+//	return true if this array has exactly the same elements in the same order as the input array
+//
 Array.prototype.equals = function(arr) {
 	if (this.length != arr.length) {
 		return false;
@@ -104,6 +137,9 @@ Array.prototype.equals = function(arr) {
 	return true;
 }
 
+//
+//	return the maximum value of this array
+//
 Array.prototype.max = function() {
 	var maxVal = Number.MIN_VALUE;
 	for (var i = this.length - 1; i >= 0; i--) {
@@ -112,10 +148,12 @@ Array.prototype.max = function() {
 	return maxVal;
 }
 
+//
 // similar to numpy's take https://docs.scipy.org/doc/numpy/reference/generated/numpy.take.html
 // arrIndex is of this form:
 //	[[x1, ..., xn], [y1, ..., yn], ... ], where, e.g.,
 // 	[[x1, ..., xn] means along the 1st dim of this array, only consider x1-th, ... xn-th hyper-rows
+//
 Array.prototype.take = function(arrIndex) {
 	var taken = [];
 	for (var i = 0; i < arrIndex[0].length; i++) {
@@ -129,6 +167,9 @@ Array.prototype.take = function(arrIndex) {
 	return taken;
 }
 
+//
+//	return the avaerage value of this array
+//
 Array.prototype.average = function() {
 	var sum = 0;
 	for (var i = this.length - 1; i >= 0; i--) {
@@ -142,6 +183,9 @@ Array.prototype.average = function() {
 	return sum / this.length;
 }
 
+//
+//	return the standard deviation of this array
+//
 Array.prototype.std = function() {
 	var avg = this.average();
 
@@ -157,7 +201,9 @@ Array.prototype.std = function() {
 	return Math.sqrt(sqsum / (this.length - 1));
 }
 
+//
 // return an array that contains elements from this array but not from arr
+//
 Array.prototype.diff = function(arr) {
 	var diffArr = [];
 
