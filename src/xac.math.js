@@ -350,7 +350,6 @@ XAC.pointNormalOfPlane = function(a, b, c, d) {
         y = c * (Math.random() + 0.5);
         z = -d / c;
     } else {
-        console.error([a, b, c, d]);
         return;
     }
 
@@ -433,7 +432,6 @@ XAC.testPointInPolygon = function(p, poly) {
         var p2 = poly[(i + 1) % poly.length];
 
         if ((p1.x - p.x) * (p2.x - eps * Math.sign(p2.x - p1.x) - p.x) <= 0 && (p1.y > p.y || p2.y > p.y)) {
-            // log([p1, p2])
             cnt++;
         }
     }
@@ -442,7 +440,7 @@ XAC.testPointInPolygon = function(p, poly) {
 }
 
 //
-//
+//  in 2d (xy space): return 1, 0 or -1 indicating which side a point is on (including on the line)
 //
 XAC.pointOnLineSide = function(p, p1, p2) {
     return Math.sign((p2.x - p1.x) * (p.y - p1.y) - (p2.y - p1.y) * (p.x - p1.x));
