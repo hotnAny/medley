@@ -13,6 +13,7 @@ XAC.MOUSEMOVE = 1;
 XAC.MOUSEUP = 2;
 
 // XAC.inputTechniques = {};
+XAC.mousedownEventHandlers = {};
 
 XAC.mousedown = function(e) {
     XAC.dispatchInputEvents(e, XAC.MOUSEDOWN);
@@ -32,20 +33,34 @@ XAC.dispatchInputEvents = function(e, type) {
     }
 
     for (var hit of XAC._activeHits) {
-        for (eventHandler of hit.object.eventHandlers) {
-            // var inputTechnique = XAC.inputTechniques[hit.object];
-            // if (inputTechnique != undefined) {
+        // attached handlers
+        switch (type) {
+            case XAC.MOUSEDOWN:
+                for (mousedown of hit.object.mousedowns) {
+                    mousedown(hit);
+                }
+                break;
+            case XAC.MOUSEMOVE:
+                // TODO for mousemoves
+                break;
+            case XAC.MOUSEUP:
+                // TODO for mouseups
+                break;
+        }
+
+        // input technique
+        for (technique of hit.object.inputTechniques) {
             switch (type) {
                 case XAC.MOUSEDOWN:
-                    if (eventHandler.mousedown(e, hit) == false) {
+                    if (technique.mousedown(e, hit) == false) {
                         XAC._activeHits.remove(hit);
                     }
                     break;
                 case XAC.MOUSEMOVE:
-                    eventHandler.mousemove(e, hit);
+                    technique.mousemove(e, hit);
                     break;
                 case XAC.MOUSEUP:
-                    eventHandler.mouseup(e, hit);
+                    technique.mouseup(e, hit);
                     XAC._activeHits.remove(hit);
                     break;
             }
@@ -59,3 +74,16 @@ $(document).ready(function() {
     $(document.body).on('mouseup', XAC.mouseup);
     XAC._activeHits = [];
 });
+
+THREE.Mesh.prototype.on = function(type, handler) {
+    switch (type) {
+        case XAC.MOUSEDOWN:
+            this.mousedowns = this.mousedowns == undefined ? [] : this.mousedowns;
+            this.mousedowns.push(handler);
+            break;
+        case XAC.MOUSEMOVE:
+            break;
+        case XAC.MOUSEUP:
+            break;
+    }
+}
