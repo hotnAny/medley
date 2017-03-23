@@ -59,13 +59,16 @@ THREE.Geometry.prototype.computeCentroids = function() {
 //
 //	known issues:
 //	- each triangle should have exactly 3 neighbors. however, some have 4 due to triangle redundance; some //    have only 2 due to unmanifold structure
+//  - assuming triangles
 //
 THREE.Geometry.prototype.createNeighborList = function(octree) {
     var eps = 1e-6;
     for (var i = 0; i < this.faces.length; i++) {
         var f = this.faces[i];
 
-        if (f.neighbors != undefined && f.neighbors.length > 0) {
+        // skip if this face's neighbor has been found
+        f.neighbors = f.neighbors || [];
+        if (f.neighbors.length >= 3) {
             continue;
         }
 
@@ -77,36 +80,64 @@ THREE.Geometry.prototype.createNeighborList = function(octree) {
 
         // use octree to filter close-by faces
         var elms = octree.search(ctr, 1);
-        f.neighbors = [];
-        var vlist = [f.a, f.b, f.c];
 
-        for (var j = 0; j < elms.length; j++) {
-            var ff = elms[j].faces; //.centroid.clone();
+        // find neighbors amongst this close-by set
+        for (elm of elms) {
+            f = elm.faces;
 
-            var vlist2 = [ff.a, ff.b, ff.c];
-
-            // skip the face itself
-            if (Math.abs(f.a - ff.a) < eps && Math.abs(f.b == ff.b) < eps && Math.abs(f.c == ff.c) <
-                eps) {
+            f.neighbors = f.neighbors || [];
+            if (f.neighbors.length >= 3) {
                 continue;
             }
 
-            // searching for pairs of vertices that correspond to the shared edge of neighboring triangles
-            var numPairs = 0;
-            for (var ii = 0; ii < vlist2.length; ii++) {
-                for (var jj = 0; jj < vlist.length; jj++) {
-                    if (this.vertices[vlist2[ii]].distanceTo(
-                            this.vertices[vlist[jj]]) < eps) {
-                        numPairs++;
-                        break;
+            var vlist = [f.a, f.b, f.c];
+
+            for (var j = 0; j < elms.length; j++) {
+                var ff = elms[j].faces; //.centroid.clone();
+
+                var vlist2 = [ff.a, ff.b, ff.c];
+
+                // skip the face itself
+                if (Math.abs(f.a - ff.a) < eps && Math.abs(f.b == ff.b) < eps && Math.abs(f.c == ff.c) <
+                    eps) {
+                    continue;
+                }
+
+                // searching for pairs of vertices that correspond to the shared edge of neighboring triangles
+                var numPairs = 0;
+                for (var ii = 0; ii < vlist2.length; ii++) {
+                    for (var jj = 0; jj < vlist.length; jj++) {
+                        if (this.vertices[vlist2[ii]].distanceTo(
+                                this.vertices[vlist[jj]]) < eps) {
+                            numPairs++;
+                            break;
+                        }
                     }
                 }
-            }
 
-            // when there are two pairs of them, this is a neighbor that shares exactly one edge
-            if (numPairs == 2) {
-                f.neighbors.push(ff);
+                // when there are two pairs of them, this is a neighbor that shares exactly one edge
+                if (numPairs == 2) {
+                    f.neighbors.push(ff);
+                    ff.neighbors = ff.neighbors || [];
+                    ff.neighbors.push(f);
+                }
             }
         }
+    }
+}
+
+//
+//
+//
+THREE.Mesh.prototype.on = function(type, handler) {
+    switch (type) {
+        case XAC.MOUSEDOWN:
+            this.mousedowns = this.mousedowns == undefined ? [] : this.mousedowns;
+            this.mousedowns.push(handler);
+            break;
+        case XAC.MOUSEMOVE:
+            break;
+        case XAC.MOUSEUP:
+            break;
     }
 }
