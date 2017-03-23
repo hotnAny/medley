@@ -208,10 +208,26 @@ Array.prototype.diff = function(arr) {
 	var diffArr = [];
 
 	for (var i = 0; i < this.length; i++) {
-		if(arr.indexOf(this[i]) < 0) {
+		if (arr.indexOf(this[i]) < 0) {
 			diffArr.push(this[i]);
 		}
 	}
 
 	return diffArr;
+}
+
+//
+//
+//
+Array.prototype.last = function() {
+	return this.length > 0 ? this[this.length - 1] : undefined;
+}
+
+//
+//
+//
+Array.prototype.insert = function(elm, idx) {
+	var tail = this.splice(idx);
+	this.push(elm);
+	this.copy(this.concat(tail));
 }
