@@ -29,11 +29,11 @@ XAC.MATERIALNORMAL = new THREE.MeshPhongMaterial({
 	opacity: 0.75,
 });
 
-XAC.MATERIALCONTRAST = new THREE.MeshPhongMaterial({
-	color: COLORCONTRAST,
-	transparent: true,
-	opacity: 0.75
-});
+// XAC.MATERIALCONTRAST = new THREE.MeshPhongMaterial({
+// 	color: COLORCONTRAST,
+// 	transparent: true,
+// 	opacity: 0.75
+// });
 
 XAC.MATERIALHIGHLIGHT = new THREE.MeshPhongMaterial({
 	color: COLORHIGHLIGHT,
@@ -285,6 +285,18 @@ function addATriangle(v1, v2, v3, clr) {
 	XAC.scene.add(tri);
 
 	return tri;
+}
+
+function addALine(v1, v2, clr) {
+	var geometry = new THREE.Geometry();
+	geometry.vertices.push(v1);
+	geometry.vertices.push(v2);
+	var material = new THREE.LineBasicMaterial({
+		color: clr
+	});
+	var line = new THREE.Line(geometry, material);
+
+	XAC.scene.add(line);
 }
 
 function addAnArrow(v1, dir, len, clr) {
