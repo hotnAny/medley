@@ -47,7 +47,10 @@ MEDLEY.PaintInput.prototype.mousemove = function(e) {
     if (hits.length > 0) {
         var hit = hits[0];
         this._points.push(hit.point);
-        this._faces.push(hit.face);
+
+        if (this._faces.last() != hit.face) {
+            this._faces.push(hit.face);
+        }
 
         this._minPoint.x = Math.min(this._minPoint.x, hit.point.x);
         this._minPoint.y = Math.min(this._minPoint.y, hit.point.y);
