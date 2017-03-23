@@ -19,7 +19,7 @@ $(document).ready(function() {
     // log(XAC.pointNormalOfPlane(a, b, c, d))
     // log(XAC.findLinePlaneIntersection(p0, p1, a, b, c, d));
     // log(XAC.testTriCylIntersection(va, vb, vc, c, nml, 2, 1));
-    // log(XAC.project([c, c1], nml))
+    // log(XAC.getRangeOfPointsOnAxis([c, c1], nml))
 
     // var u1 = new THREE.Vector3(0, 0, 2);
     // var u2 = new THREE.Vector3(0, 1, 0);
@@ -44,6 +44,16 @@ $(document).ready(function() {
     // ];
     // log(XAC.testPointInPolygon(new THREE.Vector3(0, 1, 0), poly));
     // log(XAC.testPointInPolygon(new THREE.Vector3(1, 3, 0), poly));
+
+    // var arr = [1, 2, 3, 4, 5, 6]
+    // arr.insert(7, 2);
+    // log(arr)
+
+    // var u1 = new THREE.Vector3(-1, 0, 0);
+    // var u2 = new THREE.Vector3(-5, 2, 0);
+    // var v1 = new THREE.Vector3(0, 3, 0);
+    // var v2 = new THREE.Vector3(-2, 5, 0);
+    // log(XAC.find2DLineLineIntersection(u1, u2, v1, v2))
 });
 
 function onStlLoaded(object) {
@@ -71,13 +81,14 @@ function onStlLoaded(object) {
 
     object.geometry.createNeighborList(XAC.octree);
     time('[loading object] created neighbor list for each face');
-    object.on(XAC.MOUSEDOWN, function(hit){
-        hit.object.geometry.highlightFace(hit.face, 0xff00ff, XAC.scene);
-        log(hit.face.neighbors)
-        for(neighbor of hit.face.neighbors) {
-            hit.object.geometry.highlightFace(neighbor, 0xffff00, XAC.scene);
-        }
-    });
+    // XXX testing neighbor finding
+    // object.on(XAC.MOUSEDOWN, function(hit){
+    //     hit.object.geometry.highlightFace(hit.face, 0xff00ff, XAC.scene);
+    //     log(hit.face.neighbors)
+    //     for(neighbor of hit.face.neighbors) {
+    //         hit.object.geometry.highlightFace(neighbor, 0xffff00, XAC.scene);
+    //     }
+    // });
 
     //
     // input
