@@ -122,94 +122,191 @@ MEDLEY._init1dPlacement = function(info) {
 //
 MEDLEY._init2dPlacement = function(info) {
     //
+    // 1. find enclosing circle
     //
-    // 1. find enclosing cylinder
     var nmlCrossPlane = new THREE.Vector3(info.paramsCross.A, info.paramsCross.B, info.paramsCross.C).normalize();
-    var projOnNormal = XAC.project(info.points, nmlCrossPlane);
-    var heightEnclosing = projOnNormal[1] - projOnNormal[0];
     var projOnCrossPlane = [];
     var zAxis = new THREE.Vector3(0, 0, -1);
     var angleToRotate = nmlCrossPlane.angleTo(zAxis);
     var axisToRotate = new THREE.Vector3().crossVectors(nmlCrossPlane, zAxis).normalize();
     var projPoints = [];
     for (var i = 0; i < info.points.length; i++) {
-        var proj = XAC.getProjection(info.points[i], info.paramsCross.A, info.paramsCross.B,
+        var proj = XAC.getPointProjectionOnPlane(
+            info.points[i], info.paramsCross.A, info.paramsCross.B,
             info.paramsCross.C, info.paramsCross.D);
         // _balls.remove(addABall(proj, 0x00ffff, 1));
-        // projPoints.push(proj);
         proj.applyAxisAngle(axisToRotate, angleToRotate);
         projOnCrossPlane.push(proj.clone());
-        // _balls.remove(addABall(proj, 0x00ffff,  0.5));
     }
     var enclosingCircle = makeCircle(projOnCrossPlane);
-    // log(enclosingCircle)
     var centerEnclosing = new THREE.Vector3(enclosingCircle.x, enclosingCircle.y,
         projOnCrossPlane[0].z);
     centerEnclosing.applyAxisAngle(axisToRotate, -angleToRotate);
-    // centerEnclosing.add(nmlCrossPlane.clone())
-    // _balls.remove(addABall(centerEnclosing, 0x0000ff, 1.5));
     var radiusEnclosing = enclosingCircle.r;
 
     //
-    //
     // 2. find enclosing triangles
-    var facesEnclosed = [];
+    //
     var vertices = info.object.geometry.vertices;
-    for (var i = 0; i < info.object.geometry.faces.length; i++) {
-        var face = info.object.geometry.faces[i];
-        var v1 = vertices[face.a];
-        var v2 = vertices[face.b];
-        var v3 = vertices[face.c];
-
-        if (XAC.testTriCylIntersection(v1, v2, v3, centerEnclosing, nmlCrossPlane.clone(),
-                heightEnclosing, radiusEnclosing)) {
-            facesEnclosed.push(face);
-            addATriangle(v1, v2, v3, 0xffff00);
-            // * Math.exp(1 + nmlCrossPlane.dot(face.normal))
-            // log(nmlCrossPlane.dot(face.normal));
+    // recursively find neighbors located within the given circle
+    var __findEnclosingNeighbors = function(f, ctr, r) {
+        f.visited = true;
+        var enclosingNeighbors = [];
+        for (ff of f.neighbors) {
+            if (ff.visited) continue;
+            var vindices = [ff.a, ff.b, ff.c];
+            for (idx of vindices) {
+                if (vertices[idx].distanceTo(ctr) < r) {
+                    enclosingNeighbors.push(ff);
+                    enclosingNeighbors
+                        = enclosingNeighbors.concat(__findEnclosingNeighbors(ff, ctr, r));
+                    break;
+                }
+            }
         }
+        return enclosingNeighbors;
+    }
+
+    var facesEnclosed = info.faces.clone();
+    for (face of facesEnclosed) {
+        face.visited = true;
+        // info.object.geometry.highlightFace(face, 0x00ff00, XAC.scene);
+    }
+
+    var moreFacesEnclosed = [];
+    for (face of facesEnclosed) {
+        moreFacesEnclosed = moreFacesEnclosed.concat(
+            __findEnclosingNeighbors(face, centerEnclosing, radiusEnclosing));
+    }
+
+    facesEnclosed = facesEnclosed.concat(moreFacesEnclosed);
+
+    for (face of facesEnclosed) {
+        face.visited = false;
     }
 
     //
-    //
     // 3. remesh selected area
+    //
     var facesRemeshed = [];
-    var facesOnBoundary = [];
+    var facesOnBoundary = info.faces.clone();
+    // 3.1 add internal faces directly to the remesh set
     for (face of facesEnclosed) {
-        // is it inside the selected points (boundary)?
-        // if so directly add to remesh set
         var isInside = true;
         var vindices = [face.a, face.b, face.c];
+        var numVerticesOutside = 0;
         for (var i = 0; i < vindices.length; i++) {
-            var p = XAC.getProjection(vertices[vindices[i]], info.paramsCross.A, info.paramsCross.B,
+            var p = XAC.getPointProjectionOnPlane(vertices[vindices[i]],
+                info.paramsCross.A, info.paramsCross.B,
                 info.paramsCross.C, info.paramsCross.D);
             p.applyAxisAngle(axisToRotate, angleToRotate);
 
             if (!XAC.testPointInPolygon(p, projOnCrossPlane)) {
-                isInside = false;
+                numVerticesOutside++;
                 // _balls.remove(addABall(p, 0xff0000, 0.5));
-                break;
             }
         }
 
-        // XXX
-        var v1 = vertices[face.a];
-        var v2 = vertices[face.b];
-        var v3 = vertices[face.c];
-        if (isInside) {
+        if (numVerticesOutside == 0) {
             facesRemeshed.push(face);
             // XXX
-            addATriangle(v1, v2, v3, 0xff00ff);
+            // info.object.geometry.highlightFace(face, 0xff0000, XAC.scene);
+        } else if (numVerticesOutside < 3 && facesOnBoundary.indexOf(face) < 0) {
+            facesOnBoundary.push(face);
+            for (var i = 0; i < facesOnBoundary.length; i++) {
+                if (facesOnBoundary[i].neighbors.indexOf(face) >= 0) {
+                    facesOnBoundary.insert(face, i + 1);
+                    break;
+                }
+            }
+            // XXX
+            // info.object.geometry.highlightFace(face, 0x00ff00, XAC.scene);
         }
-
-        // break;
-
-        // if not, is it intersecting with the selected points (boundary)?
-        // record relative coordinate on each edge that intersects with the boundary
     }
 
-    for (face of facesOnBoundary) {
-        // internally remesh, then add to remesh set
+    // 3.2 remesh faces intersecting the boundary
+    var __interpolate = function(p1, p2, t) {
+        return p1.clone().add(p2.clone().sub(p1).multiplyScalar(t));
+    }
+
+    var idxp = 0;
+    for (var i = 0; i < facesOnBoundary.length; i++) {
+        var face = facesOnBoundary[i];
+        info.object.geometry.highlightFace(face, 0x00ff00, XAC.scene);
+        var vindices = [face.a, face.b, face.c];
+        var voriginals = [];
+        var vprojs = [];
+        for (var j = 0; j < vindices.length; j++) {
+            voriginals.push(vertices[vindices[j]]);
+            var p = XAC.getPointProjectionOnPlane(vertices[vindices[j]],
+                info.paramsCross.A, info.paramsCross.B,
+                info.paramsCross.C, info.paramsCross.D);
+            p.applyAxisAngle(axisToRotate, angleToRotate);
+            vprojs.push(p);
+        }
+
+        var v1 = vprojs[0],
+            v2 = vprojs[1],
+            v3 = vprojs[2];
+
+        while (true) {
+            var idxpPrev = (idxp + projOnCrossPlane.length - 1) % projOnCrossPlane.length;
+            var p0 = projOnCrossPlane[idxpPrev];
+            if (!XAC.isInTriangle(p0, v1, v2, v3)) {
+                break;
+            }
+            idxp = idxpPrev;
+        }
+
+        for (;; idxp = (idxp + 1) % projOnCrossPlane.length) {
+            var idxpPrev = (idxp + projOnCrossPlane.length - 1) % projOnCrossPlane.length;
+            var p0 = projOnCrossPlane[idxpPrev];
+            var p1 = projOnCrossPlane[idxp];
+
+            // if current face contains the next point
+            face.points = face.points || [];
+            if (XAC.isInTriangle(p1, v1, v2, v3)) {
+                // if it's the first point, look back
+                if (face.points.length == 0) {
+                    var intersections = XAC.find2DLineTriangleIntersections(p0, p1, v1, v2, v3);
+                    if (intersections != undefined) {
+                        pints = [];
+                        for (int of intersections) {
+                            pints.push(__interpolate(voriginals[int.idx1], voriginals[int.idx2], int.t));
+                        }
+
+                        // XXX
+                        // addALine(pints[0], info.points[idxp], 0xff00ff);
+                        //
+
+                        face.points = face.points.concat(pints);
+                    }
+                } else {
+                    // XXX
+                    addALine(info.points[idxpPrev], info.points[idxp], 0x0000ff);
+                }
+                face.points.push(info.points[idxp]);
+
+            }
+            // if not, intersect with the current face
+            else {
+                var intersections = XAC.find2DLineTriangleIntersections(p0, p1, v1, v2, v3);
+                pints = [];
+                for (int of intersections) {
+                    pints.push(__interpolate(voriginals[int.idx1], voriginals[int.idx2], int.t));
+                }
+
+                // XXX
+                // var tempPoints = [info.points[idxpPrev]].concat(pints).concat([info.points[idxp]]);
+                // for (var k = 0; k < tempPoints.length - 1; k++) {
+                //     addALine(tempPoints[k], tempPoints[k + 1], k == 0 ? 0x0000ff : 0xff0000);
+                // }
+                //
+
+                face.points = face.points.concat(pints);
+                break;
+            }
+        }
     }
 }
 
