@@ -48,6 +48,9 @@ numeric.times = function(matrix, scalar) {
     return matrix;
 }
 
+//
+// TODO comment
+//
 numeric.fromBlocks = function(blocks) {
     var dim = numeric.dim(blocks).slice(0, 2);
     var dimBlock = numeric.dim(blocks[0][0]).slice(0, 2);
@@ -66,7 +69,7 @@ numeric.fromBlocks = function(blocks) {
 //
 //  other math-related useful functions
 //
-XAC.project = function(points, axis) {
+XAC.getRangeOfPointsOnAxis = function(points, axis) {
     var min = 1000;
     var max = -1000;
 
@@ -82,7 +85,7 @@ XAC.project = function(points, axis) {
 //
 //	get the projection coordinates of a point on a given plane parameterized by ax+by+cz+d=0
 //
-XAC.getProjection = function(v, a, b, c, d) {
+XAC.getPointProjectionOnPlane = function(v, a, b, c, d) {
     var t = -(a * v.x + b * v.y + c * v.z + d) / (a * a + b * b + c * c);
     return new THREE.Vector3(v.x + a * t, v.y + b * t, v.z + c * t);
 }
@@ -102,7 +105,7 @@ XAC.testTriBoxIntersection = function(va, vb, vc, nml, bbox) {
     var boxMax = [bbox.max.x, bbox.max.y, bbox.max.z];
 
     for (var i = 0; i < 3; i++) {
-        minmax = XAC.project([va, vb, vc], boxNormals[i]);
+        minmax = XAC.getRangeOfPointsOnAxis([va, vb, vc], boxNormals[i]);
         if (minmax[1] < boxMin[i] || minmax[0] > boxMax[i]) {
             return false;
         }
@@ -124,7 +127,7 @@ XAC.testTriBoxIntersection = function(va, vb, vc, nml, bbox) {
     }
 
     var triOffset = nml.dot(va);
-    minmax = XAC.project(boxVertices, nml);
+    minmax = XAC.getRangeOfPointsOnAxis(boxVertices, nml);
     if (minmax[1] < triOffset || minmax[0] > triOffset) {
         return false;
     }
@@ -139,8 +142,8 @@ XAC.testTriBoxIntersection = function(va, vb, vc, nml, bbox) {
     for (var i = 0; i < 3; i++) {
         for (var j = 0; j < 3; j++) {
             var axis = new THREE.Vector3().crossVectors(triEdges[i], boxNormals[j]);
-            var boxMinmax = XAC.project(boxVertices, axis);
-            var triMinmax = XAC.project([va, vb, vc], axis);
+            var boxMinmax = XAC.getRangeOfPointsOnAxis(boxVertices, axis);
+            var triMinmax = XAC.getRangeOfPointsOnAxis([va, vb, vc], axis);
             if (boxMinmax[1] < triMinmax[0] || boxMinmax[0] > triMinmax[1]) {
                 return false;
             }
@@ -285,13 +288,13 @@ XAC.testTriCylIntersection = function(va, vb, vc, c, nml, h, r) {
     // 2) at least one edge intersects with cylinder
     var top = c.clone().add(nml.clone().multiplyScalar(h / 2));
     var bottom = c.clone().add(nml.clone().multiplyScalar(-h / 2));
-    var heightProj = XAC.project([bottom, top], nml);
+    var heightProj = XAC.getRangeOfPointsOnAxis([bottom, top], nml);
     for (var i = 0; i < vertices.length; i++) {
         v1 = vertices[i];
         v2 = vertices[(i + 1) % vertices.length];
 
         // v1v2's projection on cylinder's axis falls into the height range
-        var proj = XAC.project([v1, v2], nml);
+        var proj = XAC.getRangeOfPointsOnAxis([v1, v2], nml);
         if (proj[0] > heightProj[1] || proj[1] < heightProj[0]) {
             continue;
         }
@@ -394,13 +397,13 @@ XAC.getPlaneFromPointNormal = function(p, nml) {
 XAC.distanceBetweenLineSegments = function(u1, u2, v1, v2) {
     var u1u2 = u2.clone().sub(u1);
     var paramsu = XAC.getPlaneFromPointNormal(u1, u1u2);
-    var projv1 = XAC.getProjection(v1, paramsu.A, paramsu.B, paramsu.C, paramsu.D);
-    var projv2 = XAC.getProjection(v2, paramsu.A, paramsu.B, paramsu.C, paramsu.D);
+    var projv1 = XAC.getPointProjectionOnPlane(v1, paramsu.A, paramsu.B, paramsu.C, paramsu.D);
+    var projv2 = XAC.getPointProjectionOnPlane(v2, paramsu.A, paramsu.B, paramsu.C, paramsu.D);
 
     var v1v2 = v2.clone().sub(v1);
     var paramsv = XAC.getPlaneFromPointNormal(v1, v1v2);
-    var proju1 = XAC.getProjection(u1, paramsv.A, paramsv.B, paramsv.C, paramsv.D);
-    var proju2 = XAC.getProjection(u2, paramsv.A, paramsv.B, paramsv.C, paramsv.D);
+    var proju1 = XAC.getPointProjectionOnPlane(u1, paramsv.A, paramsv.B, paramsv.C, paramsv.D);
+    var proju2 = XAC.getPointProjectionOnPlane(u2, paramsv.A, paramsv.B, paramsv.C, paramsv.D);
 
     return Math.max(
         XAC.distanceBetweenPointLineSegment(u1, projv1, projv2),
@@ -444,4 +447,61 @@ XAC.testPointInPolygon = function(p, poly) {
 //
 XAC.pointOnLineSide = function(p, p1, p2) {
     return Math.sign((p2.x - p1.x) * (p.y - p1.y) - (p2.y - p1.y) * (p.x - p1.x));
+}
+
+//
+//
+//
+XAC.find2DLineTriangleIntersections = function(p1, p2, v1, v2, v3) {
+    var vertices = [v1, v2, v3];
+    var intersections = [];
+    for (var i = 0; i < vertices.length; i++) {
+        var idx1 = i;
+        var idx2 = (i + 1) % vertices.length;
+        var infoInt = XAC.find2DLineLineIntersection(vertices[idx1], vertices[idx2], p1, p2);
+        if (infoInt != undefined) {
+            intersections.push({
+                idx1: idx1,
+                idx2: idx2,
+                t: infoInt.t,
+                s: infoInt.s,
+                p: infoInt.p
+            });
+            // if (intersections.length == 2) {
+            //     return intersections;
+            // }
+        }
+    }
+
+    // TODO: detect redundant points
+
+    return intersections;
+}
+
+//
+//
+//
+XAC.find2DLineLineIntersection = function(u1, u2, v1, v2) {
+    var denom = (v2.y - v1.y) * (u2.x -
+        u1.x) - (v2.x - v1.x) * (u2.y - u1.y);
+    if (denom == 0) {
+        return;
+    }
+
+    var t = ((v2.x - v1.x) * (u1.y - v1.y) - (v2.y - v1.y) * (u1.x - v1.x)) / denom;
+    if (t < 0 || t > 1) {
+        return;
+    }
+
+    var s = ((u2.x - u1.x) * (u1.y - v1.y) - (u2.y - u1.y) * (u1.x - v1.x)) / denom;
+    if (s < 0 || s > 1) {
+        return;
+    }
+
+    var p = u1.clone().add(u2.clone().sub(u1).multiplyScalar(t));
+    return {
+        p: p,
+        t: t,
+        s: s
+    };
 }

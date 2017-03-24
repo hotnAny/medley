@@ -16,9 +16,9 @@ var COLORNORMAL = 0xDB5B8A; // the normal color
 var COLORCONTRAST = 0xD1D6E7; // is the contrast of the COLORNORMAL
 var COLORHIGHLIGHT = 0xFFFA90;
 var COLORFOCUS = 0xE82C0C; // color to really draw users' focus
-//
+
 // XAC.MATERIALNORMAL = new THREE.MeshBasicMaterial({
-// 	color: 0x000000,
+// 	color: 0x888888,
 // 	wireframe: true,
 // 	side: THREE.DoubleSide
 // });
@@ -287,7 +287,7 @@ function addATriangle(v1, v2, v3, clr) {
 	return tri;
 }
 
-function addALine(v1, v2, clr) {
+function addALine(v1, v2, clr, r) {
 	var geometry = new THREE.Geometry();
 	geometry.vertices.push(v1);
 	geometry.vertices.push(v2);

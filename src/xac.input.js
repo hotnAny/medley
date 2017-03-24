@@ -36,8 +36,10 @@ XAC.dispatchInputEvents = function(e, type) {
         // attached handlers
         switch (type) {
             case XAC.MOUSEDOWN:
-                for (mousedown of hit.object.mousedowns) {
-                    mousedown(hit);
+                if (hit.object.mousedowns != undefined) {
+                    for (mousedown of hit.object.mousedowns) {
+                        mousedown(hit);
+                    }
                 }
                 break;
             case XAC.MOUSEMOVE:
@@ -74,16 +76,3 @@ $(document).ready(function() {
     $(document.body).on('mouseup', XAC.mouseup);
     XAC._activeHits = [];
 });
-
-THREE.Mesh.prototype.on = function(type, handler) {
-    switch (type) {
-        case XAC.MOUSEDOWN:
-            this.mousedowns = this.mousedowns == undefined ? [] : this.mousedowns;
-            this.mousedowns.push(handler);
-            break;
-        case XAC.MOUSEMOVE:
-            break;
-        case XAC.MOUSEUP:
-            break;
-    }
-}
