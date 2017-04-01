@@ -17,17 +17,18 @@ var COLORCONTRAST = 0xD1D6E7; // is the contrast of the COLORNORMAL
 var COLORHIGHLIGHT = 0xFFFA90;
 var COLORFOCUS = 0xE82C0C; // color to really draw users' focus
 
-// XAC.MATERIALNORMAL = new THREE.MeshBasicMaterial({
-// 	color: 0x888888,
-// 	wireframe: true,
-// 	side: THREE.DoubleSide
-// });
-
-XAC.MATERIALNORMAL = new THREE.MeshPhongMaterial({
-	color: COLORNORMAL,
-	transparent: true,
-	opacity: 0.75,
+// XXX for debugging
+XAC.MATERIALNORMAL = new THREE.MeshBasicMaterial({
+	color: 0xcccccc,
+	wireframe: true,
+	side: THREE.DoubleSide
 });
+
+// XAC.MATERIALNORMAL = new THREE.MeshPhongMaterial({
+// 	color: COLORNORMAL,
+// 	transparent: true,
+// 	opacity: 0.75,
+// });
 
 // XAC.MATERIALCONTRAST = new THREE.MeshPhongMaterial({
 // 	color: COLORCONTRAST,
@@ -242,16 +243,14 @@ XAC.Polygon.prototype = Object.create(XAC.Thing.prototype);
 
 _balls = [];
 
-function addABall(pt, clr, radius) {
-	clr = clr == undefined ? 0xff0000 : clr;
-	radius = radius == undefined ? 1 : radius;
-
-	var geometry = new THREE.SphereGeometry(radius, 10, 10);
+function addABall(point, color, radius, opacity) {
+	var geometry = new THREE.SphereGeometry(radius || 1, 10, 10);
 	var material = new THREE.MeshBasicMaterial({
-		color: clr
+		color: color || 0xff0000,
+		opacity: opacity || 1.0
 	});
 	var ball = new THREE.Mesh(geometry, material);
-	ball.position.set(pt.x, pt.y, pt.z);
+	ball.position.copy(point)
 
 	_balls.push(ball);
 	XAC.scene.add(ball);
@@ -265,7 +264,7 @@ function removeBalls() {
 	}
 }
 
-function addATriangle(v1, v2, v3, clr) {
+function addATriangle(v1, v2, v3, clr, wired) {
 	var vs = [v1.x, v1.y, v1.z, v2.x, v2.y, v2.z, v3.x, v3.y, v3.z];
 	var fs = new THREE.Face3(0, 1, 2);
 
@@ -277,7 +276,8 @@ function addATriangle(v1, v2, v3, clr) {
 	var material = new THREE.MeshBasicMaterial({
 		color: clr,
 		transparent: true,
-		opacity: 0.5
+		opacity: 0.5,
+		wireframe: wired || false
 	});
 	var tri = new THREE.Mesh(geometry, material);
 	tri.material.side = THREE.DoubleSide;
@@ -296,13 +296,17 @@ function addALine(v1, v2, clr, r) {
 	});
 	var line = new THREE.Line(geometry, material);
 
+	// HACK
+	// _balls.remove(addABall(v1, clr, 0.1));
+	// _balls.remove(addABall(v2, clr, 0.1));
+
 	XAC.scene.add(line);
 }
 
-function addAnArrow(v1, dir, len, clr) {
+function addAnArrow(v1, dir, len, clr, r) {
 	var flipped = len < 0;
 
-	var rArrow = 0.025 * len;
+	var rArrow = r || 0.025 * len;
 	var lArrow = len == undefined ? 100 : Math.abs(len);
 
 	var mat = clr == undefined ? MATERIALFOCUS : new THREE.MeshBasicMaterial({
