@@ -94,7 +94,7 @@ Array.prototype.remove = function(elm, compFunc) {
 //	remove an element at a given index
 //
 Array.prototype.removeAt = function(idx) {
-	if (idx >= 0) return this.splice(idx, 1);
+	if (idx >= 0) return this.splice(idx, 1)[0];
 }
 
 //
@@ -219,7 +219,10 @@ Array.prototype.diff = function(arr) {
 //
 //
 //
-Array.prototype.last = function() {
+Array.prototype.last = function(val) {
+	if(val != undefined && this.length > 0) {
+		this[this.length - 1] = val;
+	}
 	return this.length > 0 ? this[this.length - 1] : undefined;
 }
 

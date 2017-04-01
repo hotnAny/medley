@@ -42,6 +42,8 @@ $(document).ready(function() {
     //     new THREE.Vector3(-1, 1, 0),
     //     new THREE.Vector3(0, -1, 0)
     // ];
+    // var triangulation = XAC.triangulatePolygon(poly, new THREE.Vector3(0, 0, 1));
+    // log(triangulation)
     // log(XAC.testPointInPolygon(new THREE.Vector3(0, 1, 0), poly));
     // log(XAC.testPointInPolygon(new THREE.Vector3(1, 3, 0), poly));
 
@@ -54,6 +56,15 @@ $(document).ready(function() {
     // var v1 = new THREE.Vector3(0, 3, 0);
     // var v2 = new THREE.Vector3(-2, 5, 0);
     // log(XAC.find2DLineLineIntersection(u1, u2, v1, v2))
+
+    // var triangle = earcut([-1, -1, -1, 1, 1, 1, 1, -1]);
+    // log(triangle)
+    // var triangle2 = earcut([-1, -1, 1, 1, 1, -1, -1, 1]);
+    // log(triangle2)
+
+    // var array = [];
+    // array.push(1, 2, 3)
+    // log(array)
 });
 
 function onStlLoaded(object) {

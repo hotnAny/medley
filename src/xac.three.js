@@ -9,7 +9,9 @@
 //
 //  highlight a face by adding a triangle covering it
 //
-THREE.Geometry.prototype.highlightFace = function(face, color, scene) {
+//  XXX: wired is a variable for debugging
+//
+THREE.Geometry.prototype.highlightFace = function(face, color, scene, wired) {
     var v1 = this.vertices[face.a];
     var v2 = this.vertices[face.b];
     var v3 = this.vertices[face.c];
@@ -25,7 +27,8 @@ THREE.Geometry.prototype.highlightFace = function(face, color, scene) {
     var material = new THREE.MeshBasicMaterial({
         color: color,
         transparent: true,
-        opacity: 0.5
+        opacity: 0.5,
+        wireframe: wired || false
     });
     var triangle = new THREE.Mesh(geometry, material);
     triangle.material.side = THREE.DoubleSide;

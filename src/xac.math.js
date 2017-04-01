@@ -5,8 +5,9 @@
 //  by xiangchen@acm.org, 03/2017
 //
 //  NOTE:
-//  - some are extension of numeric.js
-//  - based on three.js's vector data structure
+//  - [dependency] numeric.js (http://www.numericjs.com/)
+//  - [dependency] three.js (https://threejs.org/)
+//  - [dependency] earcut.js (https://github.com/mapbox/earcut)
 //
 // .................................................................
 
@@ -429,13 +430,16 @@ XAC.distanceBetweenPointLineSegment = function(p, v1, v2) {
 //
 XAC.testPointInPolygon = function(p, poly) {
     var cnt = 0;
+    // var cnts = [0, 0, 0, 0];
     var eps = 1e-6
     for (var i = 0; i < poly.length; i++) {
         var p1 = poly[i];
         var p2 = poly[(i + 1) % poly.length];
 
-        if ((p1.x - p.x) * (p2.x - eps * Math.sign(p2.x - p1.x) - p.x) <= 0 && (p1.y > p.y || p2.y > p.y)) {
+        if ((p1.x - p.x) * (p2.x - eps * Math.sign(p2.x - p1.x) - p.x) <= 0 && p1.y >= p.y && p2.y >= p
+            .y) {
             cnt++;
+            // cnts[0]++;
         }
     }
 
@@ -467,9 +471,6 @@ XAC.find2DLineTriangleIntersections = function(p1, p2, v1, v2, v3) {
                 s: infoInt.s,
                 p: infoInt.p
             });
-            // if (intersections.length == 2) {
-            //     return intersections;
-            // }
         }
     }
 
@@ -505,3 +506,33 @@ XAC.find2DLineLineIntersection = function(u1, u2, v1, v2) {
         s: s
     };
 }
+
+//
+//  triangulate a polygon in 3D based on earcut.js
+//  - polygon: an array of vertices
+//  - normal: normal vector of a polygon
+//  return the topology of the triangulation, e.g., [1,0,3, 3,2,1],
+//      where each is an index to a vertex, three make a triangle
+//
+XAC.triangulatePolygon = function(polygon, normal) {
+    // var polygonXY = polygon.clone();
+    var vertices = [];
+    var zAxis = new THREE.Vector3(0, 0, -1);
+    var angleToRotate = normal.angleTo(zAxis);
+    var axisToRotate = new THREE.Vector3().crossVectors(normal, zAxis).normalize();
+
+    for (v of polygon) {
+        var vtrans = v.clone().applyAxisAngle(axisToRotate, angleToRotate);
+        vertices.push(vtrans.x, vtrans.y);
+    }
+
+    if (earcut == undefined) {
+        console.error('missing library earcut.js');
+    }
+
+    return earcut(vertices);
+}
+
+// XAC.transformToXY = function(v) {
+//     var zAxis = new THREE.Vector3(0, 0, -1);
+// }
