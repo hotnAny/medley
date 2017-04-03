@@ -141,40 +141,12 @@ MEDLEY._init1dPlacement = function(info) {
 //  initialize placement of 2d material based on user painting
 //
 MEDLEY._init2dPlacement = function(info) {
+    // [internal helper] interpolate between p1 and p2 with t
     var __interpolate = function(p1, p2, t) {
         return p1.clone().add(p2.clone().sub(p1).multiplyScalar(t));
     }
 
-    //
-    // 1. find enclosing circle
-    //
-    var nmlCrossPlane = new THREE.Vector3(info.paramsCross.A, info.paramsCross.B, info.paramsCross.C).normalize();
-    var projOnCrossPlane = [];
-    var zAxis = new THREE.Vector3(0, 0, -1);
-    var angleToRotate = nmlCrossPlane.angleTo(zAxis);
-    var axisToRotate = new THREE.Vector3().crossVectors(nmlCrossPlane, zAxis).normalize();
-    var projPoints = [];
-    for (var i = 0; i < info.points.length; i++) {
-        addALine(info.points[i], info.points[(i + 1) % info.points.length], 0xff00ff);
-        // _balls.remove(addABall(info.points[i], 0xff0000, 0.1));
-        var proj = XAC.getPointProjectionOnPlane(
-            info.points[i], info.paramsCross.A, info.paramsCross.B,
-            info.paramsCross.C, info.paramsCross.D);
-        proj.applyAxisAngle(axisToRotate, angleToRotate);
-        // _balls.remove(addABall(proj, 0xff0000, 0.1));
-        projOnCrossPlane.push(proj.clone());
-    }
-    var enclosingCircle = makeCircle(projOnCrossPlane);
-    var centerEnclosing = new THREE.Vector3(enclosingCircle.x, enclosingCircle.y,
-        projOnCrossPlane[0].z);
-    centerEnclosing.applyAxisAngle(axisToRotate, -angleToRotate);
-    var radiusEnclosing = enclosingCircle.r;
-
-    //
-    // 2. find enclosing triangles
-    //
-    var vertices = info.object.geometry.vertices;
-    // recursively find neighbors located within the given circle
+    // [internal helper] recursively find neighbors located within the given circle
     var __findEnclosingNeighbors = function(f, ctr, r) {
         f.visited = true;
         var enclosingNeighbors = [];
@@ -193,12 +165,49 @@ MEDLEY._init2dPlacement = function(info) {
         return enclosingNeighbors;
     }
 
-    var facesEnclosed = info.faces.clone();
-    // for (face of facesEnclosed) {
-    //     face.visited = true;
-    //     // info.object.geometry.highlightFace(face, 0x000000, XAC.scene, true);
-    // }
+    // [internal helper] debug abnormal faces
+    var __debugFace = function(face) {
+        // info.object.geometry.highlightFace(face, 0xffff00, XAC.scene);
+        for (var k = 0; k < face.points.length; k++) {
+            var p0 = face.points[k];
+            var p1 = face.points[(k + 1) % face.points.length];
+            // addALine(p0, p1, 0xff00ff);
+            addAnArrow(p0, p1.clone().sub(p0), p1.distanceTo(p0), k == 0 ? 0xff0000 :
+                0x000000, 0.01)
+        }
+    }
 
+    //
+    // 1. find enclosing circle
+    //
+    var nmlCrossPlane = new THREE.Vector3(info.paramsCross.A, info.paramsCross.B, info.paramsCross.C).normalize();
+    var zAxis = new THREE.Vector3(0, 0, -1);
+    var angleToRotate = nmlCrossPlane.angleTo(zAxis);
+    var axisToRotate = new THREE.Vector3().crossVectors(nmlCrossPlane, zAxis).normalize();
+    var projPoints = [];
+    for (var i = 0; i < info.points.length; i++) {
+        // XXX
+        // addALine(info.points[i], info.points[(i + 1) % info.points.length], 0xff00ff);
+        // _balls.remove(addABall(info.points[i], 0xff0000, 0.1));
+        var proj = XAC.getPointProjectionOnPlane(
+            info.points[i], info.paramsCross.A, info.paramsCross.B,
+            info.paramsCross.C, info.paramsCross.D);
+        proj.applyAxisAngle(axisToRotate, angleToRotate);
+        projPoints.push(proj.clone());
+    }
+
+    // find smallest bounding circle
+    var enclosingCircle = makeCircle(projPoints);
+    var centerEnclosing = new THREE.Vector3(enclosingCircle.x, enclosingCircle.y,
+        projPoints[0].z);
+    centerEnclosing.applyAxisAngle(axisToRotate, -angleToRotate);
+    var radiusEnclosing = enclosingCircle.r;
+
+    //
+    // 2. find enclosing triangles
+    //
+    var vertices = info.object.geometry.vertices;
+    var facesEnclosed = info.faces.clone();
     var moreFacesEnclosed = [];
     for (face of facesEnclosed) {
         moreFacesEnclosed = moreFacesEnclosed.concat(
@@ -218,10 +227,10 @@ MEDLEY._init2dPlacement = function(info) {
         face.verticesInside = [];
 
         var vindices = [face.a, face.b, face.c];
-        face.vs = [];
+        face.vertices = [];
         face.vprojs = [];
         for (var i = 0; i < vindices.length; i++) {
-            face.vs.push(vertices[vindices[i]]);
+            face.vertices.push(vertices[vindices[i]]);
             var p = XAC.getPointProjectionOnPlane(vertices[vindices[i]],
                 info.paramsCross.A, info.paramsCross.B,
                 info.paramsCross.C, info.paramsCross.D);
@@ -229,8 +238,8 @@ MEDLEY._init2dPlacement = function(info) {
 
             face.vprojs.push(p);
 
-            if (XAC.testPointInPolygon(p, projOnCrossPlane)) {
-                face.verticesInside.push(face.vs[i]);
+            if (XAC.testPointInPolygon(p, projPoints)) {
+                face.verticesInside.push(face.vertices[i]);
             }
         }
 
@@ -239,16 +248,16 @@ MEDLEY._init2dPlacement = function(info) {
         if (face.verticesInside.length >= 3) {
             facesRemeshed.push(face);
         }
-        // otherwise detect intersection
+        // otherwise detect intersection, and remesh the part of the face that's inside the drawing
         else {
             face.points = face.points || [];
 
             // starting outside a face, rather than in the middle of it to maintain consistent orientation
             var idxStart = 0;
             while (true) {
-                var idxpPrev = (idxStart + projOnCrossPlane.length - 1) % projOnCrossPlane.length;
-                var p0 = projOnCrossPlane[idxpPrev];
-                if (!XAC.isInTriangle(p0, face.vprojs[0], face.vprojs[1], face.vprojs[2])) {
+                var idxpPrev = (idxStart + projPoints.length - 1) % projPoints.length;
+                if (!XAC.isInTriangle(projPoints[idxpPrev], face.vprojs[0], face.vprojs[1], face.vprojs[
+                        2])) {
                     break;
                 }
                 idxStart = idxpPrev;
@@ -257,22 +266,24 @@ MEDLEY._init2dPlacement = function(info) {
             }
 
             // collect points inside the face
-            for (var i = 0; i < projOnCrossPlane.length; i++) {
-                var idx0 = (idxStart + i) % projOnCrossPlane.length;
-                var p0 = projOnCrossPlane[idx0];
-                var idx1 = (idxStart + i + 1) % projOnCrossPlane.length;
-                var p1 = projOnCrossPlane[idx1];
+            for (var i = 0; i < projPoints.length; i++) {
+                var idx0 = (idxStart + i) % projPoints.length;
+                var p0 = projPoints[idx0];
+                var idx1 = (idxStart + i + 1) % projPoints.length;
+                var p1 = projPoints[idx1];
 
+                // if a point is in the face, keep it
                 if (XAC.isInTriangle(p0, face.vprojs[0], face.vprojs[1], face.vprojs[2])) {
                     face.points.push(info.points[idx0]);
                 }
 
+                // detect if current point intersects with the face once connected to the next point
                 var intersections = XAC.find2DLineTriangleIntersections(
                     p0, p1, face.vprojs[0], face.vprojs[1], face.vprojs[2]);
 
                 if (intersections.length == 0) continue;
 
-                console.assert(intersections.length <= 2);
+                console.assert(intersections.length <= 2, 'intersecting with a triangle at 2+ points!');
 
                 var intersectedPoints = [];
                 for (int of intersections) {
@@ -295,15 +306,15 @@ MEDLEY._init2dPlacement = function(info) {
                 face.points = face.points.concat(intersectedPoints);
             }
 
-
+            // perform triangulation if a face has more than 2 points collected
             if (face.points.length >= 2) {
-
                 // add vertices of the face inside the drawing
                 switch (face.verticesInside.length) {
                     case 1:
                         face.points.push(face.verticesInside[0]);
                         break;
                     case 2:
+                        // determine the order if the face has 2 vertices inside
                         face.points.push(face.verticesInside[0]);
                         face.points.push(face.verticesInside[1]);
                         var triangulation = XAC.triangulatePolygon(face.points, face.normal);
@@ -321,38 +332,12 @@ MEDLEY._init2dPlacement = function(info) {
                 var color = 0x00ff00;
                 console.assert(triangulation.length > 0, 'triangulation failed');
                 if (triangulation.length == 0) {
-
-                    // XXX
-                    info.object.geometry.highlightFace(face, 0xffff00, XAC.scene);
-                    for (var k = 0; k < face.points.length; k++) {
-                        var p0 = face.points[k];
-                        var p1 = face.points[(k + 1) % face.points.length];
-                        // addALine(p0, p1, 0xff00ff);
-                        addAnArrow(p0, p1.clone().sub(p0), p1.distanceTo(p0), k == 0 ? 0xff0000 :
-                            0x000000, 0.01)
-                    }
-                    // XXX
-
-                    console.error(face.points)
                     continue;
                 }
 
                 if (triangulation.length / 3 != face.points.length - 2) {
-
-                    // XXX
-                    color = 0xffff00;
-                    // log([triangulation.length, face.points.length])
-                    // info.object.geometry.highlightFace(face, 0xff0000, XAC.scene);
-                    for (var k = 0; k < face.points.length; k++) {
-                        var p0 = face.points[k];
-                        var p1 = face.points[(k + 1) % face.points.length];
-                        // addALine(p0, p1, 0xff00ff);
-                        addAnArrow(p0, p1.clone().sub(p0), p1.distanceTo(p0), k == 0 ? 0xff0000 :
-                            0x000000, 0.01)
-                    }
-                    // return;
-                    // XXX
-
+                    color = 0xffff00; // XXX
+                    __debugFace(face);
                 }
 
                 for (var j = 0; j + 2 < triangulation.length; j += 3) {
@@ -386,7 +371,7 @@ MEDLEY._init2dPlacement = function(info) {
     // XXX
 
     // clean up
-    for(face of facesEnclosed) {
+    for (face of facesEnclosed) {
         face.visited = false;
         face.points = undefined;
         face.verticesInside = undefined;
