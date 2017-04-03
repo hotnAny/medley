@@ -70,7 +70,13 @@ MEDLEY.initPlacementWithPainting = function(info) {
                 MEDLEY._init1dPlacement(info);
                 break;
             case 2:
-                MEDLEY._init2dPlacement(info);
+                var isLoop = MEDLEY._isLoop(info);
+                if (isLoop) {
+                    MEDLEY._init2dPlacement(info);
+                } else if (isLoop == false) {
+                    MEDLEY._initXsecPlacement(info);
+                } else {;
+                }
                 break;
             case 3:
                 //
@@ -135,6 +141,29 @@ MEDLEY._init1dPlacement = function(info) {
             t)));
     }
     embeddable.generateGeometry(points);
+}
+
+//
+//  detect if a drawing is a loop or line (non-loop) or unsure
+//
+MEDLEY._isLoop = function(info) {
+    var minGapRatio = 0.2;
+    var maxGapRatio = 0.9;
+    info.footprint = 0;
+    for (var i = 0; i < info.points.length - 1; i++) {
+        info.footprint += info.points[i + 1].distanceTo(info.points[i]);
+    }
+
+    var gap = info.points[0].distanceTo(info.points.last());
+
+    gapRatio = gap / info.footprint;
+    if (gapRatio < minGapRatio) {
+        return true;
+    } else if (gapRatio > maxGapRatio) {
+        return false;
+    } else {
+        return;
+    }
 }
 
 //
@@ -243,7 +272,6 @@ MEDLEY._init2dPlacement = function(info) {
             }
         }
 
-
         // if face is inside, add it directly
         if (face.verticesInside.length >= 3) {
             facesRemeshed.push(face);
@@ -257,9 +285,7 @@ MEDLEY._init2dPlacement = function(info) {
             while (true) {
                 var idxpPrev = (idxStart + projPoints.length - 1) % projPoints.length;
                 if (!XAC.isInTriangle(projPoints[idxpPrev], face.vprojs[0], face.vprojs[1], face.vprojs[
-                        2])) {
-                    break;
-                }
+                        2])) break;
                 idxStart = idxpPrev;
 
                 if (idxStart == 0) break;
@@ -376,8 +402,80 @@ MEDLEY._init2dPlacement = function(info) {
         face.points = undefined;
         face.verticesInside = undefined;
     }
+};
 
-}
+// find drawn-on faces' 1) neighbors that
+// 2) intersect with the cutting plane and
+// 3) line in the fitting circle
+MEDLEY._initXsecPlacement = function(info) {
+    var nmlNormalPlane = new THREE.Vector3(info.paramsNormal.A, info.paramsNormal.B, info.paramsNormal.C)
+        .normalize();
+    var zAxis = new THREE.Vector3(0, 0, -1);
+    var angleToRotate = nmlNormalPlane.angleTo(zAxis);
+    var axisToRotate = new THREE.Vector3().crossVectors(nmlNormalPlane, zAxis).normalize();
+    var projPoints = [];
+    for (var i = 0; i < info.points.length; i++) {
+        var proj = XAC.getPointProjectionOnPlane(
+            info.points[i], info.paramsCross.A, info.paramsCross.B,
+            info.paramsCross.C, info.paramsCross.D);
+        proj.applyAxisAngle(axisToRotate, angleToRotate);
+        projPoints.push(proj.clone());
+    }
 
+    var fitInfo = XAC.fitCircle(projPoints);
+    log(info.footprint / (2 * Math.PI * fitInfo.r));
+    var fitCenter = new THREE.Vector3(fitInfo.x0, fitInfo.y0, projPoints[0].z);
+    fitCenter.applyAxisAngle(axisToRotate, -angleToRotate);
+
+    // var facesEnclosed = [];
+    var minCircleCoverage = 0.02;
+    if (info.footprint / (2 * Math.PI * fitInfo.r) < minCircleCoverage) {
+        fitCenter = undefined;
+    }
+
+    // [internal helper] recursively find neighbors located within the given circle
+    var __findSelectedgNeighbors = function(f, params, h, ctr, r) {
+        f.visited = true;
+        var selectedNeighbors = [];
+        for (ff of f.neighbors) {
+            if (ff.visited) continue;
+            var vindices = [ff.a, ff.b, ff.c];
+            for (idx of vindices) {
+                // if bounding sphere exists, rule out those outside of it
+                if (ctr != undefined && vertices[idx].distanceTo(ctr) >= r) {
+                    continue;
+                }
+                // rule out those not intersecting with the plane
+                var proj = XAC.getPointProjectionOnPlane(vertices[idx], params.A, params.B, params.C,
+                    params.D);
+                if (proj.distanceTo(vertices[idx]) > h) {
+                    continue;
+                }
+
+                // select the face
+                selectedNeighbors.push(ff);
+                selectedNeighbors = selectedNeighbors.concat(__findSelectedgNeighbors(ff, params, h,
+                    ctr, r));
+                break;
+            }
+        }
+        return selectedNeighbors;
+    }
+
+    var vertices = info.object.geometry.vertices;
+    var facesSelected = info.faces.clone();
+    for (face of info.faces) {
+        facesSelected = facesSelected.concat(__findSelectedgNeighbors(face, info.paramsNormal,
+            info.footprint / Math.PI, fitCenter, fitInfo.r * 1.414));
+    }
+
+    for (face of facesSelected) {
+        info.object.geometry.highlightFace(face, 0xffff00, XAC.scene);
+    }
+
+};
+
+//
+//
 //
 MEDLEY.initPlacementWithSelection = function(info) {};
