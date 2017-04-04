@@ -132,15 +132,40 @@ THREE.Geometry.prototype.createNeighborList = function(octree) {
 //
 //
 //
-THREE.Mesh.prototype.on = function(type, handler) {
-    switch (type) {
+THREE.Mesh.prototype.on = function(cue, handler) {
+    if(XAC.dispatchInputEvents == undefined) {
+        console.error('requiring xac.input.js');
+        return;
+    }
+
+    switch (cue) {
         case XAC.MOUSEDOWN:
-            this.mousedowns = this.mousedowns == undefined ? [] : this.mousedowns;
+            this.mousedowns = this.mousedowns || [];
             this.mousedowns.push(handler);
             break;
         case XAC.MOUSEMOVE:
+            // TODO
             break;
         case XAC.MOUSEUP:
+            // TODO
+            break;
+        default:
+            if(typeof(cue) == 'string') {
+                var key = cue.charCodeAt(0);
+                this.keydowns = this.keydowns || {};
+                this.keydowns[key] = handler;
+            }
             break;
     }
+}
+
+//
+//
+//
+THREE.Mesh.prototype.selectable = function(flag, onSelected, onDeselected){
+    this._selectable = flag;
+    this._onSelected = onSelected;
+    this._onDeselected = onDeselected;
+    this._selected = false;
+    this._selectionLocked = false;
 }
