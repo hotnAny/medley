@@ -130,10 +130,10 @@ THREE.Geometry.prototype.createNeighborList = function(octree) {
 }
 
 //
-//
+//  on key or mouse events for this object
 //
 THREE.Mesh.prototype.on = function(cue, handler) {
-    if(XAC.dispatchInputEvents == undefined) {
+    if(XAC._dispatchInputEvents == undefined) {
         console.error('requiring xac.input.js');
         return;
     }
@@ -160,7 +160,8 @@ THREE.Mesh.prototype.on = function(cue, handler) {
 }
 
 //
-//
+//  make this object selectable (or not),
+//  optionally providing callback upon selection and de-selection
 //
 THREE.Mesh.prototype.selectable = function(flag, onSelected, onDeselected){
     this._selectable = flag;
