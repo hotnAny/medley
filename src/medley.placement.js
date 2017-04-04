@@ -9,12 +9,6 @@
 
 var MEDLEY = MEDLEY || {};
 
-// XXX
-MEDLEY._matobjSelected = {
-    radius: 0.5, // mm
-    dim: 2
-};
-
 //
 //  initialize placement based on the painting technique (xac.input.painting.js)
 //
@@ -67,7 +61,8 @@ MEDLEY.initPlacementWithPainting = function(info) {
             case 0:
                 break;
             case 1:
-                MEDLEY._init1dPlacement(info);
+                if (XAC._footprint > 50)
+                    MEDLEY._init1dPlacement(embeddable, info);
                 break;
             case 2:
                 var isLoop = MEDLEY._isLoop(info);
@@ -94,7 +89,7 @@ MEDLEY.initPlacementWithPainting = function(info) {
 //
 //  initialize placement of 1d material based on user painting
 //
-MEDLEY._init1dPlacement = function(info) {
+MEDLEY._init1dPlacement = function(embeddable, info) {
     // generative material
     embeddable.generateGeometry = function(points) {
         if (this._geometry == undefined) {
