@@ -533,6 +533,72 @@ XAC.triangulatePolygon = function(polygon, normal) {
     return earcut(vertices);
 }
 
-// XAC.transformToXY = function(v) {
-//     var zAxis = new THREE.Vector3(0, 0, -1);
-// }
+//
+//  fit an array of points in p to a circle
+//
+XAC.fitCircle = function(points) {
+    var p = [];
+    for(point of points) {
+        p.push([point.x, point.y]);
+    }
+    
+    var __dist = function(x0, y0, x1, y1) {
+    	return Math.sqrt((x0 - x1) * (x0 - x1) + (y0 - y1) * (y0 - y1));
+    };
+
+	var M = [],
+		X = [],
+		Y = [],
+		y = [],
+		MT, B, c, z, n, l;
+
+	n = p.length;
+	l = 0;
+
+	for (i = 0; i < n; i++) {
+		M.push([p[i][0], p[i][1], 1.0]);
+		y.push(p[i][0] * p[i][0] + p[i][1] * p[i][1]);
+
+		if (i > 0) {
+			l += __dist(p[i - 1][0], p[i - 1][1], p[i][0], p[i][1]);
+		}
+	}
+
+	MT = numeric.transpose(M);
+	B = numeric.dot(MT, M);
+	c = numeric.dot(MT, y);
+	z = numeric.solve(B, c);
+
+	var xm = z[0] * 0.5;
+	var ym = z[1] * 0.5;
+	var r = Math.sqrt(z[2] + xm * xm + ym * ym);
+
+
+	/*
+		computing errors
+	*/
+	var err = 0;
+	for (i = 0; i < n; i++) {
+		var x = p[i][0];
+		var y = p[i][1];
+
+		var d = __dist(x, y, xm, ym);
+
+		var subErr = (d - r) * (d - r);
+
+		// console.log("subErr " + subErr);
+		err += subErr;
+	}
+
+	err = Math.sqrt(err / n);
+
+	console.log("fitting circle error: " + err);
+
+	return {
+		x0: xm,
+		y0: ym,
+		r: r,
+		err: err,
+		l: l
+	};
+}
