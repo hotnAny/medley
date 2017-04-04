@@ -16,6 +16,9 @@ XAC._selecteds = [];
 // XAC.inputTechniques = {};
 XAC.mousedownEventHandlers = {};
 
+//
+//  [internal helper] compute mouse footprint since last mousedown
+//
 XAC._updateFootprint = function(x, y) {
     if (x == undefined || y == undefined) {
         XAC._prevCooord = undefined;
@@ -45,7 +48,6 @@ XAC.mousemove = function(e) {
 
 XAC.mouseup = function(e) {
     XAC._updateFootprint(e.clientX, e.clientY);
-    log(XAC._footprint);
     XAC._dispatchInputEvents(e, XAC.MOUSEUP);
 };
 
@@ -58,6 +60,7 @@ XAC._dispatchInputEvents = function(e, type) {
         XAC._activeHits = rayCast(e.clientX, e.clientY, XAC.objects);
     }
 
+    // select or de-select objects
     var tempSelecteds = XAC._selecteds.clone();
     for (object of tempSelecteds) {
         switch (type) {
@@ -77,6 +80,7 @@ XAC._dispatchInputEvents = function(e, type) {
         }
     }
 
+    // objects currently being manipulated
     for (hit of XAC._activeHits) {
         // attached handlers
         switch (type) {
@@ -104,7 +108,7 @@ XAC._dispatchInputEvents = function(e, type) {
                 break;
         }
 
-        // input technique
+        // input techniques
         for (technique of hit.object.inputTechniques) {
             switch (type) {
                 case XAC.MOUSEDOWN:
