@@ -1,5 +1,12 @@
 var MEDLEY = MEDLEY || {};
 
+// XXX
+MEDLEY._matobjSelected = {
+    radius: 0.5, // mm
+    dim: 1
+};
+
+
 // for testing functions
 $(document).ready(function() {
     // var a = 0,
@@ -101,9 +108,18 @@ function onStlLoaded(object) {
     //     }
     // });
 
+    object.on('A', function() {
+        log('keydown on a!')
+    });
+
     //
     // input
     object.inputTechniques = [];
+    object.selectable(true, function(object) {
+        object.material.opacity /= 2;
+    }, function(object) {
+        object.material.opacity *= 2;
+    });
 
     var paintInput = new MEDLEY.PaintInput(XAC.scene);
     object.inputTechniques.push(paintInput);
