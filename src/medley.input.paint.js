@@ -90,7 +90,13 @@ MEDLEY.PaintInput.prototype.mousemove = function(e) {
 };
 
 MEDLEY.PaintInput.prototype.mouseup = function(e) {
-    if (!this._isDown || this._points.length <= 0) {
+    if (!this._isDown) {
+        return;
+    }
+
+    this._isDown = false;
+
+    if(this._points.length <= 0) {
         return;
     }
 
@@ -109,5 +115,4 @@ MEDLEY.PaintInput.prototype.mouseup = function(e) {
 
     removeBalls();
 
-    this._isDown = false;
 };
