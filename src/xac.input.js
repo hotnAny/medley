@@ -8,9 +8,20 @@
 
 var XAC = XAC || {};
 
+// mouse events
 XAC.MOUSEDOWN = 0;
 XAC.MOUSEMOVE = 1;
 XAC.MOUSEUP = 2;
+
+// TODO global mouse event handlers
+
+// keyboard events
+XAC.LEFTARROW = 37;
+XAC.UPARROW = 38;
+XAC.RIGHTARROW = 39;
+XAC.DOWNARROW = 40;
+
+XAC.keydowns = {};
 
 XAC._selecteds = [];
 // XAC.inputTechniques = {};
@@ -53,6 +64,32 @@ XAC.mouseup = function(e) {
 
 XAC.keydown = function(e) {
     XAC._dispatchInputEvents(e, XAC.KEYDOWN);
+    if (XAC.keydowns != undefined) {
+        (XAC.keydowns[e.keyCode] || console.error)();
+    }
+}
+
+XAC.on = function(cue, handler) {
+    switch (cue) {
+        case XAC.MOUSEDOWN:
+            // TODO:
+            break;
+        case XAC.MOUSEMOVE:
+            // TODO
+            break;
+        case XAC.MOUSEUP:
+            // TODO
+            break;
+        default:
+            XAC.keydowns = XAC.keydowns || {};
+            if (typeof(cue) == 'string') {
+                var key = cue.charCodeAt(0);
+                XAC.keydowns[key] = handler;
+            } else {
+                XAC.keydowns[cue] = handler;
+            }
+            break;
+    }
 }
 
 XAC._dispatchInputEvents = function(e, type) {
