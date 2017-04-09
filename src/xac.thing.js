@@ -18,17 +18,17 @@ var COLORHIGHLIGHT = 0xFFFA90;
 var COLORFOCUS = 0xE82C0C; // color to really draw users' focus
 
 // XXX for debugging
-// XAC.MATERIALNORMAL = new THREE.MeshBasicMaterial({
-// 	color: 0x000000,
-// 	wireframe: true,
-// 	side: THREE.DoubleSide
-// });
-
-XAC.MATERIALNORMAL = new THREE.MeshPhongMaterial({
-	color: COLORNORMAL,
-	transparent: true,
-	opacity: 0.5,
+XAC.MATERIALNORMAL = new THREE.MeshBasicMaterial({
+	color: 0x888888,
+	wireframe: true,
+	side: THREE.DoubleSide
 });
+
+// XAC.MATERIALNORMAL = new THREE.MeshPhongMaterial({
+// 	color: COLORNORMAL,
+// 	transparent: true,
+// 	opacity: 0.5,
+// });
 
 // XAC.MATERIALCONTRAST = new THREE.MeshPhongMaterial({
 // 	color: COLORCONTRAST,
@@ -38,7 +38,7 @@ XAC.MATERIALNORMAL = new THREE.MeshPhongMaterial({
 
 XAC.MATERIALHIGHLIGHT = new THREE.MeshPhongMaterial({
 	color: COLORHIGHLIGHT,
-	transparent: true,
+	// transparent: true,
 	opacity: 0.95
 });
 

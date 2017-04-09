@@ -3,7 +3,7 @@ var MEDLEY = MEDLEY || {};
 // XXX
 MEDLEY._matobjSelected = {
     radius: 0.5, // mm
-    dim: 1
+    dim: 2
 };
 
 
@@ -72,6 +72,16 @@ $(document).ready(function() {
     // var array = [];
     // array.push(1, 2, 3)
     // log(array)
+
+    // var a = 3,
+    //     b = 5,
+    //     c = 2,
+    //     d = 9;
+    // var p = new THREE.Vector3(-1, -1, -0.5);
+    // d += 3 * Math.sqrt(a * a + b * b + c * c);
+    // var q = XAC.getPointProjectionOnPlane(p, a, b, c, d);
+    // log(p.distanceTo(q));
+
 });
 
 function onStlLoaded(object) {
@@ -108,17 +118,22 @@ function onStlLoaded(object) {
     //     }
     // });
 
-    object.on('A', function() {
-        log('keydown on a!')
-    });
+    // object.on(XAC.UPARROW, function() {
+    //     //
+    //
+    // });
 
     //
     // input
     object.inputTechniques = [];
     object.selectable(true, function(object) {
         object.material.opacity /= 2;
+        // object.material.color = 0xcccccc;
+        // object.material.needsUpdate = true;
     }, function(object) {
         object.material.opacity *= 2;
+        // object.material.color = 0x888888;
+        // object.material.needsUpdate = true;
     });
 
     var paintInput = new MEDLEY.PaintInput(XAC.scene);
