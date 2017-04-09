@@ -34,12 +34,12 @@ MEDLEY.initPlacementWithPainting = function(info) {
 
 
     var diagnal = info.maxPoint.distanceTo(info.minPoint);
-    var ctrPlane = new THREE.Vector3().addVectors(info.minPoint, info.maxPoint).divideScalar(2);
+    var centerPlane = new THREE.Vector3().addVectors(info.minPoint, info.maxPoint).divideScalar(2);
 
     // find cross plane
     info.paramsCross = XAC.findPlaneToFitPoints(info.points);
     var planeCross = new XAC.Plane(diagnal * 2, diagnal * 2, XAC.MATERIALCONTRAST);
-    planeCross.fitTo(ctrPlane, info.paramsCross.A, info.paramsCross.B, info.paramsCross.C);
+    planeCross.fitTo(centerPlane, info.paramsCross.A, info.paramsCross.B, info.paramsCross.C);
     XAC.scene.add(planeCross.m);
 
     // find normal plane
@@ -51,7 +51,7 @@ MEDLEY.initPlacementWithPainting = function(info) {
 
     info.paramsNormal = XAC.findPlaneToFitPoints(info.points.concat(pointsExtended));
     var planeNormal = new XAC.Plane(diagnal * 2, diagnal * 2, XAC.MATERIALHIGHLIGHT);
-    planeNormal.fitTo(ctrPlane, info.paramsNormal.A, info.paramsNormal.B, info.paramsNormal.C);
+    planeNormal.fitTo(centerPlane, info.paramsNormal.A, info.paramsNormal.B, info.paramsNormal.C);
     XAC.scene.add(planeNormal.m);
 
     if (MEDLEY._matobjSelected != undefined) {
@@ -77,6 +77,8 @@ MEDLEY.initPlacementWithPainting = function(info) {
                 //
                 break;
         }
+
+
     }
 
     // remove any temp visualization stuff
@@ -129,13 +131,21 @@ MEDLEY._init1dPlacement = function(embeddable, info) {
     info.object.material.needsUpdate = true;
 
     // XXX
-    var t = 0.5;
-    var points = [];
-    for (var i = 0; i < embeddable.points0.length; i++) {
-        points.push(embeddable.points0[i].multiplyScalar(1 - t).add(embeddable.points1[i].multiplyScalar(
-            t)));
-    }
-    embeddable.generateGeometry(points);
+    // var t = 0.5;
+
+
+    // XXX
+    embeddable._t = 0;
+    embeddable.generateGeometry(embeddable.points0);
+    XAC.on(XAC.UPARROW, function() {
+        embeddable._t = XAC.clamp(embeddable._t + 0.1, 0, 1);
+        var points = [];
+        for (var i = 0; i < embeddable.points0.length; i++) {
+            points.push(embeddable.points0[i].clone().multiplyScalar(1 - embeddable._t)
+                .add(embeddable.points1[i].clone().multiplyScalar(embeddable._t)));
+        }
+        embeddable.generateGeometry(points);
+    });
 }
 
 //
@@ -171,17 +181,18 @@ MEDLEY._init2dPlacement = function(info) {
     }
 
     // [internal helper] recursively find neighbors located within the given circle
-    var __findEnclosingNeighbors = function(f, ctr, r) {
-        f.visited = true;
+    var __findEnclosingNeighbors = function(face, center, radius) {
+        face.visited = true;
         var enclosingNeighbors = [];
-        for (ff of f.neighbors) {
-            if (ff.visited) continue;
-            var vindices = [ff.a, ff.b, ff.c];
+        for (neighbor of face.neighbors) {
+            if (neighbor.visited) continue;
+            var vindices = [neighbor.a, neighbor.b, neighbor.c];
             for (idx of vindices) {
-                if (vertices[idx].distanceTo(ctr) < r) {
-                    enclosingNeighbors.push(ff);
+                if (vertices[idx].distanceTo(center) < radius) {
+                    enclosingNeighbors.push(neighbor);
                     enclosingNeighbors
-                        = enclosingNeighbors.concat(__findEnclosingNeighbors(ff, ctr, r));
+                        = enclosingNeighbors.concat(__findEnclosingNeighbors(neighbor, center,
+                            radius));
                     break;
                 }
             }
@@ -236,6 +247,7 @@ MEDLEY._init2dPlacement = function(info) {
     for (face of facesEnclosed) {
         moreFacesEnclosed = moreFacesEnclosed.concat(
             __findEnclosingNeighbors(face, centerEnclosing, radiusEnclosing));
+        log(moreFacesEnclosed.length)
     }
     facesEnclosed = facesEnclosed.concat(moreFacesEnclosed);
 
@@ -244,6 +256,7 @@ MEDLEY._init2dPlacement = function(info) {
     //
     var facesRemeshed = [];
     for (face of facesEnclosed) {
+
         if (face.verticesInside != undefined) {
             continue;
         }
@@ -251,11 +264,12 @@ MEDLEY._init2dPlacement = function(info) {
         face.verticesInside = [];
 
         var vindices = [face.a, face.b, face.c];
-        face.vertices = [];
+        if (face.vertices == undefined) {
+            info.object.geometry.assignVerticesToFaces();
+        }
         face.vprojs = [];
         for (var i = 0; i < vindices.length; i++) {
-            face.vertices.push(vertices[vindices[i]]);
-            var p = XAC.getPointProjectionOnPlane(vertices[vindices[i]],
+            var p = XAC.getPointProjectionOnPlane(face.vertices[i],
                 info.paramsCross.A, info.paramsCross.B,
                 info.paramsCross.C, info.paramsCross.D);
             p.applyAxisAngle(axisToRotate, angleToRotate);
@@ -278,10 +292,10 @@ MEDLEY._init2dPlacement = function(info) {
             // starting outside a face, rather than in the middle of it to maintain consistent orientation
             var idxStart = 0;
             while (true) {
-                var idxpPrev = (idxStart + projPoints.length - 1) % projPoints.length;
-                if (!XAC.isInTriangle(projPoints[idxpPrev], face.vprojs[0], face.vprojs[1], face.vprojs[
-                        2])) break;
-                idxStart = idxpPrev;
+                idxStart = (idxStart + projPoints.length - 1) % projPoints.length;
+                // idxStart = idxpPrev;
+                if (!XAC.isInTriangle(projPoints[idxStart],
+                        face.vprojs[0], face.vprojs[1], face.vprojs[2])) break;
 
                 if (idxStart == 0) break;
             }
@@ -387,8 +401,9 @@ MEDLEY._init2dPlacement = function(info) {
     }
 
     // XXX
-    for (face of facesRemeshed)
+    for (face of facesRemeshed) {
         info.object.geometry.highlightFace(face, 0xff00ff, XAC.scene);
+    }
     // XXX
 
     // clean up
@@ -418,39 +433,39 @@ MEDLEY._initXsecPlacement = function(info) {
     }
 
     var fitInfo = XAC.fitCircle(projPoints);
-    log(info.footprint / (2 * Math.PI * fitInfo.r));
+    log(info.footprint / (2 * Math.PI * fitInfo.radius));
     var fitCenter = new THREE.Vector3(fitInfo.x0, fitInfo.y0, projPoints[0].z);
     fitCenter.applyAxisAngle(axisToRotate, -angleToRotate);
 
-    // var facesEnclosed = [];
     var minCircleCoverage = 0.02;
-    if (info.footprint / (2 * Math.PI * fitInfo.r) < minCircleCoverage) {
+    if (info.footprint / (2 * Math.PI * fitInfo.radius) < minCircleCoverage) {
         fitCenter = undefined;
     }
 
     // [internal helper] recursively find neighbors located within the given circle
-    var __findSelectedgNeighbors = function(f, params, h, ctr, r) {
-        f.visited = true;
+    var __findSelectedgNeighbors = function(face, params, height, center, radius) {
+        face.visited = true;
         var selectedNeighbors = [];
-        for (ff of f.neighbors) {
-            if (ff.visited) continue;
-            var vindices = [ff.a, ff.b, ff.c];
+        for (neighbor of face.neighbors) {
+            if (neighbor.visited) continue;
+            var vindices = [neighbor.a, neighbor.b, neighbor.c];
             for (idx of vindices) {
                 // if bounding sphere exists, rule out those outside of it
-                if (ctr != undefined && vertices[idx].distanceTo(ctr) >= r) {
+                if (center != undefined && vertices[idx].distanceTo(center) >= radius) {
                     continue;
                 }
                 // rule out those not intersecting with the plane
                 var proj = XAC.getPointProjectionOnPlane(vertices[idx], params.A, params.B, params.C,
                     params.D);
-                if (proj.distanceTo(vertices[idx]) > h) {
+                if (proj.distanceTo(vertices[idx]) > height) {
                     continue;
                 }
 
                 // select the face
-                selectedNeighbors.push(ff);
-                selectedNeighbors = selectedNeighbors.concat(__findSelectedgNeighbors(ff, params, h,
-                    ctr, r));
+                selectedNeighbors.push(neighbor);
+                selectedNeighbors = selectedNeighbors.concat(__findSelectedgNeighbors(neighbor,
+                    params, height,
+                    center, radius));
                 break;
             }
         }
@@ -461,7 +476,7 @@ MEDLEY._initXsecPlacement = function(info) {
     var facesSelected = info.faces.clone();
     for (face of info.faces) {
         facesSelected = facesSelected.concat(__findSelectedgNeighbors(face, info.paramsNormal,
-            info.footprint / Math.PI, fitCenter, fitInfo.r * 1.414));
+            info.footprint / Math.PI, fitCenter, fitInfo.radius * 1.414));
     }
 
     for (face of facesSelected) {
