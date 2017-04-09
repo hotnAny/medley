@@ -43,17 +43,33 @@ THREE.Geometry.prototype.highlightFace = function(face, color, scene, wired) {
 //
 THREE.Geometry.prototype.computeCentroids = function() {
     for (var i = 0; i < this.faces.length; i++) {
-        var f = this.faces[i];
+        var face = this.faces[i];
 
-        if (f.centroid != undefined) {
+        if (face.centroid != undefined) {
             continue;
         }
 
-        var f = this.faces[i];
-        var va = this.vertices[f.a].clone(); //.applyMatrix4(obj.matrixWorld);
-        var vb = this.vertices[f.b].clone(); //.applyMatrix4(obj.matrixWorld);
-        var vc = this.vertices[f.c].clone(); //.applyMatrix4(obj.matrixWorld);
-        f.centroid = new THREE.Vector3().addVectors(va, vb).add(vc).divideScalar(3);
+        var face = this.faces[i];
+        var va = this.vertices[face.a].clone(); //.applyMatrix4(obj.matrixWorld);
+        var vb = this.vertices[face.b].clone(); //.applyMatrix4(obj.matrixWorld);
+        var vc = this.vertices[face.c].clone(); //.applyMatrix4(obj.matrixWorld);
+        face.centroid = new THREE.Vector3().addVectors(va, vb).add(vc).divideScalar(3);
+    }
+}
+
+THREE.Geometry.prototype.assignVerticesToFaces = function() {
+    for (var i = 0; i < this.faces.length; i++) {
+        var face = this.faces[i];
+
+        if (face.vertices != undefined) {
+            continue;
+        }
+
+        face.vertices = [];
+        var vindices = [face.a, face.b, face.c];
+        for (var j = 0; j < vindices.length; j++) {
+            face.vertices.push(this.vertices[vindices[j]]);
+        }
     }
 }
 
@@ -67,33 +83,33 @@ THREE.Geometry.prototype.computeCentroids = function() {
 THREE.Geometry.prototype.createNeighborList = function(octree) {
     var eps = 1e-6;
     for (var i = 0; i < this.faces.length; i++) {
-        var f = this.faces[i];
+        var face = this.faces[i];
 
         // skip if this face's neighbor has been found
-        f.neighbors = f.neighbors || [];
-        if (f.neighbors.length >= 3) {
+        face.neighbors = face.neighbors || [];
+        if (face.neighbors.length >= 3) {
             continue;
         }
 
-        if (f.centroid == undefined) {
+        if (face.centroid == undefined) {
             this.computeCentroids();
         }
 
-        var ctr = f.centroid.clone();
+        var ctr = face.centroid.clone();
 
         // use octree to filter close-by faces
         var elms = octree.search(ctr, 1);
 
         // find neighbors amongst this close-by set
         for (elm of elms) {
-            f = elm.faces;
+            face = elm.faces;
 
-            f.neighbors = f.neighbors || [];
-            if (f.neighbors.length >= 3) {
+            face.neighbors = face.neighbors || [];
+            if (face.neighbors.length >= 3) {
                 continue;
             }
 
-            var vlist = [f.a, f.b, f.c];
+            var vlist = [face.a, face.b, face.c];
 
             for (var j = 0; j < elms.length; j++) {
                 var ff = elms[j].faces; //.centroid.clone();
@@ -101,7 +117,8 @@ THREE.Geometry.prototype.createNeighborList = function(octree) {
                 var vlist2 = [ff.a, ff.b, ff.c];
 
                 // skip the face itself
-                if (Math.abs(f.a - ff.a) < eps && Math.abs(f.b == ff.b) < eps && Math.abs(f.c == ff.c) <
+                if (Math.abs(face.a - ff.a) < eps && Math.abs(face.b == ff.b) < eps && Math.abs(face.c ==
+                        ff.c) <
                     eps) {
                     continue;
                 }
@@ -120,9 +137,9 @@ THREE.Geometry.prototype.createNeighborList = function(octree) {
 
                 // when there are two pairs of them, this is a neighbor that shares exactly one edge
                 if (numPairs == 2) {
-                    f.neighbors.push(ff);
+                    face.neighbors.push(ff);
                     ff.neighbors = ff.neighbors || [];
-                    ff.neighbors.push(f);
+                    ff.neighbors.push(face);
                 }
             }
         }
@@ -133,7 +150,7 @@ THREE.Geometry.prototype.createNeighborList = function(octree) {
 //  on key or mouse events for this object
 //
 THREE.Mesh.prototype.on = function(cue, handler) {
-    if(XAC._dispatchInputEvents == undefined) {
+    if (XAC._dispatchInputEvents == undefined) {
         console.error('requiring xac.input.js');
         return;
     }
@@ -150,10 +167,12 @@ THREE.Mesh.prototype.on = function(cue, handler) {
             // TODO
             break;
         default:
-            if(typeof(cue) == 'string') {
+            if (typeof(cue) == 'string') {
                 var key = cue.charCodeAt(0);
                 this.keydowns = this.keydowns || {};
                 this.keydowns[key] = handler;
+            } else {
+                // TODO: handle direct keycode
             }
             break;
     }
@@ -163,7 +182,7 @@ THREE.Mesh.prototype.on = function(cue, handler) {
 //  make this object selectable (or not),
 //  optionally providing callback upon selection and de-selection
 //
-THREE.Mesh.prototype.selectable = function(flag, onSelected, onDeselected){
+THREE.Mesh.prototype.selectable = function(flag, onSelected, onDeselected) {
     this._selectable = flag;
     this._onSelected = onSelected;
     this._onDeselected = onDeselected;
