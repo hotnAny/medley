@@ -96,6 +96,7 @@ function onStlLoaded(object) {
     object.geometry.computeFaceNormals();
     object.geometry.computeVertexNormals();
     object.geometry.computeCentroids();
+    object.geometry.assignVerticesToFaces();
     time('[loading object] computing normals');
 
     if (XAC.octree != undefined) {
