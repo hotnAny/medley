@@ -314,10 +314,12 @@ XAC.testTriCylIntersection = function(va, vb, vc, c, nml, h, r) {
 //  find intersection between a line and a plane
 //  - p0, p1 represent the line segment
 //  - a, b, c, d represent the plane
+//  - if isSegment==true, do not consider points outside of segment p0p1
 //  ref: http://geomalgorithms.com/a05-_intersect-1.html
 //
-XAC.findLinePlaneIntersection = function(p0, p1, a, b, c, d) {
+XAC.findLinePlaneIntersection = function(p0, p1, a, b, c, d, isSegment) {
     var pointNormal = XAC.pointNormalOfPlane(a, b, c, d);
+    var eps = 10e-3;
 
     // a b c d represent a plane
     if (pointNormal != undefined) {
@@ -327,7 +329,11 @@ XAC.findLinePlaneIntersection = function(p0, p1, a, b, c, d) {
         if (n.dot(u) != 0) {
             var w = p0.clone().sub(v0);
             var s1 = -n.dot(w) / n.dot(u);
-            return v0.clone().add(new THREE.Vector3().addVectors(w, u.clone().multiplyScalar(s1)));
+            var int = v0.clone().add(new THREE.Vector3().addVectors(w, u.clone().multiplyScalar(s1)));
+            if (isSegment && int.distanceTo(p0) + int.distanceTo(p1) > p0.distanceTo(p1) + eps) {
+                return;
+            }
+            return int;
         }
     }
     // a b c d represent a point (0, 0, 0, 0)
@@ -538,67 +544,67 @@ XAC.triangulatePolygon = function(polygon, normal) {
 //
 XAC.fitCircle = function(points) {
     var p = [];
-    for(point of points) {
+    for (point of points) {
         p.push([point.x, point.y]);
     }
-    
+
     var __dist = function(x0, y0, x1, y1) {
-    	return Math.sqrt((x0 - x1) * (x0 - x1) + (y0 - y1) * (y0 - y1));
+        return Math.sqrt((x0 - x1) * (x0 - x1) + (y0 - y1) * (y0 - y1));
     };
 
-	var M = [],
-		X = [],
-		Y = [],
-		y = [],
-		MT, B, c, z, n, l;
+    var M = [],
+        X = [],
+        Y = [],
+        y = [],
+        MT, B, c, z, n, l;
 
-	n = p.length;
-	l = 0;
+    n = p.length;
+    l = 0;
 
-	for (i = 0; i < n; i++) {
-		M.push([p[i][0], p[i][1], 1.0]);
-		y.push(p[i][0] * p[i][0] + p[i][1] * p[i][1]);
+    for (i = 0; i < n; i++) {
+        M.push([p[i][0], p[i][1], 1.0]);
+        y.push(p[i][0] * p[i][0] + p[i][1] * p[i][1]);
 
-		if (i > 0) {
-			l += __dist(p[i - 1][0], p[i - 1][1], p[i][0], p[i][1]);
-		}
-	}
+        if (i > 0) {
+            l += __dist(p[i - 1][0], p[i - 1][1], p[i][0], p[i][1]);
+        }
+    }
 
-	MT = numeric.transpose(M);
-	B = numeric.dot(MT, M);
-	c = numeric.dot(MT, y);
-	z = numeric.solve(B, c);
+    MT = numeric.transpose(M);
+    B = numeric.dot(MT, M);
+    c = numeric.dot(MT, y);
+    z = numeric.solve(B, c);
 
-	var xm = z[0] * 0.5;
-	var ym = z[1] * 0.5;
-	var r = Math.sqrt(z[2] + xm * xm + ym * ym);
+    var xm = z[0] * 0.5;
+    var ym = z[1] * 0.5;
+    var r = Math.sqrt(z[2] + xm * xm + ym * ym);
 
 
-	/*
-		computing errors
-	*/
-	var err = 0;
-	for (i = 0; i < n; i++) {
-		var x = p[i][0];
-		var y = p[i][1];
+    /*
+    	computing errors
+    */
+    var err = 0;
+    for (i = 0; i < n; i++) {
+        var x = p[i][0];
+        var y = p[i][1];
 
-		var d = __dist(x, y, xm, ym);
+        var d = __dist(x, y, xm, ym);
 
-		var subErr = (d - r) * (d - r);
+        var subErr = (d - r) * (d - r);
 
-		// console.log("subErr " + subErr);
-		err += subErr;
-	}
+        // console.log("subErr " + subErr);
+        err += subErr;
+    }
 
-	err = Math.sqrt(err / n);
+    err = Math.sqrt(err / n);
 
-	console.log("fitting circle error: " + err);
+    console.log("fitting circle error: " + err);
 
-	return {
-		x0: xm,
-		y0: ym,
-		r: r,
-		err: err,
-		l: l
-	};
+    return {
+        x0: xm,
+        y0: ym,
+        r: r,
+        err: err,
+        l: l
+    };
 }
