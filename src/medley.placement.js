@@ -38,9 +38,10 @@ MEDLEY.initPlacementWithPainting = function(info) {
 
     // find cross plane
     info.paramsCross = XAC.findPlaneToFitPoints(info.points);
-    var planeCross = new XAC.Plane(diagnal * 2, diagnal * 2, XAC.MATERIALCONTRAST);
-    planeCross.fitTo(centerPlane, info.paramsCross.A, info.paramsCross.B, info.paramsCross.C);
-    XAC.scene.add(planeCross.m);
+    // XXX
+    // var planeCross = new XAC.Plane(diagnal * 2, diagnal * 2, XAC.MATERIALCONTRAST);
+    // planeCross.fitTo(centerPlane, info.paramsCross.A, info.paramsCross.B, info.paramsCross.C);
+    // XAC.scene.add(planeCross.m);
 
     // find normal plane
     var pointsExtended = [];
@@ -50,9 +51,10 @@ MEDLEY.initPlacementWithPainting = function(info) {
     }
 
     info.paramsNormal = XAC.findPlaneToFitPoints(info.points.concat(pointsExtended));
-    var planeNormal = new XAC.Plane(diagnal * 2, diagnal * 2, XAC.MATERIALHIGHLIGHT);
-    planeNormal.fitTo(centerPlane, info.paramsNormal.A, info.paramsNormal.B, info.paramsNormal.C);
-    XAC.scene.add(planeNormal.m);
+    // XXX
+    // var planeNormal = new XAC.Plane(diagnal * 2, diagnal * 2, XAC.MATERIALHIGHLIGHT);
+    // planeNormal.fitTo(centerPlane, info.paramsNormal.A, info.paramsNormal.B, info.paramsNormal.C);
+    // XAC.scene.add(planeNormal.m);
 
     if (MEDLEY._matobjSelected != undefined) {
         var embeddable = new MEDLEY.Embeddable(MEDLEY._matobjSelected);
@@ -81,11 +83,11 @@ MEDLEY.initPlacementWithPainting = function(info) {
 
     }
 
-    // remove any temp visualization stuff
-    setTimeout(function() {
-        XAC.scene.remove(planeCross.m);
-        XAC.scene.remove(planeNormal.m);
-    }, 500);
+    // XXX remove any temp visualization stuff
+    // setTimeout(function() {
+    //     XAC.scene.remove(planeCross.m);
+    //     XAC.scene.remove(planeNormal.m);
+    // }, 500);
 };
 
 //
@@ -247,7 +249,7 @@ MEDLEY._init2dPlacement = function(info) {
     for (face of facesEnclosed) {
         moreFacesEnclosed = moreFacesEnclosed.concat(
             __findEnclosingNeighbors(face, centerEnclosing, radiusEnclosing));
-        log(moreFacesEnclosed.length)
+        // log(moreFacesEnclosed.length)
     }
     facesEnclosed = facesEnclosed.concat(moreFacesEnclosed);
 
@@ -414,10 +416,16 @@ MEDLEY._init2dPlacement = function(info) {
     }
 };
 
-// find drawn-on faces' 1) neighbors that
-// 2) intersect with the cutting plane and
-// 3) line in the fitting circle
+
+
+//
+//  initialize cross sectional selection from a stroke,
+//  remesh the selected area as embeddable
+//
 MEDLEY._initXsecPlacement = function(info) {
+    //
+    //  find projections on the normal plane
+    //
     var nmlNormalPlane = new THREE.Vector3(info.paramsNormal.A, info.paramsNormal.B, info.paramsNormal.C)
         .normalize();
     var zAxis = new THREE.Vector3(0, 0, -1);
@@ -432,58 +440,179 @@ MEDLEY._initXsecPlacement = function(info) {
         projPoints.push(proj.clone());
     }
 
+    //
+    //  fit selection stroke to a circle
+    //
     var fitInfo = XAC.fitCircle(projPoints);
-    log(info.footprint / (2 * Math.PI * fitInfo.radius));
+    log(info.footprint / (2 * Math.PI * fitInfo.r));
     var fitCenter = new THREE.Vector3(fitInfo.x0, fitInfo.y0, projPoints[0].z);
     fitCenter.applyAxisAngle(axisToRotate, -angleToRotate);
 
-    var minCircleCoverage = 0.02;
-    if (info.footprint / (2 * Math.PI * fitInfo.radius) < minCircleCoverage) {
+    var minCircleCoverage = 0.02; // if the stroke covers too little of the fitting circle
+    if (info.footprint / (2 * Math.PI * fitInfo.r) < minCircleCoverage) {
         fitCenter = undefined;
     }
 
-    // [internal helper] recursively find neighbors located within the given circle
-    var __findSelectedgNeighbors = function(face, params, height, center, radius) {
-        face.visited = true;
-        var selectedNeighbors = [];
-        for (neighbor of face.neighbors) {
-            if (neighbor.visited) continue;
-            var vindices = [neighbor.a, neighbor.b, neighbor.c];
-            for (idx of vindices) {
-                // if bounding sphere exists, rule out those outside of it
-                if (center != undefined && vertices[idx].distanceTo(center) >= radius) {
-                    continue;
-                }
-                // rule out those not intersecting with the plane
-                var proj = XAC.getPointProjectionOnPlane(vertices[idx], params.A, params.B, params.C,
-                    params.D);
-                if (proj.distanceTo(vertices[idx]) > height) {
-                    continue;
-                }
+    // [internal helper] debug problematic faces
+    var __debugFace = function(face, points) {
+        info.object.geometry.highlightFace(face, 0xffff00, XAC.scene);
+        for (var k = 0; k < points.length; k++) {
+            var p0 = points[k];
+            var p1 = points[(k + 1) % points.length];
+            addAnArrow(p0, p1.clone().sub(p0), p1.distanceTo(p0), k == 0 ? 0xff0000 :
+                0x000000, 0.01)
+        }
+    }
 
-                // select the face
-                selectedNeighbors.push(neighbor);
-                selectedNeighbors = selectedNeighbors.concat(__findSelectedgNeighbors(neighbor,
-                    params, height,
-                    center, radius));
-                break;
+    // [internal helper] recursively find neighbors located within the selected cross section
+    //  - face: a given face
+    //  - a, b, c, d0/d1, height: two parallel planes with 2*height apart,
+    //      controling the range of cross section
+    //  - center, radius: bounding sphere, if applicable, to remove far-away irrelevant faces
+    var __remeshSelectedNeighbors = function(face, a, b, c, d0, d1, height, center, radius) {
+        // book keep which faces were visited
+        if (face.visited) return [];
+        face.visited = true;
+        facesVisited.push(face);
+
+        var eps = 10e-3;
+        var facesRemeshed = [];
+        var intersections0 = [];
+        var intersections1 = [];
+        var pointsWithin = [];
+
+        // find intersections with the two planes
+        for (var i = 0; i < face.vertices.length; i++) {
+            var v0 = face.vertices[i];
+            var v1 = face.vertices[(i + 1) % face.vertices.length];
+
+            if (center != undefined && v0.distanceTo(center) > radius) {
+                return [];
+            }
+
+            var proj0 = XAC.getPointProjectionOnPlane(v0, a, b, c, d0);
+            var proj1 = XAC.getPointProjectionOnPlane(v0, a, b, c, d1);
+            if (v0.distanceTo(proj0) + v0.distanceTo(proj1) <= height + eps) {
+                pointsWithin.push(v0);
+            }
+
+            var int0 = XAC.findLinePlaneIntersection(v0, v1, a, b, c, d0, true);
+            if (int0 != undefined) intersections0.push(int0);
+            var int1 = XAC.findLinePlaneIntersection(v0, v1, a, b, c, d1, true);
+            if (int1 != undefined) intersections1.push(int1);
+        }
+
+        // face is between the two planes
+        var intersections = intersections0.concat(intersections1);
+        if (pointsWithin.length >= 3) {
+            facesRemeshed.push(face.vertices.clone());
+        }
+        // face intersects with at least one of the planes
+        else if (intersections.length > 0) {
+            console.assert(intersections0.length + intersections1.length <= 4,
+                'intersection error: ' + intersections0.length + ', ' + intersections1.length
+            );
+
+            var remeshPoints = intersections.clone();
+            // if only 2 intersections, it means 1 or 2 vertices are between the planes
+            if (intersections.length == 2) {
+                remeshPoints = remeshPoints.concat(pointsWithin);
+                // sort when there are 4 points
+                if (pointsWithin.length == 2) XAC._sortFourPoints(remeshPoints);
+            }
+            // if there are 4 intersections, it means 0 or 1 vertice is between the planes
+            else if (intersections.length == 4) {
+                // sort the existing 4 points
+                XAC._sortFourPoints(remeshPoints);
+                // add a vertex if it's between the planes
+                if (pointsWithin[0] != undefined) {
+                    // add it in the middle
+                    if (XAC.onSameSide(pointsWithin[0], remeshPoints[1], remeshPoints[0],
+                            remeshPoints.last())) {
+                        remeshPoints.insert(pointsWithin[0], 2);
+                    }
+                    // add it to the beginning
+                    else {
+                        remeshPoints.unshift(pointsWithin[0]);
+                    }
+                }
+            }
+
+            // triangulation
+            if (remeshPoints.length >= 3) {
+                var triangles = [];
+                var triangulation = XAC.triangulatePolygon(remeshPoints, face.normal);
+
+                var color = 0x00ff00;
+                console.assert(triangulation.length > 0, 'triangulation failed');
+                if (triangulation.length > 0) {
+                    if (triangulation.length / 3 != remeshPoints.length - 2) {
+                        __debugFace(face, remeshPoints);
+                    }
+
+                    for (var j = 0; j + 2 < triangulation.length; j += 3) {
+                        var va = remeshPoints[triangulation[j]],
+                            vb = remeshPoints[triangulation[j + 1]],
+                            vc = remeshPoints[triangulation[j + 2]];
+                        facesRemeshed.push([va, vb, vc]);
+                    }
+                }
             }
         }
-        return selectedNeighbors;
+
+        // recursively deal with face's neighbors
+        if (pointsWithin.length > 0 || intersections.length > 0) {
+            for (neighbor of face.neighbors) {
+                facesRemeshed = facesRemeshed.concat(__remeshSelectedNeighbors(neighbor,
+                    a, b, c, d0, d1, height, center, radius));
+            }
+        }
+
+        return facesRemeshed;
     }
 
     var vertices = info.object.geometry.vertices;
-    var facesSelected = info.faces.clone();
+    var facesRemeshed = [];
+    var facesVisited = [];
+    var heightSelection = info.footprint / Math.PI;
+    var a = info.paramsNormal.A,
+        b = info.paramsNormal.B,
+        c = info.paramsNormal.C,
+        d = info.paramsNormal.D;
+    var dd = heightSelection * Math.sqrt(a * a + b * b + c * c);
+    var d0 = d - dd,
+        d1 = d + dd;
+
     for (face of info.faces) {
-        facesSelected = facesSelected.concat(__findSelectedgNeighbors(face, info.paramsNormal,
-            info.footprint / Math.PI, fitCenter, fitInfo.radius * 1.414));
+        facesRemeshed = facesRemeshed.concat(__remeshSelectedNeighbors(face, a, b, c, d0, d1,
+            heightSelection * 2, fitCenter, fitInfo.r * 1.414));
     }
 
-    for (face of facesSelected) {
-        info.object.geometry.highlightFace(face, 0xffff00, XAC.scene);
+    for (vertices of facesRemeshed) {
+        addATriangle(vertices[0], vertices[1], vertices[2], 0x00ff00);
+    }
+
+    // clean up
+    for (face of facesVisited) {
+        face.visited = false;
     }
 
 };
+
+//
+//  common internal helper: sort four points so they form a non-self-intersecting polygon
+//
+XAC._sortFourPoints = function(points) {
+    if (points.length != 4) return;
+
+    var v0 = points[1].clone().sub(points[0]);
+    var v1 = points[2].clone().sub(points[3]);
+    if (v0.dot(v1) < 0) {
+        var temp = points[0];
+        points[0] = points[1];
+        points[1] = temp;
+    }
+}
 
 //
 //
