@@ -13,6 +13,9 @@ var MEDLEY = MEDLEY || {};
 //  initialize placement based on the painting technique (xac.input.painting.js)
 //
 MEDLEY.initPlacementWithPainting = function(info) {
+    info.object.material.side = THREE.DoubleSide;
+    // info.object.material.needsUpdate = true;
+
     // clean up points
     var toRemove = [];
     var eps = 0.25;
@@ -61,26 +64,34 @@ MEDLEY.initPlacementWithPainting = function(info) {
         // embeddable.generateGeometry(info);
         switch (embeddable._dim) {
             case 0:
+
+                // TODO: dim=0 placement
+
+                // TODO: initialize interactors
+
                 break;
             case 1:
-                if (XAC._footprint > 50)
-                    MEDLEY._init1dPlacement(embeddable, info);
+                if (XAC._footprint > 50) MEDLEY._init1dPlacement(embeddable, info);
+
+                // TODO: initialize interactors
+
                 break;
             case 2:
+            case 3:
                 var isLoop = MEDLEY._isLoop(info);
                 if (isLoop) {
-                    MEDLEY._init2dPlacement(info);
+                    MEDLEY._init2dPatchPlacement(embeddable, info);
                 } else if (isLoop == false) {
-                    MEDLEY._initXsecPlacement(info);
+                    MEDLEY._init2dXsecPlacement(embeddable, info);
                 } else {;
                 }
-                break;
-            case 3:
-                //
+
+                // TODO: initialize interactors
+
                 break;
         }
 
-
+        MEDLEY._embeddables.push(embeddable);
     }
 
     // XXX remove any temp visualization stuff
@@ -88,34 +99,18 @@ MEDLEY.initPlacementWithPainting = function(info) {
     //     XAC.scene.remove(planeCross.m);
     //     XAC.scene.remove(planeNormal.m);
     // }, 500);
+
+    info.object.material.side = THREE.FrontSide;
+    // info.object.material.needsUpdate = true;
 };
 
 //
 //  initialize placement of 1d material based on user painting
 //
 MEDLEY._init1dPlacement = function(embeddable, info) {
-    // generative material
-    embeddable.generateGeometry = function(points) {
-        if (this._geometry == undefined) {
-            this._geometry = [];
-            for (var i = 0; i < points.length - 1; i++) {
-                var segment = new XAC.ThickLine(points[i], points[i + 1], this._matobj
-                    .radius, XAC.MATERIALHIGHLIGHT);
-                this._geometry.push(segment);
-                XAC.scene.add(segment.m);
-            }
-        } else {
-            for (var i = 0; i < points.length - 1; i++) {
-                var segment = this._geometry[i];
-                segment.update(points[i], points[i + 1], this._matobj.radius);
-            }
-        }
-    };
-    // embeddable.generateGeometry(info.points);
-
     // impose ranges for each point
-    info.object.material.side = THREE.DoubleSide;
-    info.object.material.needsUpdate = true;
+    // info.object.material.side = THREE.DoubleSide;
+    // info.object.material.needsUpdate = true;
     embeddable.points0 = [];
     embeddable.points1 = [];
     for (var i = 0; i < info.points.length; i++) {
@@ -129,54 +124,24 @@ MEDLEY._init1dPlacement = function(embeddable, info) {
             embeddable.points1.push(hits[0].point);
         }
     }
-    info.object.material.side = THREE.FrontSide;
-    info.object.material.needsUpdate = true;
+    // info.object.material.side = THREE.FrontSide;
+    // info.object.material.needsUpdate = true;
 
     // XXX
-    // var t = 0.5;
-
-
-    // XXX
-    embeddable._t = 0;
+    XAC._t = 0;
     embeddable.generateGeometry(embeddable.points0);
     XAC.on(XAC.UPARROW, function() {
-        embeddable._t = XAC.clamp(embeddable._t + 0.1, 0, 1);
-        var points = [];
-        for (var i = 0; i < embeddable.points0.length; i++) {
-            points.push(embeddable.points0[i].clone().multiplyScalar(1 - embeddable._t)
-                .add(embeddable.points1[i].clone().multiplyScalar(embeddable._t)));
-        }
-        embeddable.generateGeometry(points);
+        XAC._t = XAC.clamp(XAC._t + 0.1, 0, 1);
+        MEDLEY._embeddables.last().setDepth(XAC._t);
     });
-}
-
-//
-//  detect if a drawing is a loop or line (non-loop) or unsure
-//
-MEDLEY._isLoop = function(info) {
-    var minGapRatio = 0.2;
-    var maxGapRatio = 0.9;
-    info.footprint = 0;
-    for (var i = 0; i < info.points.length - 1; i++) {
-        info.footprint += info.points[i + 1].distanceTo(info.points[i]);
-    }
-
-    var gap = info.points[0].distanceTo(info.points.last());
-
-    gapRatio = gap / info.footprint;
-    if (gapRatio < minGapRatio) {
-        return true;
-    } else if (gapRatio > maxGapRatio) {
-        return false;
-    } else {
-        return;
-    }
+    // XXX
 }
 
 //
 //  initialize placement of 2d material based on user painting
 //
-MEDLEY._init2dPlacement = function(info) {
+MEDLEY._init2dPatchPlacement = function(embeddable, info) {
+
     // [internal helper] interpolate between p1 and p2 with t
     var __interpolate = function(p1, p2, t) {
         return p1.clone().add(p2.clone().sub(p1).multiplyScalar(t));
@@ -192,9 +157,8 @@ MEDLEY._init2dPlacement = function(info) {
             for (idx of vindices) {
                 if (vertices[idx].distanceTo(center) < radius) {
                     enclosingNeighbors.push(neighbor);
-                    enclosingNeighbors
-                        = enclosingNeighbors.concat(__findEnclosingNeighbors(neighbor, center,
-                            radius));
+                    enclosingNeighbors = enclosingNeighbors.concat(
+                        __findEnclosingNeighbors(neighbor, center, radius));
                     break;
                 }
             }
@@ -258,10 +222,7 @@ MEDLEY._init2dPlacement = function(info) {
     //
     var facesRemeshed = [];
     for (face of facesEnclosed) {
-
-        if (face.verticesInside != undefined) {
-            continue;
-        }
+        if (face.verticesInside != undefined) continue;
 
         face.verticesInside = [];
 
@@ -285,7 +246,8 @@ MEDLEY._init2dPlacement = function(info) {
 
         // if face is inside, add it directly
         if (face.verticesInside.length >= 3) {
-            facesRemeshed.push(face);
+            facesRemeshed.push(face.vertices);
+            // info.object.geometry.highlightFace(face, 0xff00ff, XAC.scene);
         }
         // otherwise detect intersection, and remesh the part of the face that's inside the drawing
         else {
@@ -368,9 +330,7 @@ MEDLEY._init2dPlacement = function(info) {
 
                 var color = 0x00ff00;
                 console.assert(triangulation.length > 0, 'triangulation failed');
-                if (triangulation.length == 0) {
-                    continue;
-                }
+                if (triangulation.length == 0) continue;
 
                 if (triangulation.length / 3 != face.points.length - 2) {
                     color = 0xffff00; // XXX
@@ -381,13 +341,14 @@ MEDLEY._init2dPlacement = function(info) {
                     var va = face.points[triangulation[j]],
                         vb = face.points[triangulation[j + 1]],
                         vc = face.points[triangulation[j + 2]];
-                    triangles.push([va, vb, vc]);
+                    // triangles.push([va, vb, vc]);
+                    facesRemeshed.push([va, vb, vc]);
                 }
 
                 // XXX
-                for (t of triangles) {
-                    addATriangle(t[0], t[1], t[2], color);
-                }
+                // for (t of triangles) {
+                //     addATriangle(t[0], t[1], t[2], color);
+                // }
                 // XXX
 
             }
@@ -396,16 +357,16 @@ MEDLEY._init2dPlacement = function(info) {
                 // handle edge cases: have vertices inside but not intersecting with drawing
                 // due to projection error, etc.
                 if (face.verticesInside.length > 1) {
-                    facesRemeshed.push(face);
+                    facesRemeshed.push(face.vertices);
                 }
             }
         }
     }
 
     // XXX
-    for (face of facesRemeshed) {
-        info.object.geometry.highlightFace(face, 0xff00ff, XAC.scene);
-    }
+    // for(t of facesRemeshed) {
+    //     addATriangle(t[0], t[1], t[2], 0x00ff00);
+    // }
     // XXX
 
     // clean up
@@ -414,6 +375,41 @@ MEDLEY._init2dPlacement = function(info) {
         face.points = undefined;
         face.verticesInside = undefined;
     }
+
+    embeddable._faces0 = facesRemeshed.clone();
+    embeddable._faces1 = [];
+
+    var rayCaster = new THREE.Raycaster();
+    var nml = nmlCrossPlane.clone().multiplyScalar(-1).normalize();
+    var voffset = embeddable._faces0[0][0].clone().add(nml.clone().multiplyScalar(0.01));
+    rayCaster.ray.set(voffset, nml);
+    var hits = rayCaster.intersectObjects([info.object]);
+    if (hits.length == 0) {
+        nml = nml.multiplyScalar(-1);
+    }
+
+    for (vs of facesRemeshed) {
+        var vertices1 = [];
+        for (v of vs) {
+            var voffset = v.clone().add(nml.clone().multiplyScalar(0.01));
+            rayCaster.ray.set(voffset, nml);
+            var hits = rayCaster.intersectObjects([info.object]);
+            if (hits.length > 0) {
+                vertices1.push(hits[0].point);
+            }
+        }
+        if (vertices1.length > 0) embeddable._faces1.push(vertices1);
+    }
+
+    XAC._t = -0.01;
+    embeddable.setDepth(XAC._t);
+
+    // XXX
+    XAC.on(XAC.UPARROW, function() {
+        XAC._t = XAC.clamp(XAC._t + 0.1, -0.01, 1.01);
+        MEDLEY._embeddables.last().setDepth(XAC._t);
+    });
+    // XXX
 };
 
 
@@ -422,12 +418,13 @@ MEDLEY._init2dPlacement = function(info) {
 //  initialize cross sectional selection from a stroke,
 //  remesh the selected area as embeddable
 //
-MEDLEY._initXsecPlacement = function(info) {
+MEDLEY._init2dXsecPlacement = function(embeddable, info) {
     //
     //  find projections on the normal plane
     //
-    var nmlNormalPlane = new THREE.Vector3(info.paramsNormal.A, info.paramsNormal.B, info.paramsNormal.C)
-        .normalize();
+    var nmlCrossPlane = new THREE.Vector3(info.paramsCross.A, info.paramsCross.B, info.paramsCross.C).normalize();
+    var nmlNormalPlane = new THREE.Vector3(info.paramsNormal.A, info.paramsNormal.B,
+        info.paramsNormal.C).normalize();
     var zAxis = new THREE.Vector3(0, 0, -1);
     var angleToRotate = nmlNormalPlane.angleTo(zAxis);
     var axisToRotate = new THREE.Vector3().crossVectors(nmlNormalPlane, zAxis).normalize();
@@ -588,16 +585,134 @@ MEDLEY._initXsecPlacement = function(info) {
             heightSelection * 2, fitCenter, fitInfo.r * 1.414));
     }
 
-    for (vertices of facesRemeshed) {
-        addATriangle(vertices[0], vertices[1], vertices[2], 0x00ff00);
-    }
+    // for (vertices of facesRemeshed) {
+    //     addATriangle(vertices[0], vertices[1], vertices[2], 0x00ff00);
+    // }
+
+    // embeddable._generate2dGeometry(facesRemeshed);
 
     // clean up
     for (face of facesVisited) {
         face.visited = false;
     }
 
+    embeddable._faces0 = facesRemeshed.clone();
+    embeddable._faces1 = [];
+
+    var rayCaster = new THREE.Raycaster();
+    // var nml = nmlCrossPlane.clone().multiplyScalar(-1).normalize();
+    // var voffset = embeddable._faces0[0][0].clone().add(nml.clone().multiplyScalar(0.01));
+    // rayCaster.ray.set(voffset, nml);
+    // var hits = rayCaster.intersectObjects([info.object]);
+    // if (hits.length == 0) {
+    //     nml = nml.multiplyScalar(-1);
+    // }
+
+    var normalsRemeshed = [];
+    for (vs of facesRemeshed) {
+        var nml = vs[1].clone().sub(vs[0]).cross(vs[2].clone().sub(vs[0])).normalize();
+        normalsRemeshed.push(nml);
+        for (v of vs) {
+            v._normals = [nml];
+        }
+    }
+
+    var eps = 10e-3;
+    for (vs of facesRemeshed) {
+        for (v of vs) {
+            for (var i = 0; i < facesRemeshed.length; i++) {
+                var us = facesRemeshed[i];
+                var nml = normalsRemeshed[i];
+                for (u of us) {
+                    if (v != u && v.distanceTo(u) < eps) {
+                        v._normals.push(nml);
+                    }
+                }
+            }
+
+            if (v._normals.length > 0) {
+                v._normal = new THREE.Vector3();
+                for (nml of v._normals) {
+                    v._normal.add(nml);
+                }
+                v._normal.divideScalar(v._normals.length);
+            } else {
+                console.error('no close points!');
+            }
+        }
+    }
+
+
+    for (vs of facesRemeshed) {
+        var vertices1 = [];
+        // var nml = vs[1].clone().sub(vs[0]).cross(vs[2].clone().sub(vs[0])).normalize();
+        for (v of vs) {
+            var nml = v._normal.clone();
+            var voffset = v.clone().add(nml.clone().multiplyScalar(0.01));
+            rayCaster.ray.set(voffset, nml);
+            var hits = rayCaster.intersectObjects([info.object]);
+
+            if (hits.length == 0) {
+                nml = nml.multiplyScalar(-1);
+                voffset = v.clone().add(nml.clone().multiplyScalar(0.01));
+                rayCaster.ray.set(voffset, nml);
+                hits = rayCaster.intersectObjects([info.object]);
+            }
+
+            if (hits.length > 0) {
+                vertices1.push(hits[0].point);
+                // _balls.remove(addABall(hits[0].point, 0xff0000, 0.25));
+            }
+            // else {
+            //     addAnArrow(v, nml, 5, 0xff0000);
+            //     return;
+            // }
+
+            // v._normal = undefined;
+            // v._normals = undefined;
+        }
+        if (vertices1.length > 0) embeddable._faces1.push(vertices1);
+    }
+
+    XAC._t = -0.01;
+    embeddable.setDepth(XAC._t);
+
+    // XXX
+    XAC.on(XAC.UPARROW, function() {
+        XAC._t = XAC.clamp(XAC._t + 0.1, -0.01, 1.01);
+        MEDLEY._embeddables.last().setDepth(XAC._t);
+    });
+    // XXX
 };
+
+//
+//
+//
+MEDLEY.initPlacementWithSelection = function(info) {};
+
+
+//
+//  detect if a drawing is a loop or line (non-loop) or unsure
+//
+MEDLEY._isLoop = function(info) {
+    var minGapRatio = 0.2;
+    var maxGapRatio = 0.9;
+    info.footprint = 0;
+    for (var i = 0; i < info.points.length - 1; i++) {
+        info.footprint += info.points[i + 1].distanceTo(info.points[i]);
+    }
+
+    var gap = info.points[0].distanceTo(info.points.last());
+
+    gapRatio = gap / info.footprint;
+    if (gapRatio < minGapRatio) {
+        return true;
+    } else if (gapRatio > maxGapRatio) {
+        return false;
+    } else {
+        return;
+    }
+}
 
 //
 //  common internal helper: sort four points so they form a non-self-intersecting polygon
@@ -613,8 +728,3 @@ XAC._sortFourPoints = function(points) {
         points[1] = temp;
     }
 }
-
-//
-//
-//
-MEDLEY.initPlacementWithSelection = function(info) {};
