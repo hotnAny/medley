@@ -18,17 +18,18 @@ var COLORHIGHLIGHT = 0xFFFA90;
 var COLORFOCUS = 0xE82C0C; // color to really draw users' focus
 
 // XXX for debugging
-XAC.MATERIALNORMAL = new THREE.MeshBasicMaterial({
-	color: 0x888888,
-	wireframe: true,
-	side: THREE.DoubleSide
-});
-
-// XAC.MATERIALNORMAL = new THREE.MeshPhongMaterial({
-// 	color: COLORNORMAL,
-// 	transparent: true,
-// 	opacity: 0.5,
+// XAC.MATERIALNORMAL = new THREE.MeshBasicMaterial({
+// 	color: 0x888888,
+// 	wireframe: true,
+// 	side: THREE.DoubleSide
 // });
+
+XAC.MATERIALNORMAL = new THREE.MeshPhongMaterial({
+	color: COLORNORMAL,
+	transparent: true,
+	opacity: 0.75,
+	// side: THREE.DoubleSide
+});
 
 // XAC.MATERIALCONTRAST = new THREE.MeshPhongMaterial({
 // 	color: COLORCONTRAST,
@@ -36,10 +37,11 @@ XAC.MATERIALNORMAL = new THREE.MeshBasicMaterial({
 // 	opacity: 0.75
 // });
 
-XAC.MATERIALHIGHLIGHT = new THREE.MeshPhongMaterial({
+XAC.MATERIALHIGHLIGHT = new THREE.MeshBasicMaterial({
 	color: COLORHIGHLIGHT,
 	// transparent: true,
-	opacity: 0.95
+	// wireframe: true,
+	opacity: 1
 });
 
 XAC.MATERIALFOCUS = new THREE.MeshPhongMaterial({
@@ -71,10 +73,6 @@ XAC.Thing.prototype = {
 
 	get m() {
 		return this._m;
-	},
-
-	unitTest: function() {
-		log(this.g);
 	}
 }
 
@@ -265,8 +263,8 @@ function removeBalls() {
 }
 
 function addATriangle(v1, v2, v3, clr, wired) {
-	var vs = [v1.x, v1.y, v1.z, v2.x, v2.y, v2.z, v3.x, v3.y, v3.z];
-	var fs = new THREE.Face3(0, 1, 2);
+	// var vs = [v1.x, v1.y, v1.z, v2.x, v2.y, v2.z, v3.x, v3.y, v3.z];
+	// var fs = new THREE.Face3(0, 1, 2);
 
 	var geometry = new THREE.Geometry(); //PolyhedronGeometry(vs, fs, 1, 1);
 	geometry.vertices.push(v1);

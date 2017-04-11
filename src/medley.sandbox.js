@@ -3,7 +3,8 @@ var MEDLEY = MEDLEY || {};
 // XXX
 MEDLEY._matobjSelected = {
     radius: 0.5, // mm
-    dim: 2
+    dim: 2,
+    thickness: 2 // mm
 };
 
 
