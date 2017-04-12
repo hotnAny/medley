@@ -599,55 +599,18 @@ MEDLEY._init2dXsecPlacement = function(embeddable, info) {
     embeddable._faces0 = facesRemeshed.clone();
     embeddable._faces1 = [];
 
+    var centroidRemeshed = new THREE.Vector3();
+    for(vs of facesRemeshed) {
+        var centroidFace = vs[0].clone().add(vs[1].clone().add(vs[2])).divideScalar(3);
+        centroidRemeshed.add(centroidFace);
+    }
+    centroidRemeshed.divideScalar(facesRemeshed.length);
+
     var rayCaster = new THREE.Raycaster();
-    // var nml = nmlCrossPlane.clone().multiplyScalar(-1).normalize();
-    // var voffset = embeddable._faces0[0][0].clone().add(nml.clone().multiplyScalar(0.01));
-    // rayCaster.ray.set(voffset, nml);
-    // var hits = rayCaster.intersectObjects([info.object]);
-    // if (hits.length == 0) {
-    //     nml = nml.multiplyScalar(-1);
-    // }
-
-    var normalsRemeshed = [];
-    for (vs of facesRemeshed) {
-        var nml = vs[1].clone().sub(vs[0]).cross(vs[2].clone().sub(vs[0])).normalize();
-        normalsRemeshed.push(nml);
-        for (v of vs) {
-            v._normals = [nml];
-        }
-    }
-
-    var eps = 10e-3;
-    for (vs of facesRemeshed) {
-        for (v of vs) {
-            for (var i = 0; i < facesRemeshed.length; i++) {
-                var us = facesRemeshed[i];
-                var nml = normalsRemeshed[i];
-                for (u of us) {
-                    if (v != u && v.distanceTo(u) < eps) {
-                        v._normals.push(nml);
-                    }
-                }
-            }
-
-            if (v._normals.length > 0) {
-                v._normal = new THREE.Vector3();
-                for (nml of v._normals) {
-                    v._normal.add(nml);
-                }
-                v._normal.divideScalar(v._normals.length);
-            } else {
-                console.error('no close points!');
-            }
-        }
-    }
-
-
     for (vs of facesRemeshed) {
         var vertices1 = [];
-        // var nml = vs[1].clone().sub(vs[0]).cross(vs[2].clone().sub(vs[0])).normalize();
         for (v of vs) {
-            var nml = v._normal.clone();
+            var nml = centroidRemeshed.clone().sub(v).normalize();
             var voffset = v.clone().add(nml.clone().multiplyScalar(0.01));
             rayCaster.ray.set(voffset, nml);
             var hits = rayCaster.intersectObjects([info.object]);
@@ -665,11 +628,10 @@ MEDLEY._init2dXsecPlacement = function(embeddable, info) {
             }
             // else {
             //     addAnArrow(v, nml, 5, 0xff0000);
+            //     addATriangle(vs[0], vs[1], vs[2], 0xffff00);
             //     return;
             // }
 
-            // v._normal = undefined;
-            // v._normals = undefined;
         }
         if (vertices1.length > 0) embeddable._faces1.push(vertices1);
     }
