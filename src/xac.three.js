@@ -104,6 +104,8 @@ THREE.Geometry.prototype.createNeighborList = function(octree) {
         for (elm of elms) {
             face = elm.faces;
 
+            if (face.vertices == undefined) this.assignVerticesToFaces();
+
             face.neighbors = face.neighbors || [];
             if (face.neighbors.length >= 3) {
                 continue;
@@ -114,14 +116,10 @@ THREE.Geometry.prototype.createNeighborList = function(octree) {
             for (var j = 0; j < elms.length; j++) {
                 var ff = elms[j].faces; //.centroid.clone();
 
-                var vlist2 = [ff.a, ff.b, ff.c];
-
                 // skip the face itself
-                if (Math.abs(face.a - ff.a) < eps && Math.abs(face.b == ff.b) < eps && Math.abs(face.c ==
-                        ff.c) <
-                    eps) {
-                    continue;
-                }
+                if (face == ff || face.neighbors.indexOf(ff) >= 0) continue;
+
+                var vlist2 = [ff.a, ff.b, ff.c];
 
                 // searching for pairs of vertices that correspond to the shared edge of neighboring triangles
                 var numPairs = 0;
@@ -130,7 +128,7 @@ THREE.Geometry.prototype.createNeighborList = function(octree) {
                         if (this.vertices[vlist2[ii]].distanceTo(
                                 this.vertices[vlist[jj]]) < eps) {
                             numPairs++;
-                            break;
+                            // break;
                         }
                     }
                 }
@@ -188,4 +186,43 @@ THREE.Mesh.prototype.selectable = function(flag, onSelected, onDeselected) {
     this._onDeselected = onDeselected;
     this._selected = false;
     this._selectionLocked = false;
+}
+
+//
+//
+//
+THREE.Geometry.prototype.removeRedundantFaces = function() {
+    var eps = 10e-3;
+    var __areRedundant = function(_vs, _us) {
+        var vs = _vs.clone();
+        var us = _us.clone();
+        for(v of vs) {
+            for(u of us) {
+                if(v.distanceTo(u)<eps) {
+                    us.remove(u);
+                    break;
+                }
+            }
+        }
+
+        return us.length == 0;
+    }
+    var toRemove = [];
+    for (f of this.faces) {
+        if(f._removed) continue;
+        if (f.vertices == undefined) this.assignVerticesToFaces();
+        for (ff of this.faces) {
+            if (ff._removed || f == ff) continue;
+            if (__areRedundant(f.vertices, ff.vertices)) {
+                toRemove.push(ff);
+                ff._removed = true;
+            }
+        }
+    }
+
+    for(f of toRemove) {
+        this.faces.remove(f);
+    }
+
+    return toRemove.length;
 }
