@@ -220,7 +220,7 @@ Array.prototype.diff = function(arr) {
 //
 //
 Array.prototype.last = function(val) {
-	if(val != undefined && this.length > 0) {
+	if (val != undefined && this.length > 0) {
 		this[this.length - 1] = val;
 	}
 	return this.length > 0 ? this[this.length - 1] : undefined;
