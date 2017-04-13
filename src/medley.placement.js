@@ -13,8 +13,8 @@ var MEDLEY = MEDLEY || {};
 //  initialize placement based on the painting technique (xac.input.painting.js)
 //
 MEDLEY.initPlacementWithPainting = function(info) {
+    // temporarily setting double-sided for internal ray casting
     info.object.material.side = THREE.DoubleSide;
-    // info.object.material.needsUpdate = true;
 
     // clean up points
     var toRemove = [];
@@ -24,9 +24,7 @@ MEDLEY.initPlacementWithPainting = function(info) {
         var p1 = info.points[i];
         if (p1.distanceTo(p0) < eps) {
             toRemove.push(p1);
-            // _balls.remove(addABall(p1, 0xff0000, 0.1));
         } else {
-            // _balls.remove(addABall(p1, 0x008800, 0.1));
             p0 = p1;
         }
     }
@@ -41,10 +39,6 @@ MEDLEY.initPlacementWithPainting = function(info) {
 
     // find cross plane
     info.paramsCross = XAC.findPlaneToFitPoints(info.points);
-    // XXX
-    // var planeCross = new XAC.Plane(diagnal * 2, diagnal * 2, XAC.MATERIALCONTRAST);
-    // planeCross.fitTo(centerPlane, info.paramsCross.A, info.paramsCross.B, info.paramsCross.C);
-    // XAC.scene.add(planeCross.m);
 
     // find normal plane
     var pointsExtended = [];
@@ -52,23 +46,16 @@ MEDLEY.initPlacementWithPainting = function(info) {
         var p = info.points[i].clone().add(info.normals[i].clone().multiplyScalar(diagnal));
         pointsExtended.push(p);
     }
-
     info.paramsNormal = XAC.findPlaneToFitPoints(info.points.concat(pointsExtended));
-    // XXX
-    // var planeNormal = new XAC.Plane(diagnal * 2, diagnal * 2, XAC.MATERIALHIGHLIGHT);
-    // planeNormal.fitTo(centerPlane, info.paramsNormal.A, info.paramsNormal.B, info.paramsNormal.C);
-    // XAC.scene.add(planeNormal.m);
+
 
     if (MEDLEY._matobjSelected != undefined) {
         var embeddable = new MEDLEY.Embeddable(MEDLEY._matobjSelected);
         // embeddable.generateGeometry(info);
         switch (embeddable._dim) {
             case 0:
-
                 // TODO: dim=0 placement
-
                 // TODO: initialize interactors
-
                 break;
             case 1:
                 if (XAC._footprint > 50) MEDLEY._init1dPlacement(embeddable, info);
@@ -82,7 +69,7 @@ MEDLEY.initPlacementWithPainting = function(info) {
                 if (isLoop) {
                     MEDLEY._init2dPatchPlacement(embeddable, info);
                 } else if (isLoop == false) {
-                    MEDLEY._init2dXsecPlacement(embeddable, info);
+                    MEDLEY._init2dXsecPlacement(embeddable, info, embeddable._baseWidth, false);
                 } else {;
                 }
 
@@ -94,14 +81,8 @@ MEDLEY.initPlacementWithPainting = function(info) {
         MEDLEY._embeddables.push(embeddable);
     }
 
-    // XXX remove any temp visualization stuff
-    // setTimeout(function() {
-    //     XAC.scene.remove(planeCross.m);
-    //     XAC.scene.remove(planeNormal.m);
-    // }, 500);
-
+    // reset sidedness of object
     info.object.material.side = THREE.FrontSide;
-    // info.object.material.needsUpdate = true;
 };
 
 //
@@ -109,8 +90,6 @@ MEDLEY.initPlacementWithPainting = function(info) {
 //
 MEDLEY._init1dPlacement = function(embeddable, info) {
     // impose ranges for each point
-    // info.object.material.side = THREE.DoubleSide;
-    // info.object.material.needsUpdate = true;
     embeddable.points0 = [];
     embeddable.points1 = [];
     for (var i = 0; i < info.points.length; i++) {
@@ -124,15 +103,13 @@ MEDLEY._init1dPlacement = function(embeddable, info) {
             embeddable.points1.push(hits[0].point);
         }
     }
-    // info.object.material.side = THREE.FrontSide;
-    // info.object.material.needsUpdate = true;
 
     // XXX
-    XAC._t = 0;
+    XAC._depth = 0;
     embeddable.generateGeometry(embeddable.points0);
     XAC.on(XAC.UPARROW, function() {
-        XAC._t = XAC.clamp(XAC._t + 0.1, 0, 1);
-        MEDLEY._embeddables.last().setDepth(XAC._t);
+        XAC._depth = XAC.clamp(XAC._depth + 0.1, 0, 1);
+        MEDLEY._embeddables.last().setDepth(XAC._depth);
     });
     // XXX
 }
@@ -363,12 +340,6 @@ MEDLEY._init2dPatchPlacement = function(embeddable, info) {
         }
     }
 
-    // XXX
-    // for(t of facesRemeshed) {
-    //     addATriangle(t[0], t[1], t[2], 0x00ff00);
-    // }
-    // XXX
-
     // clean up
     for (face of facesEnclosed) {
         face.visited = false;
@@ -401,13 +372,13 @@ MEDLEY._init2dPatchPlacement = function(embeddable, info) {
         if (vertices1.length > 0) embeddable._faces1.push(vertices1);
     }
 
-    XAC._t = -0.01;
-    embeddable.setDepth(XAC._t);
+    XAC._depth = -0.01;
+    embeddable.setDepth(XAC._depth);
 
     // XXX
     XAC.on(XAC.UPARROW, function() {
-        XAC._t = XAC.clamp(XAC._t + 0.1, -0.01, 1.01);
-        MEDLEY._embeddables.last().setDepth(XAC._t);
+        XAC._depth = XAC.clamp(XAC._depth + 0.1, -0.01, 1.01);
+        MEDLEY._embeddables.last().setDepth(XAC._depth);
     });
     // XXX
 };
@@ -417,8 +388,13 @@ MEDLEY._init2dPatchPlacement = function(embeddable, info) {
 //
 //  initialize cross sectional selection from a stroke,
 //  remesh the selected area as embeddable
+//  - embeddable: the embeddable associated with this placement
+//  - info: information about user input
+//  - width: specific to cross sectional selection --
+//      the length of the dimension perpendicular to cross sections
+//  - isLite: in a light version, show simple visuals rather than generating a full mesh
 //
-MEDLEY._init2dXsecPlacement = function(embeddable, info) {
+MEDLEY._init2dXsecPlacement = function(embeddable, info, width, isLite) {
     //
     //  find projections on the normal plane
     //
@@ -440,8 +416,9 @@ MEDLEY._init2dXsecPlacement = function(embeddable, info) {
     //
     //  fit selection stroke to a circle
     //
+    time();
     var fitInfo = XAC.fitCircle(projPoints);
-    log(info.footprint / (2 * Math.PI * fitInfo.r));
+    // log(info.footprint / (2 * Math.PI * fitInfo.r));
     var fitCenter = new THREE.Vector3(fitInfo.x0, fitInfo.y0, projPoints[0].z);
     fitCenter.applyAxisAngle(axisToRotate, -angleToRotate);
 
@@ -449,6 +426,7 @@ MEDLEY._init2dXsecPlacement = function(embeddable, info) {
     if (info.footprint / (2 * Math.PI * fitInfo.r) < minCircleCoverage) {
         fitCenter = undefined;
     }
+    time('[2d xsec] fitting circle');
 
     // [internal helper] debug problematic faces
     var __debugFace = function(face, points) {
@@ -463,10 +441,10 @@ MEDLEY._init2dXsecPlacement = function(embeddable, info) {
 
     // [internal helper] recursively find neighbors located within the selected cross section
     //  - face: a given face
-    //  - a, b, c, d0/d1, height: two parallel planes with 2*height apart,
+    //  - a, b, c, d0/d1, width: two parallel planes with width apart,
     //      controling the range of cross section
     //  - center, radius: bounding sphere, if applicable, to remove far-away irrelevant faces
-    var __remeshSelectedNeighbors = function(face, a, b, c, d0, d1, height, center, radius) {
+    var __remeshSelectedNeighbors = function(face, a, b, c, d0, d1, width, center, radius) {
         // book keep which faces were visited
         if (face.visited) return [];
         face.visited = true;
@@ -483,13 +461,11 @@ MEDLEY._init2dXsecPlacement = function(embeddable, info) {
             var v0 = face.vertices[i];
             var v1 = face.vertices[(i + 1) % face.vertices.length];
 
-            if (center != undefined && v0.distanceTo(center) > radius) {
-                return [];
-            }
+            if (center != undefined && v0.distanceTo(center) > radius) return [];
 
             var proj0 = XAC.getPointProjectionOnPlane(v0, a, b, c, d0);
             var proj1 = XAC.getPointProjectionOnPlane(v0, a, b, c, d1);
-            if (v0.distanceTo(proj0) + v0.distanceTo(proj1) <= height + eps) {
+            if (v0.distanceTo(proj0) + v0.distanceTo(proj1) <= width + eps) {
                 pointsWithin.push(v0);
             }
 
@@ -561,52 +537,103 @@ MEDLEY._init2dXsecPlacement = function(embeddable, info) {
         if (pointsWithin.length > 0 || intersections.length > 0) {
             for (neighbor of face.neighbors) {
                 facesRemeshed = facesRemeshed.concat(__remeshSelectedNeighbors(neighbor,
-                    a, b, c, d0, d1, height, center, radius));
+                    a, b, c, d0, d1, width, center, radius));
             }
         }
 
         return facesRemeshed;
     }
 
+    //
+    // cross sectional selection via two cutting planes
+    //
     var vertices = info.object.geometry.vertices;
     var facesRemeshed = [];
     var facesVisited = [];
-    var heightSelection = info.footprint / Math.PI;
     var a = info.paramsNormal.A,
         b = info.paramsNormal.B,
         c = info.paramsNormal.C,
         d = info.paramsNormal.D;
-    var dd = heightSelection * Math.sqrt(a * a + b * b + c * c);
+    var dd = width / 2 * Math.sqrt(a * a + b * b + c * c);
     var d0 = d - dd,
         d1 = d + dd;
 
     for (face of info.faces) {
         facesRemeshed = facesRemeshed.concat(__remeshSelectedNeighbors(face, a, b, c, d0, d1,
-            heightSelection * 2, fitCenter, fitInfo.r * 1.414));
+            width, fitCenter, fitInfo.r * 1.414));
     }
 
-    // for (vertices of facesRemeshed) {
-    //     addATriangle(vertices[0], vertices[1], vertices[2], 0x00ff00);
-    // }
-
-    // embeddable._generate2dGeometry(facesRemeshed);
+    //
+    //  a series of post processing
+    //
 
     // clean up
     for (face of facesVisited) {
         face.visited = false;
     }
 
-    embeddable._faces0 = facesRemeshed.clone();
-    embeddable._faces1 = [];
+    // XXX
+    if (facesRemeshed.length == 0) {
+        console.error('remeshing failed');
+        return;
+    }
 
+    // compute centroid of the selection
     var centroidRemeshed = new THREE.Vector3();
-    for(vs of facesRemeshed) {
+    for (vs of facesRemeshed) {
         var centroidFace = vs[0].clone().add(vs[1].clone().add(vs[2])).divideScalar(3);
         centroidRemeshed.add(centroidFace);
     }
     centroidRemeshed.divideScalar(facesRemeshed.length);
 
+    // show simple visuals only if it's lite
+    if (isLite) {
+        var geometry = new THREE.Geometry();
+        var nvertices = 0;
+        var eps = 0.1;
+        for (triangle of facesRemeshed) {
+            var perturbed = [];
+            for (v of triangle) {
+                var delta = v.clone().sub(centroidRemeshed).normalize().multiplyScalar(eps);
+                perturbed.push(v.clone().add(delta));
+            }
+            geometry.vertices.push(perturbed[0], perturbed[1], perturbed[2]);
+            geometry.faces.push(new THREE.Face3(nvertices, nvertices + 1, nvertices + 2));
+            nvertices += 3;
+        }
+        geometry.computeFaceNormals();
+        var triangleMeshes = new THREE.Mesh(geometry, XAC.MATERIALHIGHLIGHT.clone());
+        triangleMeshes.material.side = THREE.DoubleSide;
+        XAC.scene.add(triangleMeshes);
+        return triangleMeshes;
+    }
+
+    embeddable._faces0 = facesRemeshed.clone();
+    embeddable._faces1 = [];
+
     var rayCaster = new THREE.Raycaster();
+
+    // find out the valid range to get cross section
+    // also give embeddable access to selection info for future re-selection
+    if (embeddable._placementInfo == undefined) {
+        embeddable._placementInfo = info;
+        var materialBbox = XAC.MATERIALINVISIBLE.clone();
+        materialBbox.side = THREE.DoubleSide;
+        var bbox = XAC.getBoundingBoxMesh(info.object, materialBbox);
+        rayCaster.ray.set(centroidRemeshed, nmlCrossPlane);
+        var hits = rayCaster.intersectObjects([bbox]);
+        // _balls.remove(addABall(hits.last().point, 0xff0000, 0.5));
+        var endPoint0 = hits.last().point;
+        rayCaster.ray.set(centroidRemeshed, nmlCrossPlane.clone().multiplyScalar(-1));
+        hits = rayCaster.intersectObjects([bbox]);
+        // _balls.remove(addABall(hits.last().point, 0xff0000, 0.5));
+        var endPoint1 = hits.last().point;
+        embeddable._placementInfo._widthRange = Math.min(endPoint0.distanceTo(centroidRemeshed),
+            endPoint1.distanceTo(centroidRemeshed)) * 2;
+        log('valid width range: ' + embeddable._placementInfo._widthRange)
+    }
+
+    // finding control points for morphing selected faces
     for (vs of facesRemeshed) {
         var vertices1 = [];
         for (v of vs) {
@@ -614,35 +641,28 @@ MEDLEY._init2dXsecPlacement = function(embeddable, info) {
             var voffset = v.clone().add(nml.clone().multiplyScalar(0.01));
             rayCaster.ray.set(voffset, nml);
             var hits = rayCaster.intersectObjects([info.object]);
-
-            if (hits.length == 0) {
-                nml = nml.multiplyScalar(-1);
-                voffset = v.clone().add(nml.clone().multiplyScalar(0.01));
-                rayCaster.ray.set(voffset, nml);
-                hits = rayCaster.intersectObjects([info.object]);
-            }
-
             if (hits.length > 0) {
                 vertices1.push(hits[0].point);
-                // _balls.remove(addABall(hits[0].point, 0xff0000, 0.25));
             }
-            // else {
-            //     addAnArrow(v, nml, 5, 0xff0000);
-            //     addATriangle(vs[0], vs[1], vs[2], 0xffff00);
-            //     return;
-            // }
-
         }
         if (vertices1.length > 0) embeddable._faces1.push(vertices1);
     }
 
-    XAC._t = -0.01;
-    embeddable.setDepth(XAC._t);
-
     // XXX
+    XAC._depth = XAC._depth || -0.01;
+    XAC._thickness = XAC._thickness || 1;
+    XAC._width = XAC._width || 0;
+    embeddable.setDepth(XAC._depth);
+
     XAC.on(XAC.UPARROW, function() {
-        XAC._t = XAC.clamp(XAC._t + 0.1, -0.01, 1.01);
-        MEDLEY._embeddables.last().setDepth(XAC._t);
+        // XAC._depth = XAC.clamp(XAC._depth + 0.1, -0.01, 1.01);
+        // MEDLEY._embeddables.last().setDepth(XAC._depth);
+        XAC._width = XAC.clamp(XAC._width + 0.1, 0, 1);
+        MEDLEY._embeddables.last().setWidth(XAC._width, true);
+    });
+    XAC.on(XAC.RIGHTARROW, function() {
+        XAC._thickness += 0.2;
+        MEDLEY._embeddables.last().setThickness(XAC._thickness);
     });
     // XXX
 };
