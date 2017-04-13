@@ -128,7 +128,6 @@ THREE.Geometry.prototype.createNeighborList = function(octree) {
                         if (this.vertices[vlist2[ii]].distanceTo(
                                 this.vertices[vlist[jj]]) < eps) {
                             numPairs++;
-                            // break;
                         }
                     }
                 }
