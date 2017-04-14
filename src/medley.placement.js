@@ -105,13 +105,15 @@ MEDLEY._init1dPlacement = function(embeddable, info) {
     }
 
     // XXX
-    XAC._depth = 0;
-    embeddable.generateGeometry(embeddable.points0);
-    XAC.on(XAC.UPARROW, function() {
-        XAC._depth = XAC.clamp(XAC._depth + 0.1, 0, 1);
-        MEDLEY._embeddables.last().setDepth(XAC._depth);
-    });
+    // XAC._depth = 0;
+    // embeddable.generateGeometry(embeddable.points0);
+    // XAC.on(XAC.UPARROW, function() {
+    //     XAC._depth = XAC.clamp(XAC._depth + 0.1, 0, 1);
+    //     MEDLEY._embeddables.last().setDepth(XAC._depth);
+    // });
     // XXX
+
+    embeddable._generate1dGeometry(embeddable.points0);
 }
 
 //
@@ -322,15 +324,7 @@ MEDLEY._init2dPatchPlacement = function(embeddable, info) {
                     facesRemeshed.push([va, vb, vc]);
                 }
 
-                // XXX
-                // for (t of triangles) {
-                //     addATriangle(t[0], t[1], t[2], color);
-                // }
-                // XXX
-
-            }
-            // XXX
-            else {
+            } else {
                 // handle edge cases: have vertices inside but not intersecting with drawing
                 // due to projection error, etc.
                 if (face.verticesInside.length > 1) {
@@ -372,15 +366,7 @@ MEDLEY._init2dPatchPlacement = function(embeddable, info) {
         if (vertices1.length > 0) embeddable._faces1.push(vertices1);
     }
 
-    XAC._depth = -0.01;
-    embeddable.setDepth(XAC._depth);
-
-    // XXX
-    XAC.on(XAC.UPARROW, function() {
-        XAC._depth = XAC.clamp(XAC._depth + 0.1, -0.01, 1.01);
-        MEDLEY._embeddables.last().setDepth(XAC._depth);
-    });
-    // XXX
+    embeddable._generate23dGeometry();
 };
 
 
@@ -519,9 +505,9 @@ MEDLEY._init2dXsecPlacement = function(embeddable, info, width, isLite) {
                 var color = 0x00ff00;
                 console.assert(triangulation.length > 0, 'triangulation failed');
                 if (triangulation.length > 0) {
-                    if (triangulation.length / 3 != remeshPoints.length - 2) {
-                        __debugFace(face, remeshPoints);
-                    }
+                    // if (triangulation.length / 3 != remeshPoints.length - 2) {
+                    //     __debugFace(face, remeshPoints);
+                    // }
 
                     for (var j = 0; j + 2 < triangulation.length; j += 3) {
                         var va = remeshPoints[triangulation[j]],
@@ -586,6 +572,9 @@ MEDLEY._init2dXsecPlacement = function(embeddable, info, width, isLite) {
     }
     centroidRemeshed.divideScalar(facesRemeshed.length);
 
+    embeddable._faces0 = facesRemeshed.clone();
+    embeddable._faces1 = [];
+
     // show simple visuals only if it's lite
     if (isLite) {
         var geometry = new THREE.Geometry();
@@ -608,8 +597,6 @@ MEDLEY._init2dXsecPlacement = function(embeddable, info, width, isLite) {
         return triangleMeshes;
     }
 
-    embeddable._faces0 = facesRemeshed.clone();
-    embeddable._faces1 = [];
 
     var rayCaster = new THREE.Raycaster();
 
@@ -620,16 +607,15 @@ MEDLEY._init2dXsecPlacement = function(embeddable, info, width, isLite) {
         var materialBbox = XAC.MATERIALINVISIBLE.clone();
         materialBbox.side = THREE.DoubleSide;
         var bbox = XAC.getBoundingBoxMesh(info.object, materialBbox);
-        rayCaster.ray.set(centroidRemeshed, nmlCrossPlane);
-        var hits = rayCaster.intersectObjects([bbox]);
-        // _balls.remove(addABall(hits.last().point, 0xff0000, 0.5));
-        var endPoint0 = hits.last().point;
-        rayCaster.ray.set(centroidRemeshed, nmlCrossPlane.clone().multiplyScalar(-1));
-        hits = rayCaster.intersectObjects([bbox]);
-        // _balls.remove(addABall(hits.last().point, 0xff0000, 0.5));
-        var endPoint1 = hits.last().point;
-        embeddable._placementInfo._widthRange = Math.min(endPoint0.distanceTo(centroidRemeshed),
-            endPoint1.distanceTo(centroidRemeshed)) * 2;
+        bbox.geometry.applyMatrix(info.object.matrixWorld);
+        // XAC.scene.add(bbox);
+
+        var projRange = XAC.getRangeOfPointsOnAxis(gettg(bbox).vertices, nmlCrossPlane);
+        var projCenter = nmlCrossPlane.dot(centroidRemeshed);
+
+        embeddable._placementInfo._widthRange = Math.max(0, Math.min(projCenter - projRange[0],
+            projRange[1] - projCenter) * 2 - embeddable._baseWidth);
+
         log('valid width range: ' + embeddable._placementInfo._widthRange)
     }
 
@@ -637,10 +623,13 @@ MEDLEY._init2dXsecPlacement = function(embeddable, info, width, isLite) {
     for (vs of facesRemeshed) {
         var vertices1 = [];
         for (v of vs) {
-            var nml = centroidRemeshed.clone().sub(v).normalize();
+            // var nml = centroidRemeshed.clone().sub(v).normalize();
+            var nml = v.clone().sub(centroidRemeshed).normalize();
             var voffset = v.clone().add(nml.clone().multiplyScalar(0.01));
-            rayCaster.ray.set(voffset, nml);
+            // rayCaster.ray.set(voffset, nml);
+            rayCaster.ray.set(centroidRemeshed, nml);
             var hits = rayCaster.intersectObjects([info.object]);
+
             if (hits.length > 0) {
                 vertices1.push(hits[0].point);
             }
@@ -648,23 +637,7 @@ MEDLEY._init2dXsecPlacement = function(embeddable, info, width, isLite) {
         if (vertices1.length > 0) embeddable._faces1.push(vertices1);
     }
 
-    // XXX
-    XAC._depth = XAC._depth || -0.01;
-    XAC._thickness = XAC._thickness || 1;
-    XAC._width = XAC._width || 0;
-    embeddable.setDepth(XAC._depth);
-
-    XAC.on(XAC.UPARROW, function() {
-        // XAC._depth = XAC.clamp(XAC._depth + 0.1, -0.01, 1.01);
-        // MEDLEY._embeddables.last().setDepth(XAC._depth);
-        XAC._width = XAC.clamp(XAC._width + 0.1, 0, 1);
-        MEDLEY._embeddables.last().setWidth(XAC._width, true);
-    });
-    XAC.on(XAC.RIGHTARROW, function() {
-        XAC._thickness += 0.2;
-        MEDLEY._embeddables.last().setThickness(XAC._thickness);
-    });
-    // XXX
+    embeddable._generate23dGeometry();
 };
 
 //
