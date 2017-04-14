@@ -16,9 +16,12 @@ MEDLEY.Embeddable = function(matobj) {
     if (matobj != undefined) {
         this._matobj = matobj;
         this._dim = matobj.dim;
-        this._thickness = matobj.thickness;
+        this.DEPTHEPS = 0.01;
+        this._depthRatio = -this.DEPTHEPS;
+        this._thicknessRatio = 0.1;
         this._mesh = undefined;
         this._baseWidth = 5; // starting width for a cross sectional selection
+        this._baseThickness = matobj.thickness;
 
         switch (this._dim) {
             case 1:
@@ -42,6 +45,7 @@ MEDLEY.Embeddable.prototype = {
 //
 //
 MEDLEY.Embeddable.prototype.setDepth = function(d) {
+    d = -this.DEPTHEPS + (1 + 2 * this.DEPTHEPS) * d;
     switch (this._dim) {
         case 1:
             var points = [];
@@ -54,7 +58,7 @@ MEDLEY.Embeddable.prototype.setDepth = function(d) {
         case 2:
         case 3:
             this._generate23dGeometry({
-                depth: d
+                depthRatio: d
             });
             break;
 
@@ -65,6 +69,8 @@ MEDLEY.Embeddable.prototype.setDepth = function(d) {
 //
 //
 MEDLEY.Embeddable.prototype.setThickness = function(t) {
+    var eps = this.DEPTHEPS * 3;
+    t += eps;
     switch (this._dim) {
         case 1:
             break;
@@ -72,7 +78,7 @@ MEDLEY.Embeddable.prototype.setThickness = function(t) {
             break;
         case 3:
             this._generate23dGeometry({
-                thickness: t
+                thicknessRatio: t
             });
             break;
     }
@@ -91,10 +97,10 @@ MEDLEY.Embeddable.prototype.setWidth = function(w, isLite) {
             if (this._placementInfo != undefined) {
                 var widthCrossSection = this._baseWidth + w * this._placementInfo._widthRange;
                 XAC.scene.remove(this._liteElements);
-                // if (!isLite) {
                 XAC.scene.remove(this._meshes);
                 this._meshes = undefined;
-                // }
+                this._facesInner = undefined;
+                this._facesOuter = undefined;
                 this._liteElements = MEDLEY._init2dXsecPlacement(this, this._placementInfo,
                     widthCrossSection, isLite);
             }
@@ -105,7 +111,7 @@ MEDLEY.Embeddable.prototype.setWidth = function(w, isLite) {
 //
 //
 //
-MEDLEY.Embeddable.prototype._generate1dGeometry = function(points, controls) {
+MEDLEY.Embeddable.prototype._generate1dGeometry = function(points) {
     if (this._mesh == undefined) {
         this._mesh = [];
         for (var i = 0; i < points.length - 1; i++) {
@@ -127,8 +133,8 @@ MEDLEY.Embeddable.prototype._generate1dGeometry = function(points, controls) {
 //
 MEDLEY.Embeddable.prototype._generate23dGeometry = function(params) {
     if (params != undefined) {
-        this._depth = params.depth || this._depth;
-        this._thickness = params.thickness || this._thickness;
+        this._depthRatio = params.depthRatio || this._depthRatio;
+        this._thicknessRatio = params.thicknessRatio || this._thicknessRatio;
     }
 
     this._facesOuter = this._facesOuter || [];
@@ -137,14 +143,20 @@ MEDLEY.Embeddable.prototype._generate23dGeometry = function(params) {
         var verticesOuter = this._facesOuter[i] || [];
         var verticesInner = this._facesInner[i] || [];
         for (var j = 0; j < this._faces0[i].length; j++) {
-            var vcenter = this._faces0[i][j].clone().multiplyScalar(1 - this._depth)
-                .add(this._faces1[i][j].clone().multiplyScalar(this._depth));
+            var vcenter = this._faces0[i][j].clone().multiplyScalar(1 - this._depthRatio)
+                .add(this._faces1[i][j].clone().multiplyScalar(this._depthRatio));
 
-            var halfThickness = this._faces1[i][j].clone().sub(this._faces0[i][j])
-                .normalize().multiplyScalar(this._thickness / 2);
+            var vrange = this._faces1[i][j].clone().sub(this._faces0[i][j]);
+            var vthickness;
+            if (this._dim == 2) {
+                vthickness = vrange.clone().normalize().multiplyScalar(this._baseThickness);
+            } else if (this._dim == 3) {
+                vthickness = vrange.clone().multiplyScalar(this._thicknessRatio);
+            }
 
-            var vouter = vcenter.clone().sub(halfThickness);
-            var vinner = vcenter.clone().add(halfThickness);
+            var centerRatio = vcenter.clone().sub(this._faces0[i][j]).length() / vrange.length();
+            var vouter = vcenter.clone().sub(vthickness.clone().multiplyScalar(centerRatio));
+            var vinner = vcenter.clone().add(vthickness.clone().multiplyScalar(1 - centerRatio));
             if (verticesOuter.length <= j) {
                 verticesOuter.push(vouter);
                 verticesInner.push(vinner);
