@@ -33,9 +33,14 @@ MEDLEY.initPlacementWithPainting = function(info) {
         info.points.remove(p);
     }
 
-
+    // compute summary info about user input
     var diagnal = info.maxPoint.distanceTo(info.minPoint);
     var centerPlane = new THREE.Vector3().addVectors(info.minPoint, info.maxPoint).divideScalar(2);
+    info.normal = new THREE.Vector3();
+    for(nml of info.normals) {
+        info.normal.add(nml);
+    }
+    info.normal.divideScalar(info.normals.length);
 
     // find cross plane
     info.paramsCross = XAC.findPlaneToFitPoints(info.points);
@@ -48,7 +53,7 @@ MEDLEY.initPlacementWithPainting = function(info) {
     }
     info.paramsNormal = XAC.findPlaneToFitPoints(info.points.concat(pointsExtended));
 
-
+    // sampling based on material's dimension
     if (MEDLEY._matobjSelected != undefined) {
         var embeddable = new MEDLEY.Embeddable(MEDLEY._matobjSelected);
         // embeddable.generateGeometry(info);
@@ -79,6 +84,18 @@ MEDLEY.initPlacementWithPainting = function(info) {
         }
 
         MEDLEY._embeddables.push(embeddable);
+
+        // XXX
+        MEDLEY._sldrDepth.slider({
+            value: MEDLEY._sldrDepth.slider("option", "min")
+        });
+        MEDLEY._sldrThickness.slider({
+            value: MEDLEY._sldrThickness.slider("option", "min")
+        });
+        MEDLEY._sldrWidth.slider({
+            value: MEDLEY._sldrWidth.slider("option", "min")
+        });
+        // XXX
     }
 
     // reset sidedness of object
@@ -311,10 +328,10 @@ MEDLEY._init2dPatchPlacement = function(embeddable, info) {
                 console.assert(triangulation.length > 0, 'triangulation failed');
                 if (triangulation.length == 0) continue;
 
-                if (triangulation.length / 3 != face.points.length - 2) {
-                    color = 0xffff00; // XXX
-                    __debugFace(face);
-                }
+                // if (triangulation.length / 3 != face.points.length - 2) {
+                //     color = 0xffff00; // XXX
+                //     __debugFace(face);
+                // }
 
                 for (var j = 0; j + 2 < triangulation.length; j += 3) {
                     var va = face.points[triangulation[j]],
@@ -344,8 +361,13 @@ MEDLEY._init2dPatchPlacement = function(embeddable, info) {
     embeddable._faces0 = facesRemeshed.clone();
     embeddable._faces1 = [];
 
+    // HACK
     var rayCaster = new THREE.Raycaster();
     var nml = nmlCrossPlane.clone().multiplyScalar(-1).normalize();
+    if(nml.dot(info.normal) > 0) {
+        nml.multiplyScalar(-1);
+    }
+
     var voffset = embeddable._faces0[0][0].clone().add(nml.clone().multiplyScalar(0.01));
     rayCaster.ray.set(voffset, nml);
     var hits = rayCaster.intersectObjects([info.object]);
@@ -402,7 +424,6 @@ MEDLEY._init2dXsecPlacement = function(embeddable, info, width, isLite) {
     //
     //  fit selection stroke to a circle
     //
-    time();
     var fitInfo = XAC.fitCircle(projPoints);
     // log(info.footprint / (2 * Math.PI * fitInfo.r));
     var fitCenter = new THREE.Vector3(fitInfo.x0, fitInfo.y0, projPoints[0].z);
@@ -412,7 +433,6 @@ MEDLEY._init2dXsecPlacement = function(embeddable, info, width, isLite) {
     if (info.footprint / (2 * Math.PI * fitInfo.r) < minCircleCoverage) {
         fitCenter = undefined;
     }
-    time('[2d xsec] fitting circle');
 
     // [internal helper] debug problematic faces
     var __debugFace = function(face, points) {
@@ -599,6 +619,7 @@ MEDLEY._init2dXsecPlacement = function(embeddable, info, width, isLite) {
 
 
     var rayCaster = new THREE.Raycaster();
+    var projCenter = nmlCrossPlane.dot(centroidRemeshed);
 
     // find out the valid range to get cross section
     // also give embeddable access to selection info for future re-selection
@@ -608,34 +629,46 @@ MEDLEY._init2dXsecPlacement = function(embeddable, info, width, isLite) {
         materialBbox.side = THREE.DoubleSide;
         var bbox = XAC.getBoundingBoxMesh(info.object, materialBbox);
         bbox.geometry.applyMatrix(info.object.matrixWorld);
-        // XAC.scene.add(bbox);
 
         var projRange = XAC.getRangeOfPointsOnAxis(gettg(bbox).vertices, nmlCrossPlane);
-        var projCenter = nmlCrossPlane.dot(centroidRemeshed);
 
+        var margin = 0.1;
         embeddable._placementInfo._widthRange = Math.max(0, Math.min(projCenter - projRange[0],
-            projRange[1] - projCenter) * 2 - embeddable._baseWidth);
+            projRange[1] - projCenter) * (2 - margin) - embeddable._baseWidth);
 
+        log([projCenter - projRange[0], projRange[1] - projCenter])
         log('valid width range: ' + embeddable._placementInfo._widthRange)
     }
 
     // finding control points for morphing selected faces
-    for (vs of facesRemeshed) {
+    var toRemove = [];
+    for (vs of embeddable._faces0) {
         var vertices1 = [];
         for (v of vs) {
-            // var nml = centroidRemeshed.clone().sub(v).normalize();
-            var nml = v.clone().sub(centroidRemeshed).normalize();
+            var proj = centroidRemeshed.clone().add(nmlCrossPlane.clone().normalize().multiplyScalar(
+                nmlCrossPlane.dot(v) - projCenter));
+            var nml = v.clone().sub(proj).normalize();
             var voffset = v.clone().add(nml.clone().multiplyScalar(0.01));
-            // rayCaster.ray.set(voffset, nml);
-            rayCaster.ray.set(centroidRemeshed, nml);
+            rayCaster.ray.set(proj, nml);
             var hits = rayCaster.intersectObjects([info.object]);
 
             if (hits.length > 0) {
                 vertices1.push(hits[0].point);
+            } else {
+                toRemove.push(vs);
+                vertices1 = [];
+                break;
             }
         }
         if (vertices1.length > 0) embeddable._faces1.push(vertices1);
     }
+
+    for (vs of toRemove) {
+        embeddable._faces0.remove(vs);
+    }
+
+    console.assert(embeddable._faces0.length == embeddable._faces1.length,
+        'control faces don\'t match!');
 
     embeddable._generate23dGeometry();
 };
