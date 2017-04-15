@@ -22,7 +22,7 @@ var GRIDCOLOR = 0x888888;
 var COLORNORMAL = 0xDB5B8A; // the normal color
 var COLORCONTRAST = 0xD1D6E7; // is the contrast of the COLORNORMAL
 
-var WIDTHPANEL = 388;
+var WIDTHPANEL = 320;
 
 var MATERIALNORMAL = new THREE.MeshPhongMaterial({
     color: COLORNORMAL,

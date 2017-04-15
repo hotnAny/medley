@@ -20,7 +20,7 @@ var COLORFOCUS = 0xE82C0C; // color to really draw users' focus
 XAC.MATERIALNORMAL = new THREE.MeshPhongMaterial({
 	color: COLORNORMAL,
 	transparent: true,
-	opacity: 0.75,
+	opacity: 0.5,
 	// side: THREE.DoubleSide
 });
 
@@ -44,9 +44,9 @@ XAC.MATERIALFOCUS = new THREE.MeshPhongMaterial({
 });
 
 XAC.MATERIALINVISIBLE = new THREE.MeshPhongMaterial({
-	color: 0xffffff,
+	color: 0x000000,
 	transparent: true,
-	opacity: 0
+	opacity: 0.2
 });
 
 XAC.Thing = function(m) {

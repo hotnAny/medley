@@ -18,8 +18,6 @@ $(document).ready(function() {
     // 	side: THREE.DoubleSide
     // });
 
-    log(!(undefined))
-
 });
 
 function onStlLoaded(object) {
@@ -81,17 +79,34 @@ function onStlLoaded(object) {
     //
     // input
     object.inputTechniques = [];
-    object.selectable(true, function(object) {
-        object.material.opacity /= 2;
-        // object.material.color = 0xcccccc;
-        // object.material.needsUpdate = true;
-    }, function(object) {
-        object.material.opacity *= 2;
-        // object.material.color = 0x888888;
-        // object.material.needsUpdate = true;
-    });
+    // object.selectable(true, function(object) {
+    //     object.material.opacity /= 2;
+    //     // object.material.color = 0xcccccc;
+    //     // object.material.needsUpdate = true;
+    // }, function(object) {
+    //     object.material.opacity *= 2;
+    //     // object.material.color = 0x888888;
+    //     // object.material.needsUpdate = true;
+    // });
 
     var paintInput = new MEDLEY.PaintInput(XAC.scene);
     object.inputTechniques.push(paintInput);
     paintInput.addSubscriber(MEDLEY.initPlacementWithPainting);
+
+    XAC.on('1', function() {
+        MEDLEY._matobjSelected.dim = 1;
+    });
+    XAC.on('2', function() {
+        MEDLEY._matobjSelected.dim = 2;
+    });
+    XAC.on('3', function() {
+        MEDLEY._matobjSelected.dim = 3;
+    });
+
+    // XAC.on('Z', function() {
+    //     var embeddable = MEDLEY._embeddables.pop();
+    //     if (embeddable != undefined) {
+    //         embeddable.cleanUp();
+    //     }
+    // });
 }
