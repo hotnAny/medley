@@ -48,6 +48,7 @@ XAC._updateFootprint = function(x, y) {
 }
 
 XAC.mousedown = function(e) {
+    if (e.target.nodeName != 'CANVAS') return;
     XAC._updateFootprint();
     XAC._dispatchInputEvents(e, XAC.MOUSEDOWN);
 };
