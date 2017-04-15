@@ -30,6 +30,8 @@ $(document).ready(function() {
 
     XAC.initPanel();
 
+    XAC.ignoreMouseFromPanel = true;
+
     // XXX
     var tblSliders = $('<table class="ui-widget tbwidgets"></table>');
     MEDLEY._sldrDepth = XAC.makeSlider('sldr_depth', 'Depth', 0, 100, 0, tblSliders);
