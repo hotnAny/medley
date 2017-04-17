@@ -99,23 +99,25 @@ XAC._dispatchInputEvents = function(e, type) {
     }
 
     // select or de-select objects
-    var tempSelecteds = XAC._selecteds.clone();
-    for (object of tempSelecteds) {
-        switch (type) {
-            case XAC.MOUSEUP:
-                if (e.which == LEFTMOUSE && XAC._footprint < 25) {
-                    if (hit.object._selectable) {
-                        if (hit.object._selected) {
-                            if (hit.object._onDeselected) hit.object._onDeselected(hit.object);
+    switch (type) {
+        case XAC.MOUSEUP:
+            var tempSelecteds = XAC._selecteds.clone();
+            log(tempSelecteds);
+            for (object of tempSelecteds) {
+                if (e.which == LEFTMOUSE && XAC._footprint < 50) {
+                    if (object._selectable) {
+                        if (object._selected) {
+                            if (object._onDeselected) object._onDeselected();
                             XAC._selecteds.remove(object);
+                            object._selected = false;
                         } else {
-                            if (hit.object._onSelected) hit.object._onSelected(hit.object);
+                            if (object._onSelected) object._onSelected();
+                            object._selected = true;
                         }
-                        hit.object._selected = !hit.object._selected;
                     }
                 }
-                break;
-        }
+            }
+            break;
     }
 
     // objects currently being manipulated
@@ -129,8 +131,9 @@ XAC._dispatchInputEvents = function(e, type) {
                     }
                 }
 
-                if (XAC._selecteds.indexOf(hit.object) < 0)
-                    XAC._selecteds.push(hit.object);
+                var hitObject = hit.object.object3d || hit.object;
+                if (XAC._selecteds.indexOf(hitObject) < 0)
+                    XAC._selecteds.push(hitObject);
 
                 break;
             case XAC.MOUSEMOVE:
@@ -147,20 +150,22 @@ XAC._dispatchInputEvents = function(e, type) {
         }
 
         // input techniques
-        for (technique of hit.object.inputTechniques) {
-            switch (type) {
-                case XAC.MOUSEDOWN:
-                    if (technique.mousedown(e, hit) == false) {
+        if (hit.object.inputTechniques != undefined) {
+            for (technique of hit.object.inputTechniques) {
+                switch (type) {
+                    case XAC.MOUSEDOWN:
+                        if (technique.mousedown(e, hit) == false) {
+                            XAC._activeHits.remove(hit);
+                        }
+                        break;
+                    case XAC.MOUSEMOVE:
+                        technique.mousemove(e, hit);
+                        break;
+                    case XAC.MOUSEUP:
+                        technique.mouseup(e, hit);
                         XAC._activeHits.remove(hit);
-                    }
-                    break;
-                case XAC.MOUSEMOVE:
-                    technique.mousemove(e, hit);
-                    break;
-                case XAC.MOUSEUP:
-                    technique.mouseup(e, hit);
-                    XAC._activeHits.remove(hit);
-                    break;
+                        break;
+                }
             }
         }
     }

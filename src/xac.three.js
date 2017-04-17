@@ -187,6 +187,18 @@ THREE.Mesh.prototype.selectable = function(flag, onSelected, onDeselected) {
     this._selectionLocked = false;
 }
 
+THREE.Object3D.prototype.selectable = function(flag, onSelected, onDeselected) {
+    this._selectable = flag;
+    this._onSelected = onSelected;
+    this._onDeselected = onDeselected;
+    this._selected = false;
+    this._selectionLocked = false;
+
+    for(mesh of this.children) {
+        mesh.selectable(flag, onSelected, onDeselected);
+    }
+}
+
 //
 //
 //
@@ -195,20 +207,19 @@ THREE.Geometry.prototype.removeRedundantFaces = function() {
     var __areRedundant = function(_vs, _us) {
         var vs = _vs.clone();
         var us = _us.clone();
-        for(v of vs) {
-            for(u of us) {
-                if(v.distanceTo(u)<eps) {
+        for (v of vs) {
+            for (u of us) {
+                if (v.distanceTo(u) < eps) {
                     us.remove(u);
                     break;
                 }
             }
         }
-
         return us.length == 0;
     }
     var toRemove = [];
     for (f of this.faces) {
-        if(f._removed) continue;
+        if (f._removed) continue;
         if (f.vertices == undefined) this.assignVerticesToFaces();
         for (ff of this.faces) {
             if (ff._removed || f == ff) continue;
@@ -219,7 +230,7 @@ THREE.Geometry.prototype.removeRedundantFaces = function() {
         }
     }
 
-    for(f of toRemove) {
+    for (f of toRemove) {
         this.faces.remove(f);
     }
 
