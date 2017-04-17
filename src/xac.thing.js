@@ -35,12 +35,14 @@ XAC.MATERIALHIGHLIGHT = new THREE.MeshPhongMaterial({
 	// transparent: true,
 	// wireframe: true,
 	opacity: 1,
+	side: THREE.DoubleSide
 });
 
 XAC.MATERIALFOCUS = new THREE.MeshPhongMaterial({
 	color: COLORFOCUS,
-	transparent: true,
-	opacity: 0.95
+	// transparent: true,
+	opacity: 1,
+	side: THREE.DoubleSide
 });
 
 XAC.MATERIALINVISIBLE = new THREE.MeshPhongMaterial({
