@@ -164,12 +164,13 @@ THREE.Mesh.prototype.on = function(cue, handler) {
             // TODO
             break;
         default:
+            this.keydowns = this.keydowns || {};
             if (typeof(cue) == 'string') {
                 var key = cue.charCodeAt(0);
-                this.keydowns = this.keydowns || {};
                 this.keydowns[key] = handler;
             } else {
                 // TODO: handle direct keycode
+                this.keydowns[cue] = handler;
             }
             break;
     }
@@ -194,7 +195,7 @@ THREE.Object3D.prototype.selectable = function(flag, onSelected, onDeselected) {
     this._selected = false;
     this._selectionLocked = false;
 
-    for(mesh of this.children) {
+    for (mesh of this.children) {
         mesh.selectable(flag, onSelected, onDeselected);
     }
 }

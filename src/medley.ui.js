@@ -40,9 +40,6 @@ $(document).ready(function() {
             var max = $(event.target).slider("option", "max");
             var value = ui.value * 1.0 / max;
 
-            // for (embeddable of MEDLEY._activeEmbeddables) {
-            //     embeddable.setDepth(value);
-            // }
             for (object of XAC._selecteds) {
                 if (object.embeddable != undefined) object.embeddable.setDepth(value);
             }
@@ -54,10 +51,6 @@ $(document).ready(function() {
         slide: function(event, ui) {
             var max = $(event.target).slider("option", "max");
             var value = ui.value * 1.0 / max;
-
-            // if(MEDLEY._embeddables.length > 0) {
-            //     MEDLEY._embeddables.last().setThickness(value);
-            // }
 
             for (object of XAC._selecteds) {
                 if (eobject.mbeddable != undefined) object.embeddable.setThickness(value);
@@ -85,6 +78,13 @@ $(document).ready(function() {
             }
         }
     });
+
+    // delete using keyboard
+    XAC.on(46, function() {
+        for (object of XAC._selecteds) {
+            if (object.embeddable != undefined) object.embeddable.selfDestroy();
+        }
+    });
+
     panel.append(tblSliders);
-    // XXX
 });

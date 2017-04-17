@@ -129,7 +129,6 @@ MEDLEY.Embeddable.prototype._generate1dGeometry = function(params) {
         XAC.scene.add(this._meshes);
 
         this._makeInteractive();
-        // MEDLEY._activeEmbeddables.push(this);
         this._meshes._selected = true;
         XAC._selecteds.push(this._meshes);
 
@@ -228,7 +227,6 @@ MEDLEY.Embeddable.prototype._generate23dGeometry = function(params) {
         XAC.scene.add(this._meshes);
 
         this._makeInteractive();
-        // MEDLEY._activeEmbeddables.push(this);
         this._meshes._selected = true;
         XAC._selecteds.push(this._meshes);
     } else {
@@ -258,32 +256,14 @@ MEDLEY.Embeddable.prototype._generateSurface = function(faces) {
     var material = XAC.MATERIALHIGHLIGHT.clone();
     var mesh = new THREE.Mesh(geometry, this._material.clone());
 
-    // create octree
-    // var octree = new THREE.Octree({
-    //     undeferred: true,
-    //     depthMax: Infinity,
-    //     objectsThreshold: 8,
-    // });
-    // octree.add(mesh, {
-    //     useFaces: true
-    // });
-    // octree.update();
-    // octree.setVisibility(false);
-
-    // find boundary points
-    // var __hasRedundancy = function(us, v) {
-    //     var eps = 10e-3;
-    //     for (u of us) {
-    //         if (u.distanceTo(v) < eps) return true;
-    //     }
-    //     return false;
-    // };
-
     return {
         mesh: mesh
     };
 }
 
+//
+//
+//
 MEDLEY.Embeddable.prototype._makeInteractive = function() {
     this._meshes.embeddable = this;
     for (mesh of this._meshes.children) {
@@ -292,7 +272,6 @@ MEDLEY.Embeddable.prototype._makeInteractive = function() {
     }
 
     this._meshes.selectable(true, function() {
-        // MEDLEY._activeEmbeddables.push(this.embeddable);
         for (mesh of this.children) {
             mesh.material.color.setHex(COLORHIGHLIGHT);
             mesh.material.needsUpdate = true;
@@ -300,17 +279,22 @@ MEDLEY.Embeddable.prototype._makeInteractive = function() {
         MEDLEY._sldrDepth.slider('value',
             this.embeddable._depthRatio * MEDLEY._sldrDepth.slider('option', 'max'));
         MEDLEY._sldrThickness.slider('value',
-            this.embeddable._thicknessRatio * MEDLEY._sldrThickness.slider('option', 'max'));
+            this.embeddable._thicknessRatio * MEDLEY._sldrThickness.slider('option', 'max')
+        );
         MEDLEY._sldrWidth.slider('value',
             this.embeddable._widthRatio * MEDLEY._sldrWidth.slider('option', 'max'));
     }, function() {
-        // MEDLEY._activeEmbeddables.remove(this.embeddable);
         for (mesh of this.children) {
             mesh.material.color.setHex(COLORCONTRAST);
             mesh.material.needsUpdate = true;
         }
-        // log('deselected')
     });
+}
 
-
+//
+//
+//
+MEDLEY.Embeddable.prototype.selfDestroy = function() {
+    MEDLEY._embeddables.remove(this);
+    XAC.scene.remove(this._meshes);
 }
