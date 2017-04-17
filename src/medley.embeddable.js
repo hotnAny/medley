@@ -20,7 +20,7 @@ MEDLEY.Embeddable = function(matobj) {
 
     this.DEPTHEPS = 0.01; // small depth pertubation to avoid z fighting
     this._depthRatio = -this.DEPTHEPS;
-    this._thicknessRatio = 0.1; // starting thickness ratio for 3d embeddable
+    this._thicknessRatio = 0; // starting thickness ratio for 3d embeddable
     this._baseThickness = matobj.thickness; // starting width for xsec embeddable
     this._baseWidth = 5; // starting width for a cross sectional selection
     this._widthRatio = 0;
@@ -129,7 +129,7 @@ MEDLEY.Embeddable.prototype._generate1dGeometry = function(params) {
         XAC.scene.add(this._meshes);
 
         this._makeInteractive();
-        MEDLEY._activeEmbeddables.push(this);
+        // MEDLEY._activeEmbeddables.push(this);
         this._meshes._selected = true;
         XAC._selecteds.push(this._meshes);
 
@@ -228,7 +228,7 @@ MEDLEY.Embeddable.prototype._generate23dGeometry = function(params) {
         XAC.scene.add(this._meshes);
 
         this._makeInteractive();
-        MEDLEY._activeEmbeddables.push(this);
+        // MEDLEY._activeEmbeddables.push(this);
         this._meshes._selected = true;
         XAC._selecteds.push(this._meshes);
     } else {
@@ -256,29 +256,28 @@ MEDLEY.Embeddable.prototype._generateSurface = function(faces) {
     geometry.computeCentroids();
     geometry.assignVerticesToFaces();
     var material = XAC.MATERIALHIGHLIGHT.clone();
-    // material.side = THREE.DoubleSide;
     var mesh = new THREE.Mesh(geometry, this._material.clone());
 
     // create octree
-    var octree = new THREE.Octree({
-        undeferred: true,
-        depthMax: Infinity,
-        objectsThreshold: 8,
-    });
-    octree.add(mesh, {
-        useFaces: true
-    });
-    octree.update();
-    octree.setVisibility(false);
+    // var octree = new THREE.Octree({
+    //     undeferred: true,
+    //     depthMax: Infinity,
+    //     objectsThreshold: 8,
+    // });
+    // octree.add(mesh, {
+    //     useFaces: true
+    // });
+    // octree.update();
+    // octree.setVisibility(false);
 
     // find boundary points
-    var __hasRedundancy = function(us, v) {
-        var eps = 10e-3;
-        for (u of us) {
-            if (u.distanceTo(v) < eps) return true;
-        }
-        return false;
-    };
+    // var __hasRedundancy = function(us, v) {
+    //     var eps = 10e-3;
+    //     for (u of us) {
+    //         if (u.distanceTo(v) < eps) return true;
+    //     }
+    //     return false;
+    // };
 
     return {
         mesh: mesh
@@ -293,14 +292,19 @@ MEDLEY.Embeddable.prototype._makeInteractive = function() {
     }
 
     this._meshes.selectable(true, function() {
-        MEDLEY._activeEmbeddables.push(this.embeddable);
+        // MEDLEY._activeEmbeddables.push(this.embeddable);
         for (mesh of this.children) {
             mesh.material.color.setHex(COLORHIGHLIGHT);
             mesh.material.needsUpdate = true;
         }
-        // log('selected')
+        MEDLEY._sldrDepth.slider('value',
+            this.embeddable._depthRatio * MEDLEY._sldrDepth.slider('option', 'max'));
+        MEDLEY._sldrThickness.slider('value',
+            this.embeddable._thicknessRatio * MEDLEY._sldrThickness.slider('option', 'max'));
+        MEDLEY._sldrWidth.slider('value',
+            this.embeddable._widthRatio * MEDLEY._sldrWidth.slider('option', 'max'));
     }, function() {
-        MEDLEY._activeEmbeddables.remove(this.embeddable);
+        // MEDLEY._activeEmbeddables.remove(this.embeddable);
         for (mesh of this.children) {
             mesh.material.color.setHex(COLORCONTRAST);
             mesh.material.needsUpdate = true;

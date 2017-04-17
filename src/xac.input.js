@@ -24,7 +24,6 @@ XAC.DOWNARROW = 40;
 XAC.keydowns = {};
 
 XAC._selecteds = [];
-// XAC.inputTechniques = {};
 XAC.mousedownEventHandlers = {};
 
 //
@@ -105,7 +104,7 @@ XAC._dispatchInputEvents = function(e, type) {
             for (object of tempSelecteds) {
                 if (e.which == LEFTMOUSE && XAC._footprint < 50) {
                     if (object._selectable) {
-                        if (object._selected) {
+                        if (object._selected && !e.shiftKey) {
                             if (object._onDeselected) object._onDeselected();
                             XAC._selecteds.remove(object);
                             object._selected = false;

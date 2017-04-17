@@ -56,7 +56,14 @@ MEDLEY.initPlacementWithPainting = function(info) {
     // sampling based on material's dimension
     if (MEDLEY._matobjSelected != undefined) {
         var embeddable = new MEDLEY.Embeddable(MEDLEY._matobjSelected);
-        // embeddable.generateGeometry(info);
+
+        // remove all active embeddables to focus on this new one
+        for(object of XAC._selecteds) {
+            if(object._onDeselected) {
+                object._onDeselected();
+            }
+        }
+
         switch (embeddable._dim) {
             case 0:
                 // TODO: dim=0 placement

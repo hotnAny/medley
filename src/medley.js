@@ -9,4 +9,4 @@
 var MEDLEY = MEDLEY || {};
 
 MEDLEY._embeddables = [];
-MEDLEY._activeEmbeddables = [];
+// MEDLEY._activeEmbeddables = [];
