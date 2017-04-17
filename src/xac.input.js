@@ -102,7 +102,6 @@ XAC._dispatchInputEvents = function(e, type) {
     switch (type) {
         case XAC.MOUSEUP:
             var tempSelecteds = XAC._selecteds.clone();
-            log(tempSelecteds);
             for (object of tempSelecteds) {
                 if (e.which == LEFTMOUSE && XAC._footprint < 50) {
                     if (object._selectable) {
