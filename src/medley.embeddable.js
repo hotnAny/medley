@@ -16,24 +16,23 @@ MEDLEY.Embeddable = function(matobj) {
     if (matobj != undefined) {
         this._matobj = matobj;
         this._dim = matobj.dim;
-        this.DEPTHEPS = 0.01;
+        this.DEPTHEPS = 0.01; // small depth pertubation to avoid z fighting
         this._depthRatio = -this.DEPTHEPS;
-        this._thicknessRatio = 0.1;
-        this._mesh = undefined;
+        this._thicknessRatio = 0.1; // starting thickness ratio for 3d embeddable
         this._baseWidth = 5; // starting width for a cross sectional selection
-        this._baseThickness = matobj.thickness;
+        this._baseThickness = matobj.thickness; // starting width for xsec embeddable
 
-        switch (this._dim) {
-            case 1:
-                this.generateGeometry = this._generate1dGeometry;
-                break;
-            case 2:
-                // not able to decide yet
-                break;
-            case 3:
-                // not able to decide yet
-                break;
-        }
+        // switch (this._dim) {
+        //     case 1:
+        //         this.generateGeometry = this._generate1dGeometry;
+        //         break;
+        //     case 2:
+        //         // not able to decide yet
+        //         break;
+        //     case 3:
+        //         // not able to decide yet
+        //         break;
+        // }
     }
 };
 
@@ -42,7 +41,8 @@ MEDLEY.Embeddable.prototype = {
 };
 
 //
-//
+//  set the depth of an embeddable (into the object)
+//   - d: [0, 1] interpolate between control points/faces
 //
 MEDLEY.Embeddable.prototype.setDepth = function(d) {
     d = -this.DEPTHEPS + (1 + 2 * this.DEPTHEPS) * d;
@@ -50,8 +50,8 @@ MEDLEY.Embeddable.prototype.setDepth = function(d) {
         case 1:
             var points = [];
             for (var i = 0; i < this.points0.length; i++) {
-                points.push(this.points0[i].clone().multiplyScalar(1 - t)
-                    .add(this.points1[i].clone().multiplyScalar(t)));
+                points.push(this.points0[i].clone().multiplyScalar(1 - d)
+                    .add(this.points1[i].clone().multiplyScalar(d)));
             }
             this._generate1dGeometry(points);
             break;
@@ -66,7 +66,8 @@ MEDLEY.Embeddable.prototype.setDepth = function(d) {
 }
 
 //
-//
+//  set the thickness of an embeddable
+//  - t: [0, 1] interpolate between min thickness and (maxDepth-minDepth)
 //
 MEDLEY.Embeddable.prototype.setThickness = function(t) {
     var eps = this.DEPTHEPS * 3;
@@ -85,7 +86,8 @@ MEDLEY.Embeddable.prototype.setThickness = function(t) {
 }
 
 //
-//
+//  set the width of an embeddable
+//  - w: [0, 1] ranging between base width and maximum width
 //
 MEDLEY.Embeddable.prototype.setWidth = function(w, isLite) {
     switch (this._dim) {
@@ -109,27 +111,34 @@ MEDLEY.Embeddable.prototype.setWidth = function(w, isLite) {
 }
 
 //
-//
+//  generate 1d geometry - segments of cylinders
+//  - points: points of the line segments
 //
 MEDLEY.Embeddable.prototype._generate1dGeometry = function(points) {
-    if (this._mesh == undefined) {
-        this._mesh = [];
+    if (this._meshes == undefined) {
+        this._meshes = new THREE.Object3D();
+        this._segments = [];
         for (var i = 0; i < points.length - 1; i++) {
             var segment = new XAC.ThickLine(points[i], points[i + 1], this._matobj
-                .radius, XAC.MATERIALHIGHLIGHT);
-            this._mesh.push(segment);
-            XAC.scene.add(segment.m);
+                .radius, XAC.MATERIALHIGHLIGHT.clone());
+            this._meshes.add(segment.m);
+            this._segments.push(segment);
         }
+        XAC.scene.add(this._meshes);
+
+        this._makeInteractive();
+
     } else {
         for (var i = 0; i < points.length - 1; i++) {
-            var segment = this._mesh[i];
+            var segment = this._segments[i];
             segment.update(points[i], points[i + 1], this._matobj.radius);
         }
     }
 };
 
 //
-//
+//  generate 2 or 3d geometry - segments of cylinders
+//  - params: depthRatio and/or thicknessRatio to control depth and thickness
 //
 MEDLEY.Embeddable.prototype._generate23dGeometry = function(params) {
     if (params != undefined) {
@@ -174,9 +183,8 @@ MEDLEY.Embeddable.prototype._generate23dGeometry = function(params) {
 
     if (this._meshes == undefined) {
         // create the two sides of embeddable geometry
-        var infoInner = this._makeSide(this._facesInner);
-        var infoOuter = this._makeSide(this._facesOuter);
-        // time('[generate embeddable geometry] created two sides');
+        var infoInner = this._generateSurface(this._facesInner);
+        var infoOuter = this._generateSurface(this._facesOuter);
 
         // stitch the two sides together
         var geometry = new THREE.Geometry();
@@ -205,9 +213,7 @@ MEDLEY.Embeddable.prototype._generate23dGeometry = function(params) {
         geometry.computeFaceNormals();
         geometry.computeCentroids();
         var material = XAC.MATERIALHIGHLIGHT.clone();
-        material.side = THREE.DoubleSide;
         var meshLateral = new THREE.Mesh(geometry, material);
-        // time('[generate embeddable geometry] stitched the two sides together');
 
         // aggregating everything
         this._meshes = new THREE.Object3D();
@@ -216,6 +222,8 @@ MEDLEY.Embeddable.prototype._generate23dGeometry = function(params) {
         this._meshes.add(meshLateral);
 
         XAC.scene.add(this._meshes);
+
+        this._makeInteractive();
     } else {
         for (mesh of this._meshes.children) {
             mesh.geometry.verticesNeedUpdate = true;
@@ -226,10 +234,9 @@ MEDLEY.Embeddable.prototype._generate23dGeometry = function(params) {
 
 
 //
+//  generate a surface given a set of face vertices
 //
-//
-MEDLEY.Embeddable.prototype._makeSide = function(faces) {
-    // time();
+MEDLEY.Embeddable.prototype._generateSurface = function(faces) {
     var geometry = new THREE.Geometry();
     var nvertices = 0;
     for (vertices of faces) {
@@ -242,9 +249,8 @@ MEDLEY.Embeddable.prototype._makeSide = function(faces) {
     geometry.computeCentroids();
     geometry.assignVerticesToFaces();
     var material = XAC.MATERIALHIGHLIGHT.clone();
-    material.side = THREE.DoubleSide;
+    // material.side = THREE.DoubleSide;
     var mesh = new THREE.Mesh(geometry, material);
-    // time('[_makeSide] made the side');
 
     // create octree
     var octree = new THREE.Octree({
@@ -257,7 +263,6 @@ MEDLEY.Embeddable.prototype._makeSide = function(faces) {
     });
     octree.update();
     octree.setVisibility(false);
-    // time('[_makeSide] built octree');
 
     // find boundary points
     var __hasRedundancy = function(us, v) {
@@ -268,10 +273,28 @@ MEDLEY.Embeddable.prototype._makeSide = function(faces) {
         return false;
     };
 
-    // var boundaryPoints = [];
-
     return {
-        mesh: mesh,
-        // boundaryPoints: boundaryPoints
+        mesh: mesh
     };
+}
+
+MEDLEY.Embeddable.prototype._makeInteractive = function() {
+    for (mesh of this._meshes.children) {
+        mesh.object3d = this._meshes;
+        XAC.objects.push(mesh);
+    }
+
+    this._meshes.selectable(true, function() {
+        for (mesh of this.children) {
+            mesh.material.color.setHex(COLORFOCUS); // opacity /= 2; //= XAC.MATERIALFOCUS.clone();
+            mesh.material.needsUpdate = true;
+        }
+        log('selected')
+    }, function() {
+        for (mesh of this.children) {
+            mesh.material.color.setHex(COLORHIGHLIGHT); // = XAC.MATERIALHIGHLIGHT.clone();
+            mesh.material.needsUpdate = true;
+        }
+        log('deselected')
+    });
 }
