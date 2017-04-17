@@ -16,24 +16,19 @@ MEDLEY.Embeddable = function(matobj) {
     if (matobj != undefined) {
         this._matobj = matobj;
         this._dim = matobj.dim;
-        this.DEPTHEPS = 0.01; // small depth pertubation to avoid z fighting
-        this._depthRatio = -this.DEPTHEPS;
-        this._thicknessRatio = 0.1; // starting thickness ratio for 3d embeddable
-        this._baseWidth = 5; // starting width for a cross sectional selection
-        this._baseThickness = matobj.thickness; // starting width for xsec embeddable
-
-        // switch (this._dim) {
-        //     case 1:
-        //         this.generateGeometry = this._generate1dGeometry;
-        //         break;
-        //     case 2:
-        //         // not able to decide yet
-        //         break;
-        //     case 3:
-        //         // not able to decide yet
-        //         break;
-        // }
     }
+
+    this.DEPTHEPS = 0.01; // small depth pertubation to avoid z fighting
+    this._depthRatio = -this.DEPTHEPS;
+    this._thicknessRatio = 0.1; // starting thickness ratio for 3d embeddable
+    this._baseThickness = matobj.thickness; // starting width for xsec embeddable
+    this._baseWidth = 5; // starting width for a cross sectional selection
+    this._widthRatio = 0;
+
+    this._material = XAC.MATERIALHIGHLIGHT.clone();
+    this._material.opacity = 1;
+    this._material.transparent = false;
+    this._material.side = THREE.DoubleSide;
 };
 
 MEDLEY.Embeddable.prototype = {
@@ -48,12 +43,9 @@ MEDLEY.Embeddable.prototype.setDepth = function(d) {
     d = -this.DEPTHEPS + (1 + 2 * this.DEPTHEPS) * d;
     switch (this._dim) {
         case 1:
-            var points = [];
-            for (var i = 0; i < this.points0.length; i++) {
-                points.push(this.points0[i].clone().multiplyScalar(1 - d)
-                    .add(this.points1[i].clone().multiplyScalar(d)));
-            }
-            this._generate1dGeometry(points);
+            this._generate1dGeometry({
+                depthRatio: d
+            });
             break;
         case 2:
         case 3:
@@ -105,6 +97,7 @@ MEDLEY.Embeddable.prototype.setWidth = function(w, isLite) {
                 this._facesOuter = undefined;
                 this._liteElements = MEDLEY._init2dXsecPlacement(this, this._placementInfo,
                     widthCrossSection, isLite);
+                this._widthRatio = w;
             }
             break;
     }
@@ -114,19 +107,31 @@ MEDLEY.Embeddable.prototype.setWidth = function(w, isLite) {
 //  generate 1d geometry - segments of cylinders
 //  - points: points of the line segments
 //
-MEDLEY.Embeddable.prototype._generate1dGeometry = function(points) {
+MEDLEY.Embeddable.prototype._generate1dGeometry = function(params) {
+    if (params != undefined) {
+        this._depthRatio = params.depthRatio || this._depthRatio;
+    }
+    var points = [];
+    for (var i = 0; i < this.points0.length; i++) {
+        points.push(this.points0[i].clone().multiplyScalar(1 - this._depthRatio)
+            .add(this.points1[i].clone().multiplyScalar(this._depthRatio)));
+    }
+
     if (this._meshes == undefined) {
         this._meshes = new THREE.Object3D();
         this._segments = [];
         for (var i = 0; i < points.length - 1; i++) {
             var segment = new XAC.ThickLine(points[i], points[i + 1], this._matobj
-                .radius, XAC.MATERIALHIGHLIGHT.clone());
+                .radius, this._material.clone());
             this._meshes.add(segment.m);
             this._segments.push(segment);
         }
         XAC.scene.add(this._meshes);
 
         this._makeInteractive();
+        MEDLEY._activeEmbeddables.push(this);
+        this._meshes._selected = true;
+        XAC._selecteds.push(this._meshes);
 
     } else {
         for (var i = 0; i < points.length - 1; i++) {
@@ -212,8 +217,7 @@ MEDLEY.Embeddable.prototype._generate23dGeometry = function(params) {
 
         geometry.computeFaceNormals();
         geometry.computeCentroids();
-        var material = XAC.MATERIALHIGHLIGHT.clone();
-        var meshLateral = new THREE.Mesh(geometry, material);
+        var meshLateral = new THREE.Mesh(geometry, this._material.clone());
 
         // aggregating everything
         this._meshes = new THREE.Object3D();
@@ -224,6 +228,9 @@ MEDLEY.Embeddable.prototype._generate23dGeometry = function(params) {
         XAC.scene.add(this._meshes);
 
         this._makeInteractive();
+        MEDLEY._activeEmbeddables.push(this);
+        this._meshes._selected = true;
+        XAC._selecteds.push(this._meshes);
     } else {
         for (mesh of this._meshes.children) {
             mesh.geometry.verticesNeedUpdate = true;
@@ -250,7 +257,7 @@ MEDLEY.Embeddable.prototype._generateSurface = function(faces) {
     geometry.assignVerticesToFaces();
     var material = XAC.MATERIALHIGHLIGHT.clone();
     // material.side = THREE.DoubleSide;
-    var mesh = new THREE.Mesh(geometry, material);
+    var mesh = new THREE.Mesh(geometry, this._material.clone());
 
     // create octree
     var octree = new THREE.Octree({
@@ -279,22 +286,27 @@ MEDLEY.Embeddable.prototype._generateSurface = function(faces) {
 }
 
 MEDLEY.Embeddable.prototype._makeInteractive = function() {
+    this._meshes.embeddable = this;
     for (mesh of this._meshes.children) {
         mesh.object3d = this._meshes;
         XAC.objects.push(mesh);
     }
 
     this._meshes.selectable(true, function() {
+        MEDLEY._activeEmbeddables.push(this.embeddable);
         for (mesh of this.children) {
-            mesh.material.color.setHex(COLORFOCUS); // opacity /= 2; //= XAC.MATERIALFOCUS.clone();
+            mesh.material.color.setHex(COLORHIGHLIGHT);
             mesh.material.needsUpdate = true;
         }
-        log('selected')
+        // log('selected')
     }, function() {
+        MEDLEY._activeEmbeddables.remove(this.embeddable);
         for (mesh of this.children) {
-            mesh.material.color.setHex(COLORHIGHLIGHT); // = XAC.MATERIALHIGHLIGHT.clone();
+            mesh.material.color.setHex(COLORCONTRAST);
             mesh.material.needsUpdate = true;
         }
-        log('deselected')
+        // log('deselected')
     });
+
+
 }
