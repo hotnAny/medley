@@ -95,18 +95,6 @@ MEDLEY.initPlacementWithPainting = function(info) {
         }
 
         MEDLEY._embeddables.push(embeddable);
-
-        // // XXX
-        // MEDLEY._sldrDepth.slider({
-        //     value: MEDLEY._sldrDepth.slider("option", "min")
-        // });
-        // MEDLEY._sldrThickness.slider({
-        //     value: MEDLEY._sldrThickness.slider("option", "min")
-        // });
-        // MEDLEY._sldrWidth.slider({
-        //     value: MEDLEY._sldrWidth.slider("option", "min")
-        // });
-        // // XXX
     }
 
     // reset sidedness of object
@@ -131,15 +119,6 @@ MEDLEY._init1dPlacement = function(embeddable, info) {
             embeddable.points1.push(hits[0].point);
         }
     }
-
-    // XXX
-    // XAC._depth = 0;
-    // embeddable.generateGeometry(embeddable.points0);
-    // XAC.on(XAC.UPARROW, function() {
-    //     XAC._depth = XAC.clamp(XAC._depth + 0.1, 0, 1);
-    //     MEDLEY._embeddables.last().setDepth(XAC._depth);
-    // });
-    // XXX
 
     embeddable._generate1dGeometry(embeddable.points0);
 }
@@ -386,6 +365,7 @@ MEDLEY._init2dPatchPlacement = function(embeddable, info) {
         nml = nml.multiplyScalar(-1);
     }
 
+    info.object.material.side = THREE.BackSide;
     for (vs of facesRemeshed) {
         var vertices1 = [];
         for (v of vs) {
@@ -646,8 +626,8 @@ MEDLEY._init2dXsecPlacement = function(embeddable, info, width, isLite) {
         embeddable._placementInfo._widthRange = Math.max(0, Math.min(projCenter - projRange[0],
             projRange[1] - projCenter) * (2 - margin) - embeddable._baseWidth);
 
-        log([projCenter - projRange[0], projRange[1] - projCenter])
-        log('valid width range: ' + embeddable._placementInfo._widthRange)
+        // log([projCenter - projRange[0], projRange[1] - projCenter])
+        // log('valid width range: ' + embeddable._placementInfo._widthRange)
     }
 
     // finding control points for morphing selected faces
