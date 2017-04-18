@@ -1,8 +1,8 @@
 // ........................................................................................................
 //
-//  generating 3d things v0.2
+//  generating 3d things v0.3
 //
-//  by xiangchen@acm.org, 03/2017
+//  by xiangchen@acm.org, 04/2017
 //
 // ........................................................................................................
 
@@ -12,16 +12,15 @@ var BACKGROUNDCOLOR = 0xF2F0F0;
 var GROUNDCOLOR = 0xF2F0F0;
 var GRIDCOLOR = 0x888888;
 
-var COLORNORMAL = 0xDB5B8A; // the normal color
-var COLORCONTRAST = 0xD1D6E7; // is the contrast of the COLORNORMAL
-var COLORHIGHLIGHT = 0xFFFA90;
-var COLORFOCUS = 0xE82C0C; // color to really draw users' focus
+var COLORNORMAL = 0xDB5B8A; // the normal color, pink-ish
+var COLORCONTRAST = 0xD1D6E7; // is the contrast of the COLORNORMAL, grey-ish
+var COLORHIGHLIGHT = 0xFFFA90; // highlight color, yellow-ish
+var COLORFOCUS = 0xE82C0C; // color to really draw users' focus, red-ish
 
 XAC.MATERIALNORMAL = new THREE.MeshPhongMaterial({
 	color: COLORNORMAL,
 	transparent: true,
 	opacity: 0.5,
-	// side: THREE.DoubleSide
 });
 
 XAC.MATERIALCONTRAST = new THREE.MeshPhongMaterial({
@@ -32,17 +31,14 @@ XAC.MATERIALCONTRAST = new THREE.MeshPhongMaterial({
 
 XAC.MATERIALHIGHLIGHT = new THREE.MeshPhongMaterial({
 	color: COLORHIGHLIGHT,
-	// transparent: true,
-	// wireframe: true,
-	opacity: 1,
-	side: THREE.DoubleSide
+	transparent: true,
+	opacity: 0.75,
 });
 
 XAC.MATERIALFOCUS = new THREE.MeshPhongMaterial({
 	color: COLORFOCUS,
-	// transparent: true,
-	opacity: 1,
-	side: THREE.DoubleSide
+	transparent: true,
+	opacity: 0.75,
 });
 
 XAC.MATERIALINVISIBLE = new THREE.MeshPhongMaterial({
@@ -226,12 +222,6 @@ XAC.Box.prototype.update = function(w, t, l) {
 //	@param faces - which vertices each face corresponds to
 //
 XAC.Polygon = function(vertices, faces, mat) {
-	// var arrVertices = [];
-	// for (var i = 0; i < vertices.length; i++) {
-	// 	arrVertices = arrVertices.concat(vertices[i].toArray());
-	// }
-
-	// this._g = new THREE.PolyhedronGeometry(arrVertices, faces, 1)
 	this._g = new THREE.Geometry();
 	this._g.vertices = vertices;
 	this._g.faces = faces;
