@@ -20,6 +20,7 @@ XAC.LEFTARROW = 37;
 XAC.UPARROW = 38;
 XAC.RIGHTARROW = 39;
 XAC.DOWNARROW = 40;
+XAC.DELETE = 46;
 
 XAC.keydowns = {};
 
@@ -177,3 +178,52 @@ $(document).ready(function() {
     $(document.body).on('keydown', XAC.keydown);
     XAC._activeHits = [];
 });
+
+
+//
+//
+//
+XAC.enableDragDrop = function(filesHandler) {
+	// drag & drop 3d model file
+	$(document).on('dragover', function(e) {
+		e.stopPropagation();
+		e.preventDefault();
+		e.dataTransfer = e.originalEvent.dataTransfer;
+		e.dataTransfer.dropEffect = 'copy';
+	});
+
+	$(document).on('drop', function(e) {
+		e.stopPropagation();
+		e.preventDefault();
+		e.dataTransfer = e.originalEvent.dataTransfer;
+		var files = e.dataTransfer.files;
+
+		if(filesHandler != undefined) {
+			filesHandler(files);
+		}
+	});
+}
+
+//
+//
+//
+XAC.makeSlider = function(id, label, min, max, value, parent) {
+	var sldrRow = $('<tr></tr>');
+	var sldrCell = $('<td><label class="ui-widget">' + label + '</label></td><td width="200px"></td>');
+	var sldr = $('<div id="' + id + '"></div>');
+	sldrCell.append(sldr);
+	sldrRow.append(sldrCell);
+
+	sldr.slider({
+		max: max,
+		min: min,
+		range: 'max'
+	});
+
+	sldr.slider('value', value);
+
+	parent.append(sldrRow);
+	sldr.row = sldrRow;
+	return sldr;
+
+}
