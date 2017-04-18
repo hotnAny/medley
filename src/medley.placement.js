@@ -85,6 +85,7 @@ MEDLEY.initPlacementWithPainting = function(info) {
                 if (isLoop) {
                     MEDLEY._init2dPatchPlacement(embeddable, info);
                 } else if (isLoop == false) {
+                    log('from placement')
                     MEDLEY._init2dXsecPlacement(embeddable, info, embeddable._baseWidth, false);
                 } else {;
                 }
@@ -318,10 +319,10 @@ MEDLEY._init2dPatchPlacement = function(embeddable, info) {
                 console.assert(triangulation.length > 0, 'triangulation failed');
                 if (triangulation.length == 0) continue;
 
-                // if (triangulation.length / 3 != face.points.length - 2) {
-                //     color = 0xffff00; // XXX
-                //     __debugFace(face);
-                // }
+                if (triangulation.length / 3 != face.points.length - 2) {
+                    color = 0xff0000; // XXX
+                    __debugFace(face);
+                }
 
                 for (var j = 0; j + 2 < triangulation.length; j += 3) {
                     var va = face.points[triangulation[j]],
@@ -512,7 +513,7 @@ MEDLEY._init2dXsecPlacement = function(embeddable, info, width, isLite) {
                 var triangles = [];
                 var triangulation = XAC.triangulatePolygon(remeshPoints, face.normal);
 
-                var color = 0x00ff00;
+                // var color = 0x00ff00;
                 console.assert(triangulation.length > 0, 'triangulation failed');
                 if (triangulation.length > 0) {
                     // if (triangulation.length / 3 != remeshPoints.length - 2) {

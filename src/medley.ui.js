@@ -28,7 +28,15 @@ $(document).ready(function() {
 
     $(document.body).append(panel);
 
-    XAC.initPanel();
+    XAC.enableDragDrop(function(files){
+        for (var i = files.length - 1; i >= 0; i--) {
+			var reader = new FileReader();
+			reader.onload = (function(e) {
+				XAC.loadStl(e.target.result, MEDLEY.onStlLoaded);
+			});
+			reader.readAsBinaryString(files[i]);
+		}
+    });
 
     XAC.ignoreMouseFromPanel = true;
 
@@ -39,10 +47,12 @@ $(document).ready(function() {
     MEDLEY._sldrDepth = XAC.makeSlider('sldr_depth', 'Depth', 0, 100, 0, tblSliders);
     MEDLEY._sldrDepth.slider({
         slide: function(event, ui) {
+            // log('[embeddable] setDepth')
             var max = $(event.target).slider("option", "max");
             var value = ui.value * 1.0 / max;
 
-            for (object of XAC._selecteds) {
+            var selected = XAC._selecteds.clone();
+            for (object of selected) {
                 if (object.embeddable != undefined) object.embeddable.setDepth(
                     value);
             }
@@ -52,10 +62,12 @@ $(document).ready(function() {
     MEDLEY._sldrThickness = XAC.makeSlider('sldr_thickness', 'Thickness', 0, 100, 0, tblSliders);
     MEDLEY._sldrThickness.slider({
         slide: function(event, ui) {
+            // log('[embeddable] setThickness')
             var max = $(event.target).slider("option", "max");
             var value = ui.value * 1.0 / max;
 
-            for (object of XAC._selecteds) {
+            var selected = XAC._selecteds.clone();
+            for (object of selected) {
                 if (object.embeddable != undefined) object.embeddable.setThickness(
                     value);
             }
@@ -65,11 +77,13 @@ $(document).ready(function() {
     MEDLEY._sldrWidth = XAC.makeSlider('sldr_width', 'Width', 0, 100, 0, tblSliders);
     MEDLEY._sldrWidth.slider({
         slide: function(event, ui) {
+            // log('[embeddable] setWidth')
             var max = $(event.target).slider("option", "max");
             var value = ui.value * 1.0 / max;
 
-            for (object of XAC._selecteds) {
-                if (object.embeddable != undefined) object.embeddable.setWidth(value);
+            var selected = XAC._selecteds.clone();
+            for (object of selected) {
+                if (object.embeddable != undefined) object.embeddable.setWidth(value, true);
             }
         },
 
@@ -77,11 +91,17 @@ $(document).ready(function() {
             var max = $(event.target).slider("option", "max");
             var value = ui.value * 1.0 / max;
 
-            if (MEDLEY._embeddables.length > 0) {
-                MEDLEY._embeddables.last().setWidth(value);
+            var selected = XAC._selecteds.clone();
+            for (object of selected) {
+                if (object.embeddable != undefined) object.embeddable.setWidth(value);
             }
         }
     });
+
+    MEDLEY.sldrMapFunc = function(sldr) {
+        var max = sldr.slider("option", "max");
+        return sldr.slider('option', 'value') * 1.0 / max;
+    }
 
     // delete using keyboard
     XAC.on(XAC.DELETE, function() {

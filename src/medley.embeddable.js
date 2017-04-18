@@ -18,8 +18,8 @@ MEDLEY.Embeddable = function(matobj) {
         this._dim = matobj.dim;
     }
 
-    this.DEPTHEPS = 0.01; // small depth pertubation to avoid z fighting
-    this._depthRatio = -this.DEPTHEPS;
+    this.DEPTHEPS = 0.02; // small depth pertubation to avoid z fighting
+    this._depthRatio = 0;
     this._thicknessRatio = 0; // starting thickness ratio for 3d embeddable
     this._baseThickness = matobj.thickness; // starting width for xsec embeddable
     this._baseWidth = 5; // starting width for a cross sectional selection
@@ -29,6 +29,15 @@ MEDLEY.Embeddable = function(matobj) {
     this._material.opacity = 1;
     this._material.transparent = false;
     this._material.side = THREE.DoubleSide;
+
+    this._mapDepth = function(d) {
+        return -this.DEPTHEPS + (1 + 2 * this.DEPTHEPS) * d;
+    };
+
+    this._mapThickness = function(t) {
+        var eps = this.DEPTHEPS * 3;
+        return t + eps;
+    }
 };
 
 MEDLEY.Embeddable.prototype = {
@@ -40,7 +49,6 @@ MEDLEY.Embeddable.prototype = {
 //   - d: [0, 1] interpolate between control points/faces
 //
 MEDLEY.Embeddable.prototype.setDepth = function(d) {
-    d = -this.DEPTHEPS + (1 + 2 * this.DEPTHEPS) * d;
     switch (this._dim) {
         case 1:
             this._generate1dGeometry({
@@ -62,8 +70,7 @@ MEDLEY.Embeddable.prototype.setDepth = function(d) {
 //  - t: [0, 1] interpolate between min thickness and (maxDepth-minDepth)
 //
 MEDLEY.Embeddable.prototype.setThickness = function(t) {
-    var eps = this.DEPTHEPS * 3;
-    t += eps;
+
     switch (this._dim) {
         case 1:
             break;
@@ -95,6 +102,7 @@ MEDLEY.Embeddable.prototype.setWidth = function(w, isLite) {
                 this._meshes = undefined;
                 this._facesInner = undefined;
                 this._facesOuter = undefined;
+                // log('from embeddable')
                 this._liteElements = MEDLEY._init2dXsecPlacement(this, this._placementInfo,
                     widthCrossSection, isLite);
                 this._widthRatio = w;
@@ -112,9 +120,10 @@ MEDLEY.Embeddable.prototype._generate1dGeometry = function(params) {
         this._depthRatio = params.depthRatio || this._depthRatio;
     }
     var points = [];
+    var d = this._mapDepth(this._depthRatio);
     for (var i = 0; i < this.points0.length; i++) {
-        points.push(this.points0[i].clone().multiplyScalar(1 - this._depthRatio)
-            .add(this.points1[i].clone().multiplyScalar(this._depthRatio)));
+        points.push(this.points0[i].clone().multiplyScalar(1 - d)
+            .add(this.points1[i].clone().multiplyScalar(d)));
     }
 
     if (this._meshes == undefined) {
@@ -149,21 +158,23 @@ MEDLEY.Embeddable.prototype._generate23dGeometry = function(params) {
         this._thicknessRatio = params.thicknessRatio || this._thicknessRatio;
     }
 
+    var d = this._mapDepth(this._depthRatio);
+    var t = this._mapThickness(this._thicknessRatio);
     this._facesOuter = this._facesOuter || [];
     this._facesInner = this._facesInner || [];
     for (var i = 0; i < this._faces0.length; i++) {
         var verticesOuter = this._facesOuter[i] || [];
         var verticesInner = this._facesInner[i] || [];
         for (var j = 0; j < this._faces0[i].length; j++) {
-            var vcenter = this._faces0[i][j].clone().multiplyScalar(1 - this._depthRatio)
-                .add(this._faces1[i][j].clone().multiplyScalar(this._depthRatio));
+            var vcenter = this._faces0[i][j].clone().multiplyScalar(1 - d)
+                .add(this._faces1[i][j].clone().multiplyScalar(d));
 
             var vrange = this._faces1[i][j].clone().sub(this._faces0[i][j]);
             var vthickness;
             if (this._dim == 2) {
                 vthickness = vrange.clone().normalize().multiplyScalar(this._baseThickness);
             } else if (this._dim == 3) {
-                vthickness = vrange.clone().multiplyScalar(this._thicknessRatio);
+                vthickness = vrange.clone().multiplyScalar(t);
             }
 
             var centerRatio = vcenter.clone().sub(this._faces0[i][j]).length() / vrange.length();
@@ -275,13 +286,17 @@ MEDLEY.Embeddable.prototype._makeInteractive = function() {
             mesh.material.color.setHex(COLORHIGHLIGHT);
             mesh.material.needsUpdate = true;
         }
-        MEDLEY._sldrDepth.slider('value',
-            this.embeddable._depthRatio * MEDLEY._sldrDepth.slider('option', 'max'));
-        MEDLEY._sldrThickness.slider('value',
-            this.embeddable._thicknessRatio * MEDLEY._sldrThickness.slider('option', 'max')
-        );
-        MEDLEY._sldrWidth.slider('value',
-            this.embeddable._widthRatio * MEDLEY._sldrWidth.slider('option', 'max'));
+        // MEDLEY._sldrDepth.slider('value',
+        //     this.embeddable._depthRatio * MEDLEY._sldrDepth.slider('option', 'max'));
+        // MEDLEY._sldrThickness.slider('value',
+        //     this.embeddable._thicknessRatio * MEDLEY._sldrThickness.slider('option', 'max')
+        // );
+        // MEDLEY._sldrWidth.slider('value',
+        //     this.embeddable._widthRatio * MEDLEY._sldrWidth.slider('option', 'max'));
+
+        XAC.updateSlider(MEDLEY._sldrDepth, this.embeddable._depthRatio, MEDLEY.sldrMapFunc);
+        XAC.updateSlider(MEDLEY._sldrThickness, this.embeddable._thicknessRatio, MEDLEY.sldrMapFunc);
+        XAC.updateSlider(MEDLEY._sldrWidth, this.embeddable._widthRatio, MEDLEY.sldrMapFunc);
     }, function() {
         for (mesh of this.children) {
             mesh.material.color.setHex(COLORCONTRAST);
@@ -289,15 +304,20 @@ MEDLEY.Embeddable.prototype._makeInteractive = function() {
         }
     });
 
-    MEDLEY._sldrDepth.slider('value',
-        this._depthRatio * MEDLEY._sldrDepth.slider('option', 'max'));
-    MEDLEY._sldrThickness.slider('value',
-        this._thicknessRatio * MEDLEY._sldrThickness.slider('option', 'max'));
-    MEDLEY._sldrWidth.slider('value',
-        this._widthRatio * MEDLEY._sldrWidth.slider('option', 'max'));
+    // MEDLEY._sldrDepth.slider('value',
+    //     this._depthRatio * MEDLEY._sldrDepth.slider('option', 'max'));
+    // MEDLEY._sldrThickness.slider('value',
+    //     this._thicknessRatio * MEDLEY._sldrThickness.slider('option', 'max'));
+    // MEDLEY._sldrWidth.slider('value',
+    //     this._widthRatio * MEDLEY._sldrWidth.slider('option', 'max'));
+
+
+    XAC.updateSlider(MEDLEY._sldrDepth, this._depthRatio, MEDLEY.sldrMapFunc);
+    XAC.updateSlider(MEDLEY._sldrThickness, this._thicknessRatio, MEDLEY.sldrMapFunc);
+    XAC.updateSlider(MEDLEY._sldrWidth, this._widthRatio, MEDLEY.sldrMapFunc);
 
     this._meshes._selected = true;
-    XAC._selecteds.push(this._meshes);
+    if (XAC._selecteds.indexOf(this._meshes) < 0) XAC._selecteds.push(this._meshes);
 }
 
 //
@@ -306,4 +326,14 @@ MEDLEY.Embeddable.prototype._makeInteractive = function() {
 MEDLEY.Embeddable.prototype.selfDestroy = function() {
     MEDLEY._embeddables.remove(this);
     XAC.scene.remove(this._meshes);
+}
+
+XAC.updateSlider = function(sldr, value, mapFunc) {
+    var sldrValue = mapFunc(sldr);
+    if (sldrValue != value) {
+        sldr.slider('value', value);
+        log([sldrValue, value])
+    } else {
+
+    }
 }
