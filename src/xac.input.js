@@ -130,11 +130,9 @@ XAC._dispatchInputEvents = function(e, type) {
                 }
 
                 // only take the first hit - avoid selecting multiple objects in one click
-                if (XAC._activeHits.indexOf(hit) == 0) {
-                    var hitObject = hit.object.object3d || hit.object;
-                    if (XAC._selecteds.indexOf(hitObject) < 0)
-                        XAC._selecteds.push(hitObject);
-                }
+                var hitObject = hit.object.object3d || hit.object;
+                if (XAC._selecteds.indexOf(hitObject) < 0)
+                    XAC._selecteds.push(hitObject);
 
                 break;
             case XAC.MOUSEMOVE:
