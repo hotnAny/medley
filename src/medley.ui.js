@@ -42,16 +42,9 @@ $(document).ready(function() {
             var max = $(event.target).slider("option", "max");
             var value = ui.value * 1.0 / max;
 
-            var eps = 0.1;
-            if (XAC._depthValue != undefined) {
-                if (Math.abs(value - XAC._depthValue) > eps) {
-                    for (object of XAC._selecteds) {
-                        if (object.embeddable != undefined) object.embeddable.setDepth(
-                            value);
-                    }
-                }
-            } else {
-                XAC._depthValue = value;
+            for (object of XAC._selecteds) {
+                if (object.embeddable != undefined) object.embeddable.setDepth(
+                    value);
             }
         }
     });
@@ -91,7 +84,7 @@ $(document).ready(function() {
     });
 
     // delete using keyboard
-    XAC.on(46, function() {
+    XAC.on(XAC.DELETE, function() {
         for (object of XAC._selecteds) {
             if (object.embeddable != undefined) object.embeddable.selfDestroy();
         }

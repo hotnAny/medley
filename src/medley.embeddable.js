@@ -134,7 +134,7 @@ MEDLEY.Embeddable.prototype._generate1dGeometry = function(params) {
 
     } else {
         for (var i = 0; i < points.length - 1; i++) {
-            this._segments[i].update(points[i], points[i + 1], this._matobj.radius);
+            this._segments[i].updateEfficiently(points[i], points[i + 1], this._matobj.radius);
         }
     }
 };
