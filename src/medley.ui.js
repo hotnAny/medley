@@ -32,7 +32,9 @@ $(document).ready(function() {
 
     XAC.ignoreMouseFromPanel = true;
 
-    // XXX
+    //
+    //  sliders to manipulate embeddables
+    //
     var tblSliders = $('<table class="ui-widget tbwidgets"></table>');
     MEDLEY._sldrDepth = XAC.makeSlider('sldr_depth', 'Depth', 0, 100, 0, tblSliders);
     MEDLEY._sldrDepth.slider({
@@ -40,8 +42,16 @@ $(document).ready(function() {
             var max = $(event.target).slider("option", "max");
             var value = ui.value * 1.0 / max;
 
-            for (object of XAC._selecteds) {
-                if (object.embeddable != undefined) object.embeddable.setDepth(value);
+            var eps = 0.1;
+            if (XAC._depthValue != undefined) {
+                if (Math.abs(value - XAC._depthValue) > eps) {
+                    for (object of XAC._selecteds) {
+                        if (object.embeddable != undefined) object.embeddable.setDepth(
+                            value);
+                    }
+                }
+            } else {
+                XAC._depthValue = value;
             }
         }
     });
@@ -53,7 +63,8 @@ $(document).ready(function() {
             var value = ui.value * 1.0 / max;
 
             for (object of XAC._selecteds) {
-                if (eobject.mbeddable != undefined) object.embeddable.setThickness(value);
+                if (object.embeddable != undefined) object.embeddable.setThickness(
+                    value);
             }
         }
     });
