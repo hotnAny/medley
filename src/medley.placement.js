@@ -13,6 +13,9 @@ var MEDLEY = MEDLEY || {};
 //  initialize placement based on the painting technique (xac.input.painting.js)
 //
 MEDLEY.initPlacementWithPainting = function(info) {
+    var epsFootprint = 5;
+    if (info.footprint < epsFootprint) return;
+
     // temporarily setting double-sided for internal ray casting
     info.object.material.side = THREE.DoubleSide;
 
@@ -37,7 +40,7 @@ MEDLEY.initPlacementWithPainting = function(info) {
     var diagnal = info.maxPoint.distanceTo(info.minPoint);
     var centerPlane = new THREE.Vector3().addVectors(info.minPoint, info.maxPoint).divideScalar(2);
     info.normal = new THREE.Vector3();
-    for(nml of info.normals) {
+    for (nml of info.normals) {
         info.normal.add(nml);
     }
     info.normal.divideScalar(info.normals.length);
@@ -58,11 +61,12 @@ MEDLEY.initPlacementWithPainting = function(info) {
         var embeddable = new MEDLEY.Embeddable(MEDLEY._matobjSelected);
 
         // remove all active embeddables to focus on this new one
-        for(object of XAC._selecteds) {
-            if(object._onDeselected) {
+        for (object of XAC._selecteds) {
+            if (object._onDeselected) {
                 object._onDeselected();
             }
         }
+        XAC._selecteds = [];
 
         switch (embeddable._dim) {
             case 0:
@@ -92,17 +96,17 @@ MEDLEY.initPlacementWithPainting = function(info) {
 
         MEDLEY._embeddables.push(embeddable);
 
-        // XXX
-        MEDLEY._sldrDepth.slider({
-            value: MEDLEY._sldrDepth.slider("option", "min")
-        });
-        MEDLEY._sldrThickness.slider({
-            value: MEDLEY._sldrThickness.slider("option", "min")
-        });
-        MEDLEY._sldrWidth.slider({
-            value: MEDLEY._sldrWidth.slider("option", "min")
-        });
-        // XXX
+        // // XXX
+        // MEDLEY._sldrDepth.slider({
+        //     value: MEDLEY._sldrDepth.slider("option", "min")
+        // });
+        // MEDLEY._sldrThickness.slider({
+        //     value: MEDLEY._sldrThickness.slider("option", "min")
+        // });
+        // MEDLEY._sldrWidth.slider({
+        //     value: MEDLEY._sldrWidth.slider("option", "min")
+        // });
+        // // XXX
     }
 
     // reset sidedness of object
@@ -371,7 +375,7 @@ MEDLEY._init2dPatchPlacement = function(embeddable, info) {
     // HACK
     var rayCaster = new THREE.Raycaster();
     var nml = nmlCrossPlane.clone().multiplyScalar(-1).normalize();
-    if(nml.dot(info.normal) > 0) {
+    if (nml.dot(info.normal) > 0) {
         nml.multiplyScalar(-1);
     }
 
@@ -432,7 +436,6 @@ MEDLEY._init2dXsecPlacement = function(embeddable, info, width, isLite) {
     //  fit selection stroke to a circle
     //
     var fitInfo = XAC.fitCircle(projPoints);
-    // log(info.footprint / (2 * Math.PI * fitInfo.r));
     var fitCenter = new THREE.Vector3(fitInfo.x0, fitInfo.y0, projPoints[0].z);
     fitCenter.applyAxisAngle(axisToRotate, -angleToRotate);
 

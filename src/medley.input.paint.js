@@ -34,6 +34,7 @@ MEDLEY.PaintInput.prototype.mousedown = function(e, hit) {
     this._faces = [];
     this._minPoint = new THREE.Vector3(Number.MAX_VALUE, Number.MAX_VALUE, Number.MAX_VALUE);
     this._maxPoint = new THREE.Vector3(-Number.MAX_VALUE, -Number.MAX_VALUE, -Number.MAX_VALUE);
+    this._footprint = 0;
 
     return true;
 };
@@ -46,6 +47,11 @@ MEDLEY.PaintInput.prototype.mousemove = function(e) {
     var hits = rayCast(e.clientX, e.clientY, [this._object]);
     if (hits.length > 0) {
         var hit = hits[0];
+
+        if (this._points.length > 0) {
+            this._footprint += hits[0].point.distanceTo(this._points.last());
+        }
+
         this._points.push(hit.point);
 
         if (this._faces.last() != hit.face) {
@@ -96,7 +102,7 @@ MEDLEY.PaintInput.prototype.mouseup = function(e) {
 
     this._isDown = false;
 
-    if(this._points.length <= 0) {
+    if (this._points.length <= 0) {
         return;
     }
 
@@ -106,7 +112,8 @@ MEDLEY.PaintInput.prototype.mouseup = function(e) {
         faces: this._faces,
         normals: this._normals,
         minPoint: this._minPoint,
-        maxPoint: this._maxPoint
+        maxPoint: this._maxPoint,
+        footprint: this._footprint
     };
 
     for (callback of this._callbacks) {
