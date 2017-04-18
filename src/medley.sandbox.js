@@ -2,14 +2,24 @@ var MEDLEY = MEDLEY || {};
 
 // XXX
 MEDLEY._matobjSelected = {
-    radius: 0.5, // mm
-    dim: 1,
+    radius: 0.375, // mm
+    dim: 2,
     thickness: 2 // mm
 };
 
 
 // for testing functions
 $(document).ready(function() {
+
+    XAC.on('1', function() {
+        MEDLEY._matobjSelected.dim = 1;
+    });
+    XAC.on('2', function() {
+        MEDLEY._matobjSelected.dim = 2;
+    });
+    XAC.on('3', function() {
+        MEDLEY._matobjSelected.dim = 3;
+    });
 
     // XXX for debugging
     // XAC.MATERIALNORMAL = new THREE.MeshBasicMaterial({
@@ -21,36 +31,10 @@ $(document).ready(function() {
 });
 
 function onStlLoaded(object) {
-    //
-    // geometry processing
-    if (object.geometry.isBufferGeometry) {
-        time();
-        object.geometry = new THREE.Geometry().fromBufferGeometry(object.geometry);
-        time('[loading object] buffergeometry converted');
-    }
 
-    object.geometry.computeFaceNormals();
-    object.geometry.computeVertexNormals();
-    time('[loading object] computed normals');
-    object.geometry.computeCentroids();
-    time('[loading object] computed centroid');
-    object.geometry.assignVerticesToFaces();
-    time('[loading object] assigned vertices to faces');
     // var nremoved = object.geometry.removeRedundantFaces();
     // time('[loading object] removed ' + nremoved + ' redundant faces');
 
-
-    if (XAC.octree != undefined) {
-        XAC.octree.add(object, {
-            useFaces: true
-        });
-        XAC.octree.update();
-        time('[loading object] added object to octree');
-        XAC.octree.setVisibility(false);
-    }
-
-    object.geometry.createNeighborList(XAC.octree);
-    time('[loading object] created neighbor list for each face');
     // for (face of object.geometry.faces) {
     //     // log(face.neighbors.length);
     //     if (face.neighbors.length > 3) {
@@ -78,7 +62,7 @@ function onStlLoaded(object) {
 
     //
     // input
-    object.inputTechniques = [];
+    // object.inputTechniques = [];
     // object.selectable(true, function(object) {
     //     object.material.opacity /= 2;
     //     // object.material.color = 0xcccccc;
@@ -89,19 +73,11 @@ function onStlLoaded(object) {
     //     // object.material.needsUpdate = true;
     // });
 
-    var paintInput = new MEDLEY.PaintInput(XAC.scene);
-    object.inputTechniques.push(paintInput);
-    paintInput.addSubscriber(MEDLEY.initPlacementWithPainting);
+    // var paintInput = new MEDLEY.PaintInput(XAC.scene);
+    // object.inputTechniques.push(paintInput);
+    // paintInput.addSubscriber(MEDLEY.initPlacementWithPainting);
 
-    XAC.on('1', function() {
-        MEDLEY._matobjSelected.dim = 1;
-    });
-    XAC.on('2', function() {
-        MEDLEY._matobjSelected.dim = 2;
-    });
-    XAC.on('3', function() {
-        MEDLEY._matobjSelected.dim = 3;
-    });
+
 
     // XAC.on('Z', function() {
     //     var embeddable = MEDLEY._embeddables.pop();
