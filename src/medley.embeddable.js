@@ -129,8 +129,8 @@ MEDLEY.Embeddable.prototype._generate1dGeometry = function(params) {
         XAC.scene.add(this._meshes);
 
         this._makeInteractive();
-        this._meshes._selected = true;
-        XAC._selecteds.push(this._meshes);
+        // this._meshes._selected = true;
+        // XAC._selecteds.push(this._meshes);
 
     } else {
         for (var i = 0; i < points.length - 1; i++) {
@@ -226,8 +226,8 @@ MEDLEY.Embeddable.prototype._generate23dGeometry = function(params) {
         XAC.scene.add(this._meshes);
 
         this._makeInteractive();
-        this._meshes._selected = true;
-        XAC._selecteds.push(this._meshes);
+        // this._meshes._selected = true;
+        // XAC._selecteds.push(this._meshes);
     } else {
         for (mesh of this._meshes.children) {
             mesh.geometry.verticesNeedUpdate = true;
@@ -288,6 +288,16 @@ MEDLEY.Embeddable.prototype._makeInteractive = function() {
             mesh.material.needsUpdate = true;
         }
     });
+
+    MEDLEY._sldrDepth.slider('value',
+        this._depthRatio * MEDLEY._sldrDepth.slider('option', 'max'));
+    MEDLEY._sldrThickness.slider('value',
+        this._thicknessRatio * MEDLEY._sldrThickness.slider('option', 'max'));
+    MEDLEY._sldrWidth.slider('value',
+        this._widthRatio * MEDLEY._sldrWidth.slider('option', 'max'));
+
+    this._meshes._selected = true;
+    XAC._selecteds.push(this._meshes);
 }
 
 //
