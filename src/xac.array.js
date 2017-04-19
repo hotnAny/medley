@@ -226,6 +226,10 @@ Array.prototype.last = function(val) {
 	return this.length > 0 ? this[this.length - 1] : undefined;
 }
 
+Array.prototype.lastBut = function(n) {
+	return this.length > n ? this[this.length - 1 - n] : undefined;
+}
+
 //
 //
 //
