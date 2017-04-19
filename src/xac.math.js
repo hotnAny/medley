@@ -598,7 +598,7 @@ XAC.fitCircle = function(points) {
 
     err = Math.sqrt(err / n);
 
-    console.log("fitting circle error: " + err);
+    // console.log("fitting circle error: " + err);
 
     return {
         x0: xm,

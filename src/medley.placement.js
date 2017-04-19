@@ -74,7 +74,14 @@ MEDLEY.initPlacementWithPainting = function(info) {
                 // TODO: initialize interactors
                 break;
             case 1:
+                embeddable._placementInfo = info;
                 if (XAC._footprint > 50) MEDLEY._init1dPlacement(embeddable, info);
+
+                // XXX
+                // compute1dCurvature(info.points, info.paramsNormal);
+                // info.points.copy(smoothen1dGeometry(info.points));
+                // compute1dCurvature(info.points, info.paramsNormal);
+                // XXX
 
                 // TODO: initialize interactors
 

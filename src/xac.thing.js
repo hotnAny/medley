@@ -290,6 +290,7 @@ function addALine(v1, v2, clr, r) {
 	// _balls.remove(addABall(v2, clr, 0.1));
 
 	XAC.scene.add(line);
+	return line;
 }
 
 function addAnArrow(v1, dir, len, clr, r) {

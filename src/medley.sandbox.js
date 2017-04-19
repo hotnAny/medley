@@ -3,7 +3,7 @@ var MEDLEY = MEDLEY || {};
 // XXX
 MEDLEY._matobjSelected = {
     radius: 0.375, // mm
-    dim: 2,
+    dim: 1,
     thickness: 2 // mm
 };
 
@@ -20,6 +20,48 @@ $(document).ready(function() {
     XAC.on('3', function() {
         MEDLEY._matobjSelected.dim = 3;
     });
+    XAC.on(XAC.ENTER, function() {
+        time();
+        var embeddable = MEDLEY._embeddables.last();
+        embeddable.fitBendRadius(25)
+            //
+            // if (XAC._points == undefined) {
+            //     XAC._points = [];
+            //     var d = embeddable._mapDepth(embeddable._depthRatio);
+            //     for (var i = 0; i < embeddable.points0.length; i++) {
+            //         XAC._points.push(embeddable.points0[i].clone().multiplyScalar(1 - d)
+            //             .add(embeddable.points1[i].clone().multiplyScalar(d)));
+            //     }
+            // }
+            //
+            // // for (j = 0; j < 100; j++) {
+            //     XAC._points.copy(smoothen1dGeometry(XAC._points));
+            //
+            //     // XAC._lines = XAC._lines || [];
+            //     // for (line of XAC._lines) XAC.scene.remove(line);
+            //     // for (var i = 0; i < XAC._points.length - 1; i++) {
+            //     //     XAC._lines.push(addALine(XAC._points[i], XAC._points[i + 1], 0xff0000, 1));
+            //     // }
+            // // }
+            // // if (embeddable != undefined) embeddable.selfDestroy();
+            // // log(XAC._points[1].toArray());
+            // // for (var i = 0; i < XAC._points.length - 1; i++) {
+            // //     embeddable._segments[i].updateEfficiently(XAC._points[i], XAC._points[i + 1], embeddable._matobj.radius);
+            // // }
+            //
+            // XAC.scene.remove(embeddable._meshes);
+            // embeddable._meshes = new THREE.Object3D();
+            // embeddable._segments = [];
+            // for (var i = 0; i < XAC._points.length - 1; i++) {
+            //     var segment = new XAC.ThickLine(XAC._points[i], XAC._points[i + 1], embeddable._matobj
+            //         .radius, embeddable._material.clone());
+            //     embeddable._meshes.add(segment.m);
+            //     embeddable._segments.push(segment);
+            // }
+            // XAC.scene.add(embeddable._meshes);
+
+        time('smoothened 1d geometry')
+    });
 
     // XXX for debugging
     // XAC.MATERIALNORMAL = new THREE.MeshBasicMaterial({
@@ -29,60 +71,3 @@ $(document).ready(function() {
     // });
 
 });
-
-function onStlLoaded(object) {
-
-    // var nremoved = object.geometry.removeRedundantFaces();
-    // time('[loading object] removed ' + nremoved + ' redundant faces');
-
-    // for (face of object.geometry.faces) {
-    //     // log(face.neighbors.length);
-    //     if (face.neighbors.length > 3) {
-    //         object.geometry.highlightFace(face, 0x00ff00, XAC.scene);
-    //         for(neighbor of face.neighbors) {
-    //             log(neighbor)
-    //             object.geometry.highlightFace(neighbor, 0xff00ff, XAC.scene);
-    //         }
-    //         return;
-    //     }
-    // }
-    // XXX testing neighbor finding
-    // object.on(XAC.MOUSEDOWN, function(hit){
-    //     hit.object.geometry.highlightFace(hit.face, 0xff00ff, XAC.scene);
-    //     log(hit.face.neighbors)
-    //     for(neighbor of hit.face.neighbors) {
-    //         hit.object.geometry.highlightFace(neighbor, 0xffff00, XAC.scene);
-    //     }
-    // });
-
-    // object.on(XAC.UPARROW, function() {
-    //     //
-    //
-    // });
-
-    //
-    // input
-    // object.inputTechniques = [];
-    // object.selectable(true, function(object) {
-    //     object.material.opacity /= 2;
-    //     // object.material.color = 0xcccccc;
-    //     // object.material.needsUpdate = true;
-    // }, function(object) {
-    //     object.material.opacity *= 2;
-    //     // object.material.color = 0x888888;
-    //     // object.material.needsUpdate = true;
-    // });
-
-    // var paintInput = new MEDLEY.PaintInput(XAC.scene);
-    // object.inputTechniques.push(paintInput);
-    // paintInput.addSubscriber(MEDLEY.initPlacementWithPainting);
-
-
-
-    // XAC.on('Z', function() {
-    //     var embeddable = MEDLEY._embeddables.pop();
-    //     if (embeddable != undefined) {
-    //         embeddable.cleanUp();
-    //     }
-    // });
-}
