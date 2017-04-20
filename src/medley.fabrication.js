@@ -1,34 +1,27 @@
-MEDLEY.Embeddable.prototype.fitBendRadius = function(r) {
-    var points = [];
-    var d = this._mapDepth(this._depthRatio);
-    for (var i = 0; i < this.points0.length; i++) {
-        points.push(this.points0[i].clone().multiplyScalar(1 - d)
-            .add(this.points1[i].clone().multiplyScalar(d)));
-    }
+//	........................................................................................................
+//
+//  medley fabrication
+//      - smoothen geometry to fit material's bend radius
+//
+//  by xiangchen@acm.org, 04/2017
+//
+//	........................................................................................................
 
+var MEDLEY = MEDLEY || {};
+
+MEDLEY.fit1dBendRadius = function(info, points, r) {
     var minRadiusPrev;
     var eps = 10e-3;
     while (true) {
-        var minRadius = this._compute1dCurvature(points, this._placementInfo.paramsNormal, r);
-        log(minRadius)
+        var minRadius = MEDLEY._compute1dCurvature(points,info.paramsNormal, r);
+        // log(minRadius)
         if (minRadius > r || Math.abs(minRadius - minRadiusPrev) < eps) break;
-        this._smoothen1dGeometry(points, (r + 1 - minRadius));
+        MEDLEY._smoothen1dGeometry(points, (r + 1 - minRadius));
         minRadiusPrev = minRadius;
     }
-
-    XAC.scene.remove(this._meshes);
-    this._meshes = new THREE.Object3D();
-    this._segments = [];
-    for (var i = 0; i < points.length - 1; i++) {
-        var segment = new XAC.ThickLine(points[i], points[i + 1], this._matobj
-            .radius, this._material.clone());
-        this._meshes.add(segment.m);
-        this._segments.push(segment);
-    }
-    XAC.scene.add(this._meshes);
 }
 
-MEDLEY.Embeddable.prototype._smoothen1dGeometry = function(points, nitr) {
+MEDLEY._smoothen1dGeometry = function(points, nitr) {
     var c = 0;
     for (j = 0; j < nitr; j++) {
         var pointsSmooth = [points[0]];
@@ -44,11 +37,9 @@ MEDLEY.Embeddable.prototype._smoothen1dGeometry = function(points, nitr) {
         pointsSmooth.push(points.last());
         points.copy(pointsSmooth);
     }
-
-    // return points;
 }
 
-MEDLEY.Embeddable.prototype._compute1dCurvature = function(points, paramsPlane, bendRadius) {
+MEDLEY._compute1dCurvature = function(points, paramsPlane, bendRadius) {
     // time();
     // var bendRadius = 50;
     var theta = 30;
