@@ -128,6 +128,9 @@ MEDLEY._init1dPlacement = function(embeddable, info) {
         }
     }
 
+    MEDLEY.fit1dBendRadius(info, embeddable.points0, embeddable.bendRadius);
+    MEDLEY.fit1dBendRadius(info, embeddable.points1, embeddable.bendRadius);
+
     embeddable._generate1dGeometry(embeddable.points0);
 }
 
@@ -387,6 +390,10 @@ MEDLEY._init2dPatchPlacement = function(embeddable, info) {
         if (vertices1.length > 0) embeddable._faces1.push(vertices1);
     }
 
+    for (var i = 0; i < 100; i++) {
+        embeddable._smoothen23dGeometry(embeddable._faces0);
+        embeddable._smoothen23dGeometry(embeddable._faces1);
+    }
     embeddable._generate23dGeometry();
 };
 

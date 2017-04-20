@@ -16,6 +16,7 @@ MEDLEY.Embeddable = function(matobj) {
     if (matobj != undefined) {
         this._matobj = matobj;
         this._dim = matobj.dim;
+        this.bendRadius = matobj.bendRadius;
     }
 
     this.DEPTHEPS = 0.02; // small depth pertubation to avoid z fighting
