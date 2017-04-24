@@ -2,16 +2,17 @@
 //
 // handling different object-oriented input techniques by dispatching input events to them
 //
-// by xiangchen@acm.org, 2017/03
+// by xiangchen@acm.org, v0.1, 2017/04
 //
 // ........................................................................................................
 
 var XAC = XAC || {};
 
 // mouse events
-XAC.MOUSEDOWN = 0;
-XAC.MOUSEMOVE = 1;
-XAC.MOUSEUP = 2;
+XAC.MOUSEDOWN = -1;
+XAC.MOUSEMOVE = -2;
+XAC.MOUSEUP = -3;
+XAC.KEYUP = -4;
 
 // TODO global mouse event handlers
 
@@ -21,6 +22,7 @@ XAC.UPARROW = 38;
 XAC.RIGHTARROW = 39;
 XAC.DOWNARROW = 40;
 XAC.ENTER = 13;
+XAC.SHIFT = 16;
 XAC.DELETE = 46;
 
 XAC.keydowns = {};
@@ -71,6 +73,14 @@ XAC.keydown = function(e) {
     }
 }
 
+XAC.keyup = function(e) {
+    if(XAC.keyups != undefined) {
+        for(handler of XAC.keyups) {
+            handler(e);
+        }
+    }
+}
+
 XAC.on = function(cue, handler) {
     switch (cue) {
         case XAC.MOUSEDOWN:
@@ -81,6 +91,10 @@ XAC.on = function(cue, handler) {
             break;
         case XAC.MOUSEUP:
             // TODO
+            break;
+        case XAC.KEYUP:
+            XAC.keyups = XAC.keyups || [];
+            XAC.keyups.push(handler);
             break;
         default:
             XAC.keydowns = XAC.keydowns || {};
@@ -177,6 +191,7 @@ $(document).ready(function() {
     $(document.body).on('mousemove', XAC.mousemove);
     $(document.body).on('mouseup', XAC.mouseup);
     $(document.body).on('keydown', XAC.keydown);
+    $(document.body).on('keyup', XAC.keyup);
     XAC._activeHits = [];
 });
 
@@ -185,46 +200,46 @@ $(document).ready(function() {
 //
 //
 XAC.enableDragDrop = function(filesHandler) {
-	// drag & drop 3d model file
-	$(document).on('dragover', function(e) {
-		e.stopPropagation();
-		e.preventDefault();
-		e.dataTransfer = e.originalEvent.dataTransfer;
-		e.dataTransfer.dropEffect = 'copy';
-	});
+    // drag & drop 3d model file
+    $(document).on('dragover', function(e) {
+        e.stopPropagation();
+        e.preventDefault();
+        e.dataTransfer = e.originalEvent.dataTransfer;
+        e.dataTransfer.dropEffect = 'copy';
+    });
 
-	$(document).on('drop', function(e) {
-		e.stopPropagation();
-		e.preventDefault();
-		e.dataTransfer = e.originalEvent.dataTransfer;
-		var files = e.dataTransfer.files;
+    $(document).on('drop', function(e) {
+        e.stopPropagation();
+        e.preventDefault();
+        e.dataTransfer = e.originalEvent.dataTransfer;
+        var files = e.dataTransfer.files;
 
-		if(filesHandler != undefined) {
-			filesHandler(files);
-		}
-	});
+        if (filesHandler != undefined) {
+            filesHandler(files);
+        }
+    });
 }
 
 //
 //
 //
 XAC.makeSlider = function(id, label, min, max, value, parent) {
-	var sldrRow = $('<tr></tr>');
-	var sldrCell = $('<td><label class="ui-widget">' + label + '</label></td><td width="200px"></td>');
-	var sldr = $('<div id="' + id + '"></div>');
-	sldrCell.append(sldr);
-	sldrRow.append(sldrCell);
+    var sldrRow = $('<tr></tr>');
+    var sldrCell = $('<td><label class="ui-widget">' + label + '</label></td><td width="200px"></td>');
+    var sldr = $('<div id="' + id + '"></div>');
+    sldrCell.append(sldr);
+    sldrRow.append(sldrCell);
 
-	sldr.slider({
-		max: max,
-		min: min,
-		range: 'max'
-	});
+    sldr.slider({
+        max: max,
+        min: min,
+        range: 'max'
+    });
 
-	sldr.slider('value', value);
+    sldr.slider('value', value);
 
-	parent.append(sldrRow);
-	sldr.row = sldrRow;
-	return sldr;
+    parent.append(sldrRow);
+    sldr.row = sldrRow;
+    return sldr;
 
 }
