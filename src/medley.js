@@ -45,6 +45,6 @@ MEDLEY.onStlLoaded = function(object) {
 
     var paintInput = new MEDLEY.PaintInput(XAC.scene);
     object.inputTechniques.push(paintInput);
-    paintInput.addSubscriber(MEDLEY.initPlacementWithPainting);
+    paintInput.addSubscriber(MEDLEY.selectToCreateEmbeddables);
 
 }

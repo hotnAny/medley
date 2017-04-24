@@ -236,6 +236,7 @@ function addABall(point, color, radius, opacity) {
 	var geometry = new THREE.SphereGeometry(radius || 1, 10, 10);
 	var material = new THREE.MeshBasicMaterial({
 		color: color || 0xff0000,
+		transparent: true,
 		opacity: opacity || 1.0
 	});
 	var ball = new THREE.Mesh(geometry, material);
