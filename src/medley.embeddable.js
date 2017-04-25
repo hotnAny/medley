@@ -102,17 +102,20 @@ MEDLEY.Embeddable.prototype.setWidth = function(w, isLite) {
                 widthRatio: w
             });
         case 3:
-            // NOTE: _placementInfo will be assigned only in a cross sectional selection case
-            if (this._placementInfo != undefined) {
+            // NOTE: _info will be assigned only in a cross sectional selection case
+            if (this._info != undefined) {
                 var widthCrossSection = this._baseWidth + w * this._widthRange;
                 XAC.scene.remove(this._liteElements);
-                XAC.scene.remove(this._meshes);
+                MEDLEY.everything.remove(this._meshes);
                 this._meshes = undefined;
                 this._facesInner = undefined;
                 this._facesOuter = undefined;
-                // log('from embeddable')
-                this._liteElements = MEDLEY._select3dStrip(this, this._placementInfo,
+
+                this._liteElements = MEDLEY._select3dStrip(this, this._info,
                     widthCrossSection, isLite);
+
+                if (this._meshes != undefined) MEDLEY.updateEverything(this._meshes);
+
                 this._widthRatio = w;
             }
             break;
@@ -143,7 +146,6 @@ MEDLEY.Embeddable.prototype._generate1dGeometry = function(params) {
             this._meshes.add(segment.m);
             this._segments.push(segment);
         }
-        XAC.scene.add(this._meshes);
 
         this._makeInteractive();
     } else {
@@ -225,7 +227,6 @@ MEDLEY.Embeddable.prototype._generate2dGeometry = function(params) {
         this._meshes.add(meshOuter);
         this._meshes.add(meshLateral);
 
-        XAC.scene.add(this._meshes);
         this._makeInteractive();
     } else {
         for (mesh of this._meshes.children) {
@@ -293,7 +294,6 @@ MEDLEY.Embeddable.prototype._generate3dGeometry = function(params) {
         this._meshes.add(meshOuter);
         this._meshes.add(meshLateral);
 
-        XAC.scene.add(this._meshes);
         this._makeInteractive();
     } else {
         for (mesh of this._meshes.children) {
