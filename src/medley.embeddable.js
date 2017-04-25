@@ -395,7 +395,7 @@ MEDLEY.Embeddable.prototype._makeInteractive = function() {
 //
 MEDLEY.Embeddable.prototype.selfDestroy = function() {
     MEDLEY.embeddables.remove(this);
-    XAC.scene.remove(this._meshes);
+    MEDLEY.everything.remove(this._meshes);
 }
 
 XAC.updateSlider = function(sldr, value, mapFunc) {
