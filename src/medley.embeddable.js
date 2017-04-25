@@ -127,18 +127,18 @@ MEDLEY.Embeddable.prototype._generate1dGeometry = function(params) {
     if (params != undefined) {
         this._depthRatio = params.depthRatio || this._depthRatio;
     }
-    var points = [];
+    this.points = [];
     var d = this._mapDepth(this._depthRatio);
     for (var i = 0; i < this.points0.length; i++) {
-        points.push(this.points0[i].clone().multiplyScalar(1 - d)
+        this.points.push(this.points0[i].clone().multiplyScalar(1 - d)
             .add(this.points1[i].clone().multiplyScalar(d)));
     }
 
     if (this._meshes == undefined) {
         this._meshes = new THREE.Object3D();
         this._segments = [];
-        for (var i = 0; i < points.length - 1; i++) {
-            var segment = new XAC.ThickLine(points[i], points[i + 1], this._matobj
+        for (var i = 0; i < this.points.length - 1; i++) {
+            var segment = new XAC.ThickLine(this.points[i], this.points[i + 1], this._matobj
                 .radius, this._material.clone());
             this._meshes.add(segment.m);
             this._segments.push(segment);
@@ -146,12 +146,9 @@ MEDLEY.Embeddable.prototype._generate1dGeometry = function(params) {
         XAC.scene.add(this._meshes);
 
         this._makeInteractive();
-        // this._meshes._selected = true;
-        // XAC._selecteds.push(this._meshes);
-
     } else {
-        for (var i = 0; i < points.length - 1; i++) {
-            this._segments[i].updateEfficiently(points[i], points[i + 1], this._matobj.radius);
+        for (var i = 0; i < this.points.length - 1; i++) {
+            this._segments[i].updateEfficiently(this.points[i], this.points[i + 1], this._matobj.radius);
         }
     }
 };
