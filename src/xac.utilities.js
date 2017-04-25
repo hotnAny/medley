@@ -29,7 +29,7 @@ XAC.loadStl = function(data, onStlLoaded) {
 	var stlLoader = new THREE.STLLoader();
 	var geometry = stlLoader.parse(data);
 	var object = new THREE.Mesh(geometry, XAC.MATERIALNORMAL);
-	XAC.scene.add(object);
+	// XAC.scene.add(object.clone());
 
 	var dims = getBoundingBoxDimensions(object);
 	var ctr = getBoundingBoxCenter(object);
