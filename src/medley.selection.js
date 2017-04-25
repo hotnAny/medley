@@ -13,6 +13,9 @@ var MEDLEY = MEDLEY || {};
 //  select part of an object to create embeddables based on the painting technique (xac.input.painting.js)
 //
 MEDLEY.selectToCreateEmbeddables = function(info) {
+    info.object.updateMatrixWorld();
+    info.matrixWorld = info.object.matrixWorld.clone();
+
     var epsFootprint = 5;
     if (info.footprint < epsFootprint) return;
 
@@ -104,11 +107,18 @@ MEDLEY.selectToCreateEmbeddables = function(info) {
                 break;
         }
 
-        MEDLEY._embeddables.push(embeddable);
+        MEDLEY.embeddables.push(embeddable);
     }
 
     // reset sidedness of object
     info.object.material.side = THREE.FrontSide;
+
+    var everythingOld = MEDLEY.everything;
+    XAC.scene.remove(everythingOld);
+    MEDLEY.everything = new THREE.Object3D();
+    MEDLEY.everything.add(everythingOld);
+    MEDLEY.everything.add(embeddable._meshes);
+    XAC.scene.add(MEDLEY.everything);
 };
 
 //
@@ -121,11 +131,15 @@ MEDLEY._select1dSegments = function(embeddable, info) {
     for (var i = 0; i < info.points.length; i++) {
         var rayCaster = new THREE.Raycaster();
         var nml = info.normals[i].multiplyScalar(-1).normalize();
+
         rayCaster.ray.set(info.points[i].clone().add(nml.clone().multiplyScalar(0.01)), nml);
+
         var hits = rayCaster.intersectObjects([info.object]);
         if (hits.length > 0) {
             embeddable.points0.push(info.points[i]);
             embeddable.points1.push(hits[0].point);
+        } else {
+            addAnArrow(info.points[i], nml, 5, 0xff0000);
         }
     }
 
@@ -205,6 +219,9 @@ MEDLEY._select2dPatch = function(embeddable, info) {
 //  select a 2d strip around part of an object as embeddable
 //
 MEDLEY._select2dStrip = function(embeddable, info) {
+    // info.object.updateMatrixWorld();
+    // var matrixWorld = info.object.matrixWorld.clone();
+
     // [internal helper] find connected/neighboring faces that intersect the cross plane
     var __findIntersectingNeighbors = function(face, a, b, c, d, center, radius) {
         if (face.visited) return [];
@@ -214,8 +231,8 @@ MEDLEY._select2dStrip = function(embeddable, info) {
         // find intersections with the two planes
         var intersections = [];
         for (var i = 0; i < face.vertices.length; i++) {
-            var v0 = face.vertices[i];
-            var v1 = face.vertices[(i + 1) % face.vertices.length];
+            var v0 = face.vertices[i].clone().applyMatrix4(info.matrixWorld);
+            var v1 = face.vertices[(i + 1) % face.vertices.length].clone().applyMatrix4(info.matrixWorld);
 
             var int = XAC.findLinePlaneIntersection(v0, v1, a, b, c, d, true);
             if (int != undefined) intersections.push(int);
@@ -267,7 +284,6 @@ MEDLEY._select2dStrip = function(embeddable, info) {
     // fit the selection to material's bend radius
     var projsXY = [];
     for (var i = 0; i < points.length; i++) {
-        // addALine(points[i], points[(i + 1) % points.length], 0xff0000)
         projsXY.push(points[i].clone().applyAxisAngle(axisToRotate, angleToRotate));
     }
     MEDLEY.fit1dBendRadius(info, projsXY, embeddable.bendRadius);
@@ -301,8 +317,8 @@ MEDLEY._select2dStrip = function(embeddable, info) {
         embeddable._widthRange = Math.max(0, widthRange - embeddable._baseWidth);
     }
 
-    embeddable.points0 = points;
     embeddable.normal = nmlCrossPlane;
+
     embeddable._generate2dGeometry();
 }
 
@@ -310,6 +326,10 @@ MEDLEY._select2dStrip = function(embeddable, info) {
 //  select a (freeform) patch from the object to create embeddable
 //
 MEDLEY._select3dPatch = function(embeddable, info) {
+    info.object.updateMatrixWorld();
+    var matrixWorld = info.object.matrixWorld.clone();
+
+    var vertices = info.object.geometry.vertices.clone();
 
     // [internal helper] interpolate between p1 and p2 with t
     var __interpolate = function(p1, p2, t) {
@@ -324,7 +344,8 @@ MEDLEY._select3dPatch = function(embeddable, info) {
             if (neighbor.visited) continue;
             var vindices = [neighbor.a, neighbor.b, neighbor.c];
             for (idx of vindices) {
-                if (vertices[idx].distanceTo(center) < radius) {
+                var v = vertices[idx].clone().applyMatrix4(matrixWorld);
+                if (v.distanceTo(center) < radius) {
                     enclosingNeighbors.push(neighbor);
                     enclosingNeighbors = enclosingNeighbors.concat(
                         __findEnclosingNeighbors(neighbor, center, radius));
@@ -337,11 +358,9 @@ MEDLEY._select3dPatch = function(embeddable, info) {
 
     // [internal helper] debug abnormal faces
     var __debugFace = function(face) {
-        // info.object.geometry.highlightFace(face, 0xffff00, XAC.scene);
         for (var k = 0; k < face.points.length; k++) {
             var p0 = face.points[k];
             var p1 = face.points[(k + 1) % face.points.length];
-            // addALine(p0, p1, 0xff00ff);
             addAnArrow(p0, p1.clone().sub(p0), p1.distanceTo(p0), k == 0 ? 0xff0000 :
                 0x000000, 0.01)
         }
@@ -373,7 +392,6 @@ MEDLEY._select3dPatch = function(embeddable, info) {
     //
     // 2. find enclosing triangles
     //
-    var vertices = info.object.geometry.vertices;
     var facesEnclosed = info.faces.clone();
     var moreFacesEnclosed = [];
     for (face of facesEnclosed) {
@@ -397,7 +415,8 @@ MEDLEY._select3dPatch = function(embeddable, info) {
         }
         face.vprojs = [];
         for (var i = 0; i < vindices.length; i++) {
-            var p = XAC.getPointProjectionOnPlane(face.vertices[i],
+            var v = face.vertices[i].clone().applyMatrix4(info.matrixWorld);
+            var p = XAC.getPointProjectionOnPlane(v,
                 info.paramsCross.A, info.paramsCross.B,
                 info.paramsCross.C, info.paramsCross.D);
             p.applyAxisAngle(axisToRotate, angleToRotate);
@@ -405,13 +424,15 @@ MEDLEY._select3dPatch = function(embeddable, info) {
             face.vprojs.push(p);
 
             if (XAC.testPointInPolygon(p, projPoints)) {
-                face.verticesInside.push(face.vertices[i]);
+                face.verticesInside.push(v);
             }
         }
 
         // if face is inside, add it directly
         if (face.verticesInside.length >= 3) {
-            facesRemeshed.push(face.vertices);
+            var vs = [];
+            for (v of face.vertices) vs.push(v.clone().applyMatrix4(info.matrixWorld));
+            facesRemeshed.push(vs);
             // info.object.geometry.highlightFace(face, 0xff00ff, XAC.scene);
         }
         // otherwise detect intersection, and remesh the part of the face that's inside the drawing
@@ -514,7 +535,9 @@ MEDLEY._select3dPatch = function(embeddable, info) {
                 // handle edge cases: have vertices inside but not intersecting with drawing
                 // due to projection error, etc.
                 if (face.verticesInside.length > 1) {
-                    facesRemeshed.push(face.vertices);
+                    var vs = [];
+                    for (v of face.vertices) vs.push(v.clone().applyMatrix4(info.matrixWorld));
+                    facesRemeshed.push(vs);
                 }
             }
         }
@@ -541,6 +564,7 @@ MEDLEY._select3dPatch = function(embeddable, info) {
     info.object.material.side = THREE.BackSide;
     var toRemove = [];
     for (vs of facesRemeshed) {
+        // addATriangle(vs[0], vs[1], vs[2], 0x00ff00);
         var vertices1 = [];
         for (v of vs) {
             var voffset = v.clone().add(nml.clone().multiplyScalar(0.01));
@@ -578,6 +602,9 @@ MEDLEY._select3dPatch = function(embeddable, info) {
 //  - isLite: in a light version, show simple visuals rather than generating a full mesh
 //
 MEDLEY._select3dStrip = function(embeddable, info, width, isLite) {
+    // info.object.updateMatrixWorld();
+    // var matrixWorld = info.object.matrixWorld.clone();
+
     //
     //  find projections on the normal plane
     //
@@ -638,10 +665,10 @@ MEDLEY._select3dStrip = function(embeddable, info, width, isLite) {
 
         // find intersections with the two planes
         for (var i = 0; i < face.vertices.length; i++) {
-            var v0 = face.vertices[i];
-            var v1 = face.vertices[(i + 1) % face.vertices.length];
+            var v0 = face.vertices[i].clone().applyMatrix4(info.matrixWorld);
+            var v1 = face.vertices[(i + 1) % face.vertices.length].clone().applyMatrix4(info.matrixWorld);
 
-            if (center != undefined && v0.distanceTo(center) > radius) return [];
+            // if (center != undefined && v0.distanceTo(center) > radius) return [];
 
             var proj0 = XAC.getPointProjectionOnPlane(v0, a, b, c, d0);
             var proj1 = XAC.getPointProjectionOnPlane(v0, a, b, c, d1);
@@ -658,7 +685,9 @@ MEDLEY._select3dStrip = function(embeddable, info, width, isLite) {
         // face is between the two planes
         var intersections = intersections0.concat(intersections1);
         if (pointsWithin.length >= 3) {
-            facesRemeshed.push(face.vertices.clone());
+            var vs = [];
+            for (v of face.vertices) vs.push(v.clone().applyMatrix4(info.matrixWorld));
+            facesRemeshed.push(vs);
         }
         // face intersects with at least one of the planes
         else if (intersections.length > 0) {
@@ -727,7 +756,10 @@ MEDLEY._select3dStrip = function(embeddable, info, width, isLite) {
     //
     // cross sectional selection via two cutting planes
     //
-    var vertices = info.object.geometry.vertices;
+    // var vertices = info.object.geometry.vertices.clone();
+    // for (v of vertices) {
+    //     v.applyMatrix4(matrixWorld);
+    // }
     var facesRemeshed = [];
     var facesVisited = [];
     var a = info.paramsNormal.A,
