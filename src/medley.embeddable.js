@@ -57,8 +57,12 @@ MEDLEY.Embeddable.prototype.setDepth = function(d) {
             });
             break;
         case 2:
+            this._generate2dGeometry({
+                depthRatio: d
+            });
+            break;
         case 3:
-            this._generate23dGeometry({
+            this._generate3dGeometry({
                 depthRatio: d
             });
             break;
@@ -78,7 +82,7 @@ MEDLEY.Embeddable.prototype.setThickness = function(t) {
         case 2:
             break;
         case 3:
-            this._generate23dGeometry({
+            this._generate3dGeometry({
                 thicknessRatio: t
             });
             break;
@@ -94,17 +98,20 @@ MEDLEY.Embeddable.prototype.setWidth = function(w, isLite) {
         case 1:
             break;
         case 2:
+            this._generate2dGeometry({
+                widthRatio: w
+            });
         case 3:
             // NOTE: _placementInfo will be assigned only in a cross sectional selection case
             if (this._placementInfo != undefined) {
-                var widthCrossSection = this._baseWidth + w * this._placementInfo._widthRange;
+                var widthCrossSection = this._baseWidth + w * this._widthRange;
                 XAC.scene.remove(this._liteElements);
                 XAC.scene.remove(this._meshes);
                 this._meshes = undefined;
                 this._facesInner = undefined;
                 this._facesOuter = undefined;
                 // log('from embeddable')
-                this._liteElements = MEDLEY._init2dXsecPlacement(this, this._placementInfo,
+                this._liteElements = MEDLEY._select3dStrip(this, this._placementInfo,
                     widthCrossSection, isLite);
                 this._widthRatio = w;
             }
@@ -149,11 +156,92 @@ MEDLEY.Embeddable.prototype._generate1dGeometry = function(params) {
     }
 };
 
+MEDLEY.Embeddable.prototype._generate2dGeometry = function(params) {
+    if (params != undefined) {
+        this._depthRatio = params.depthRatio || this._depthRatio;
+        this._widthRatio = params.widthRatio || this._widthRatio;
+        this._thicknessRatio = params.thicknessRatio || this._thicknessRatio;
+    }
+
+    var points = [];
+    var d = this._mapDepth(this._depthRatio);
+    for (var i = 0; i < this.points0.length; i++) {
+        points.push(this.points0[i].clone().multiplyScalar(1 - d)
+            .add(this.points1[i].clone().multiplyScalar(d)));
+    }
+
+    var geometry = new THREE.Geometry();
+    this._facesInner = this._facesInner || [];
+    this._facesOuter = this._facesOuter || [];
+
+    // XXX
+    var whalf = (this._baseWidth + this._widthRatio * this._widthRange) / 2;
+
+    var vwidth = this.normal.clone().multiplyScalar(whalf);
+
+    for (var i = 0; i < points.length - 1; i++) {
+        var p0 = points[i];
+        var p1 = points[i + 1];
+        var p0top = p0.clone().add(vwidth);
+        var p1top = p1.clone().add(vwidth);
+        var p0bottom = p0.clone().sub(vwidth);
+        var p1bottom = p1.clone().sub(vwidth);
+        var vrange0 = this.points1[i].clone().sub(this.points0[i]);
+        var vthickness0 = vrange0.normalize().multiplyScalar(this._baseThickness);
+        var vrange1 = this.points1[i + 1].clone().sub(this.points0[i + 1]);
+        var vthickness1 = vrange1.normalize().multiplyScalar(this._baseThickness);
+
+        var p0topInner = p0top.clone().sub(vthickness0);
+        var p1topInner = p1top.clone().sub(vthickness1);
+        var p0bottomInner = p0bottom.clone().sub(vthickness0);
+        var p1bottomInner = p1bottom.clone().sub(vthickness1);
+
+        var p0topOuter = p0top.clone().add(vthickness0);
+        var p1topOuter = p1top.clone().add(vthickness1);
+        var p0bottomOuter = p0bottom.clone().add(vthickness0);
+        var p1bottomOuter = p1bottom.clone().add(vthickness1);
+
+        if (this._meshes == undefined) {
+            this._facesInner.push([p0topInner, p1topInner, p0bottomInner]);
+            this._facesInner.push([p1bottomInner, p1topInner, p0bottomInner]);
+            this._facesOuter.push([p0topOuter, p1topOuter, p0bottomOuter]);
+            this._facesOuter.push([p1bottomOuter, p1topOuter, p0bottomOuter]);
+        } else {
+            this._facesInner[2 * i][0].copy(p0topInner);
+            this._facesInner[2 * i][1].copy(p1topInner);
+            this._facesInner[2 * i][2].copy(p0bottomInner);
+            this._facesInner[2 * i + 1][0].copy(p1bottomInner);
+            this._facesOuter[2 * i][0].copy(p0topOuter);
+            this._facesOuter[2 * i][1].copy(p1topOuter);
+            this._facesOuter[2 * i][2].copy(p0bottomOuter);
+            this._facesOuter[2 * i + 1][0].copy(p1bottomOuter);
+        }
+    }
+
+    if (this._meshes == undefined) {
+        var meshInner = this._generateSurface(this._facesInner);
+        var meshOuter = this._generateSurface(this._facesOuter);
+        var meshLateral = this._stitchSurfaces(meshInner, meshOuter);
+
+        this._meshes = new THREE.Object3D();
+        this._meshes.add(meshInner);
+        this._meshes.add(meshOuter);
+        this._meshes.add(meshLateral);
+
+        XAC.scene.add(this._meshes);
+        this._makeInteractive();
+    } else {
+        for (mesh of this._meshes.children) {
+            mesh.geometry.verticesNeedUpdate = true;
+        }
+    }
+}
+
 //
 //  generate 2 or 3d geometry - segments of cylinders
 //  - params: depthRatio and/or thicknessRatio to control depth and thickness
 //
-MEDLEY.Embeddable.prototype._generate23dGeometry = function(params) {
+MEDLEY.Embeddable.prototype._generate3dGeometry = function(params) {
     if (params != undefined) {
         this._depthRatio = params.depthRatio || this._depthRatio;
         this._thicknessRatio = params.thicknessRatio || this._thicknessRatio;
@@ -198,48 +286,18 @@ MEDLEY.Embeddable.prototype._generate23dGeometry = function(params) {
 
     if (this._meshes == undefined) {
         // create the two sides of embeddable geometry
-        var infoInner = this._generateSurface(this._facesInner);
-        var infoOuter = this._generateSurface(this._facesOuter);
-
-        // stitch the two sides together
-        var geometry = new THREE.Geometry();
-        var nvertices = 0;
-        console.assert(infoInner.mesh.geometry.vertices.length == infoOuter.mesh.geometry.vertices.length,
-            'boundary points do not match');
-        infoInner.mesh.geometry.assignVerticesToFaces();
-        infoOuter.mesh.geometry.assignVerticesToFaces();
-        var facesInner = infoInner.mesh.geometry.faces;
-        var facesOuter = infoOuter.mesh.geometry.faces;
-        var nfaces = facesInner.length;
-        var nedges = 3;
-        for (var i = 0; i < nfaces; i++) {
-            for (var j = 0; j < nedges; j++) {
-                var vi0 = facesInner[i].vertices[j];
-                var vi1 = facesInner[i].vertices[(j + 1) % nedges];
-                var vo0 = facesOuter[i].vertices[j];
-                var vo1 = facesOuter[i].vertices[(j + 1) % nedges];
-                geometry.vertices.push(vi0, vi1, vo0, vo1);
-                geometry.faces.push(new THREE.Face3(nvertices + 0, nvertices + 1, nvertices + 2));
-                geometry.faces.push(new THREE.Face3(nvertices + 2, nvertices + 3, nvertices + 1));
-                nvertices += 4;
-            }
-        }
-
-        geometry.computeFaceNormals();
-        geometry.computeCentroids();
-        var meshLateral = new THREE.Mesh(geometry, this._material.clone());
+        var meshInner = this._generateSurface(this._facesInner);
+        var meshOuter = this._generateSurface(this._facesOuter);
+        var meshLateral = this._stitchSurfaces(meshInner, meshOuter);
 
         // aggregating everything
         this._meshes = new THREE.Object3D();
-        this._meshes.add(infoInner.mesh);
-        this._meshes.add(infoOuter.mesh);
+        this._meshes.add(meshInner);
+        this._meshes.add(meshOuter);
         this._meshes.add(meshLateral);
 
         XAC.scene.add(this._meshes);
-
         this._makeInteractive();
-        // this._meshes._selected = true;
-        // XAC._selecteds.push(this._meshes);
     } else {
         for (mesh of this._meshes.children) {
             mesh.geometry.verticesNeedUpdate = true;
@@ -267,9 +325,39 @@ MEDLEY.Embeddable.prototype._generateSurface = function(faces) {
     var material = XAC.MATERIALHIGHLIGHT.clone();
     var mesh = new THREE.Mesh(geometry, this._material.clone());
 
-    return {
-        mesh: mesh
-    };
+    return mesh;
+}
+
+//
+//
+//
+MEDLEY.Embeddable.prototype._stitchSurfaces = function(mesh0, mesh1) {
+    var geometry = new THREE.Geometry();
+    var nvertices = 0;
+    console.assert(mesh0.geometry.vertices.length == mesh1.geometry.vertices.length,
+        'boundary points do not match');
+    mesh0.geometry.assignVerticesToFaces();
+    mesh1.geometry.assignVerticesToFaces();
+    var facesInner = mesh0.geometry.faces;
+    var facesOuter = mesh1.geometry.faces;
+    var nfaces = facesInner.length;
+    var nedges = 3;
+    for (var i = 0; i < nfaces; i++) {
+        for (var j = 0; j < nedges; j++) {
+            var vi0 = facesInner[i].vertices[j];
+            var vi1 = facesInner[i].vertices[(j + 1) % nedges];
+            var vo0 = facesOuter[i].vertices[j];
+            var vo1 = facesOuter[i].vertices[(j + 1) % nedges];
+            geometry.vertices.push(vi0, vi1, vo0, vo1);
+            geometry.faces.push(new THREE.Face3(nvertices + 0, nvertices + 1, nvertices + 2));
+            geometry.faces.push(new THREE.Face3(nvertices + 2, nvertices + 3, nvertices + 1));
+            nvertices += 4;
+        }
+    }
+
+    geometry.computeFaceNormals();
+    geometry.computeCentroids();
+    return new THREE.Mesh(geometry, this._material.clone());
 }
 
 //
@@ -287,14 +375,6 @@ MEDLEY.Embeddable.prototype._makeInteractive = function() {
             mesh.material.color.setHex(COLORHIGHLIGHT);
             mesh.material.needsUpdate = true;
         }
-        // MEDLEY._sldrDepth.slider('value',
-        //     this.embeddable._depthRatio * MEDLEY._sldrDepth.slider('option', 'max'));
-        // MEDLEY._sldrThickness.slider('value',
-        //     this.embeddable._thicknessRatio * MEDLEY._sldrThickness.slider('option', 'max')
-        // );
-        // MEDLEY._sldrWidth.slider('value',
-        //     this.embeddable._widthRatio * MEDLEY._sldrWidth.slider('option', 'max'));
-
         XAC.updateSlider(MEDLEY._sldrDepth, this.embeddable._depthRatio, MEDLEY.sldrMapFunc);
         XAC.updateSlider(MEDLEY._sldrThickness, this.embeddable._thicknessRatio, MEDLEY.sldrMapFunc);
         XAC.updateSlider(MEDLEY._sldrWidth, this.embeddable._widthRatio, MEDLEY.sldrMapFunc);
@@ -304,14 +384,6 @@ MEDLEY.Embeddable.prototype._makeInteractive = function() {
             mesh.material.needsUpdate = true;
         }
     });
-
-    // MEDLEY._sldrDepth.slider('value',
-    //     this._depthRatio * MEDLEY._sldrDepth.slider('option', 'max'));
-    // MEDLEY._sldrThickness.slider('value',
-    //     this._thicknessRatio * MEDLEY._sldrThickness.slider('option', 'max'));
-    // MEDLEY._sldrWidth.slider('value',
-    //     this._widthRatio * MEDLEY._sldrWidth.slider('option', 'max'));
-
 
     XAC.updateSlider(MEDLEY._sldrDepth, this._depthRatio, MEDLEY.sldrMapFunc);
     XAC.updateSlider(MEDLEY._sldrThickness, this._thicknessRatio, MEDLEY.sldrMapFunc);
@@ -333,7 +405,7 @@ XAC.updateSlider = function(sldr, value, mapFunc) {
     var sldrValue = mapFunc(sldr);
     if (sldrValue != value) {
         sldr.slider('value', value);
-        log([sldrValue, value])
+        // log([sldrValue, value])
     } else {
 
     }
