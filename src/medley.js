@@ -8,10 +8,15 @@
 
 var MEDLEY = MEDLEY || {};
 
-MEDLEY._embeddables = [];
-// MEDLEY._activeEmbeddables = [];
+$(document).ready(function() {
+    MEDLEY.embeddables = [];
+    MEDLEY.everything = new THREE.Object3D();
+    XAC.scene.add(MEDLEY.everything);
+});
 
 MEDLEY.onStlLoaded = function(object) {
+    MEDLEY.everything.add(object);
+
     //
     // geometry processing
     //

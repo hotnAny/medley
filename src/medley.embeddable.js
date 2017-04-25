@@ -394,7 +394,7 @@ MEDLEY.Embeddable.prototype._makeInteractive = function() {
 //
 //
 MEDLEY.Embeddable.prototype.selfDestroy = function() {
-    MEDLEY._embeddables.remove(this);
+    MEDLEY.embeddables.remove(this);
     XAC.scene.remove(this._meshes);
 }
 
