@@ -36,6 +36,11 @@ MEDLEY.PaintInput.prototype.mousedown = function(e, hit) {
     this._maxPoint = new THREE.Vector3(-Number.MAX_VALUE, -Number.MAX_VALUE, -Number.MAX_VALUE);
     this._footprint = 0;
 
+    // get the transformed geometry of the object
+    this._geometry = gettg(this._object);
+    this._geometry.computeVertexNormals();
+    this._geometry.computeFaceNormals();
+
     return true;
 };
 
@@ -69,20 +74,22 @@ MEDLEY.PaintInput.prototype.mousemove = function(e) {
         addABall(hit.point, this._colorPaint, this._radiusPaint);
 
         // interpolate the normal
-        var vertices = hit.object.geometry.vertices;
+        // var vertices = hit.object.geometry.vertices;
+        var vertices = this._geometry.vertices;
+
         var v1 = vertices[hit.face.a]
         var v2 = vertices[hit.face.b]
         var v3 = vertices[hit.face.c]
         var p = hit.point;
 
-        // XXX
-        // addATriangle(v1, v2, v3, this._colorPaint);
 
         var a1 = XAC.triangleArea(p, v2, v3);
         var a2 = XAC.triangleArea(p, v3, v1);
         var a3 = XAC.triangleArea(p, v1, v2);
 
-        var normals = hit.face.vertexNormals;
+        // get the transformed vertex normals
+        var idxFace = hit.object.geometry.faces.indexOf(hit.face);
+        var normals = this._geometry.faces[idxFace].vertexNormals;
         var n1 = normals[0].clone();
         var n2 = normals[1].clone();
         var n3 = normals[2].clone();
@@ -121,5 +128,4 @@ MEDLEY.PaintInput.prototype.mouseup = function(e) {
     }
 
     removeBalls();
-
 };
