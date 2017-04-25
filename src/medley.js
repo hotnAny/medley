@@ -53,3 +53,16 @@ MEDLEY.onStlLoaded = function(object) {
     paintInput.addSubscriber(MEDLEY.selectToCreateEmbeddables);
 
 }
+
+//
+//
+//
+MEDLEY.updateEverything = function(object) {
+    var everythingOld = MEDLEY.everything;
+    XAC.scene.remove(everythingOld);
+    MEDLEY.everything = new THREE.Object3D();
+    MEDLEY.everything.add(everythingOld);
+    MEDLEY.everything.add(object);
+    XAC.scene.add(MEDLEY.everything);
+
+}
