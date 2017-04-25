@@ -87,7 +87,7 @@ MEDLEY.selectToCreateEmbeddables = function(info) {
 
         switch (embeddable._dim) {
             case 1:
-                embeddable._placementInfo = info;
+                embeddable._info = info;
                 if (XAC._footprint > 50) MEDLEY._select1dSegments(embeddable, info);
                 break;
             case 2:
@@ -113,12 +113,8 @@ MEDLEY.selectToCreateEmbeddables = function(info) {
     // reset sidedness of object
     info.object.material.side = THREE.FrontSide;
 
-    var everythingOld = MEDLEY.everything;
-    XAC.scene.remove(everythingOld);
-    MEDLEY.everything = new THREE.Object3D();
-    MEDLEY.everything.add(everythingOld);
-    MEDLEY.everything.add(embeddable._meshes);
-    XAC.scene.add(MEDLEY.everything);
+    // reorg the everything object3d
+    if (embeddable._meshes != undefined) MEDLEY.updateEverything(embeddable._meshes);
 };
 
 //
@@ -828,8 +824,8 @@ MEDLEY._select3dStrip = function(embeddable, info, width, isLite) {
 
     // find out the valid range to get cross section
     // also give embeddable access to selection info for future re-selection
-    if (embeddable._placementInfo == undefined) {
-        embeddable._placementInfo = info;
+    if (embeddable._info == undefined) {
+        embeddable._info = info;
         var widthRange = MEDLEY._findAvailableWidthRange(info.object, centroidRemeshed, nmlCrossPlane);
         embeddable._widthRange = Math.max(0, widthRange - embeddable._baseWidth);
     }
