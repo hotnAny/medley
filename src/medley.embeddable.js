@@ -12,7 +12,9 @@
 
 var MEDLEY = MEDLEY || {};
 
-MEDLEY.Embeddable = function(matobj) {
+MEDLEY.Embeddable = function(object, matobj) {
+    this._object = object;
+    
     if (matobj != undefined) {
         this._matobj = matobj;
         this._dim = matobj.dim;

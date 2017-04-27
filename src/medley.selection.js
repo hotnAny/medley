@@ -24,7 +24,7 @@ MEDLEY.selectToCreateEmbeddables = function(info) {
 
     // clean up points
     var toRemove = [];
-    var eps = 0.25;
+    var eps = 5;
     var p0 = info.points[0];
     for (var i = 1; i < info.points.length; i++) {
         var p1 = info.points[i];
@@ -38,6 +38,8 @@ MEDLEY.selectToCreateEmbeddables = function(info) {
     for (p of toRemove) {
         info.points.remove(p);
     }
+
+    log('# of points: ' + info.points.length);
 
     // compute summary info about user input
     var diagnal = info.maxPoint.distanceTo(info.minPoint);
@@ -75,7 +77,7 @@ MEDLEY.selectToCreateEmbeddables = function(info) {
 
     // sampling based on material's dimension
     if (MEDLEY._matobjSelected != undefined) {
-        var embeddable = new MEDLEY.Embeddable(MEDLEY._matobjSelected);
+        var embeddable = new MEDLEY.Embeddable(info.object, MEDLEY._matobjSelected);
 
         // remove all active embeddables to focus on this new one
         for (object of XAC._selecteds) {
