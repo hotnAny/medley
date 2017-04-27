@@ -608,3 +608,43 @@ XAC.fitCircle = function(points) {
         l: l
     };
 }
+
+//
+//  fit an array of THREE.Vector3 points in p to a circle
+//
+XAC.fitSphere = function(points) {
+    var p = [];
+    for (point of points) {
+        p.push([point.x, point.y, point.z]);
+    }
+
+    var M = [],
+        X = [],
+        Y = [],
+        y = [],
+        MT, B, c, z, n, l;
+
+    n = p.length;
+
+    for (i = 0; i < n; i++) {
+        M.push([p[i][0], p[i][1], p[i][2], 1.0]);
+        y.push(p[i][0] * p[i][0] + p[i][1] * p[i][1] + p[i][2] * p[i][2]);
+    }
+
+    MT = numeric.transpose(M);
+    B = numeric.dot(MT, M);
+    c = numeric.dot(MT, y);
+    z = numeric.solve(B, c);
+
+    var xm = z[0] * 0.5;
+    var ym = z[1] * 0.5;
+    var zm = z[2] * 0.5;
+    var r = Math.sqrt(z[3] + xm * xm + ym * ym + zm * zm);
+
+    return {
+        x0: xm,
+        y0: ym,
+        z0: zm,
+        r: r
+    };
+}
