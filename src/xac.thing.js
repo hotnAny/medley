@@ -93,7 +93,7 @@ XAC.Line.prototype = Object.create(XAC.Thing.prototype);
 //
 XAC.ThickLine = function(p1, p2, r, mat) {
 	var h = p1.distanceTo(p2);
-	this._line = new XAC.Cylinder(r, h, mat, true);
+	this._line = new XAC.Cylinder(r, h, mat, false);
 	this._g = this._line.g;
 	this._m = this._line.m;
 
@@ -107,7 +107,7 @@ XAC.ThickLine = function(p1, p2, r, mat) {
 XAC.ThickLine.prototype = Object.create(XAC.Thing.prototype);
 XAC.ThickLine.prototype.update = function(p1, p2, r) {
 	var h = p1.distanceTo(p2);
-	this._line.update(r, h, undefined, true);
+	this._line.update(r, h, undefined, false);
 
 	rotateObjTo(this._m, this._dir, true);
 	this._dir = p2.clone().sub(p1);
