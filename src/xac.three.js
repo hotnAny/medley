@@ -237,3 +237,13 @@ THREE.Geometry.prototype.removeRedundantFaces = function() {
 
     return toRemove.length;
 }
+
+//
+//
+//
+THREE.Vector3.prototype.applyAxisAngleOnPoint = function(axis, point, angle) {
+    this.sub(point);
+    this.applyAxisAngle(axis, angle);
+    this.add(point);
+    return this;
+}
