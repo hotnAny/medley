@@ -107,7 +107,6 @@ function rotateGeoTo(geo, dir, isReversed) {
 	geo.applyMatrix(mr);
 }
 
-
 //
 //	rotate a vector towards a given direction
 //
