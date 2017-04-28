@@ -4,10 +4,20 @@
 //
 //  by xiangchen@acm.org, 03/2017
 //
-//  include:
-//  - constructor;
-//  - generateGeometry: unified interface to generate geometry for the embeddable
-//  - _generate1dGeometry: actual method to generate 1d geometry
+//      - constructor;
+//
+//      - setDepth: set the embeddable's depth into an object (1/2/3d)
+//      - setWidth: set the embeddable's width (2/3d)
+//      - setThickness: set the embeddable's thickness (3d)
+//
+//      - _generate1dGeometry: generate 1d geometry (polyline-based tube/tunnel)
+//      - _generate2dGeometry: generate 2d geometry (slab extruded from a polyline)
+//      - _generate3dGeometry: generate 3d geometry (solid extruded from users' 3d drawing)
+//
+//      - _generateSurface: generate a surface given a set of face vertices
+//      - _stitchSurfaces: stitch two surfaces together by forming a lateral area
+//      - _makeInteractive
+//
 //	........................................................................................................
 
 var MEDLEY = MEDLEY || {};
@@ -33,10 +43,12 @@ MEDLEY.Embeddable = function(object, matobj) {
     this._material.transparent = false;
     this._material.side = THREE.DoubleSide;
 
+    // map a [0,1] depth ratio to a slightly large interval
     this._mapDepth = function(d) {
         return -this.DEPTHEPS + (1 + 2 * this.DEPTHEPS) * d;
     };
 
+    // map a [0,1] thickness ratio to a slightly large interval
     this._mapThickness = function(t) {
         var eps = this.DEPTHEPS * 3;
         return t + eps;
@@ -68,7 +80,6 @@ MEDLEY.Embeddable.prototype.setDepth = function(d) {
                 depthRatio: d
             });
             break;
-
     }
 }
 
@@ -125,8 +136,7 @@ MEDLEY.Embeddable.prototype.setWidth = function(w, isLite) {
 }
 
 //
-//  generate 1d geometry - segments of cylinders
-//  - points: points of the line segments
+//  generate 1d geometry (polyline-based tube/tunnel)
 //
 MEDLEY.Embeddable.prototype._generate1dGeometry = function(params) {
     if (params != undefined) {
@@ -157,6 +167,9 @@ MEDLEY.Embeddable.prototype._generate1dGeometry = function(params) {
     }
 };
 
+//
+//  generate 2d geometry (slab extruded from a polyline)
+//
 MEDLEY.Embeddable.prototype._generate2dGeometry = function(params) {
     if (params != undefined) {
         this._depthRatio = params.depthRatio || this._depthRatio;
@@ -238,8 +251,7 @@ MEDLEY.Embeddable.prototype._generate2dGeometry = function(params) {
 }
 
 //
-//  generate 2 or 3d geometry - segments of cylinders
-//  - params: depthRatio and/or thicknessRatio to control depth and thickness
+//  generate 3d geometry (solid extruded from users' 3d drawing)
 //
 MEDLEY.Embeddable.prototype._generate3dGeometry = function(params) {
     if (params != undefined) {
@@ -305,7 +317,6 @@ MEDLEY.Embeddable.prototype._generate3dGeometry = function(params) {
 }
 
 
-
 //
 //  generate a surface given a set of face vertices
 //
@@ -328,7 +339,7 @@ MEDLEY.Embeddable.prototype._generateSurface = function(faces) {
 }
 
 //
-//
+//  stitch two surfaces together by forming a lateral area
 //
 MEDLEY.Embeddable.prototype._stitchSurfaces = function(mesh0, mesh1) {
     var geometry = new THREE.Geometry();
@@ -360,7 +371,7 @@ MEDLEY.Embeddable.prototype._stitchSurfaces = function(mesh0, mesh1) {
 }
 
 //
-//
+//  make each embeddable selectable, and associated with sliders on depth, width and thickness
 //
 MEDLEY.Embeddable.prototype._makeInteractive = function() {
     this._meshes.embeddable = this;
@@ -393,15 +404,29 @@ MEDLEY.Embeddable.prototype._makeInteractive = function() {
 }
 
 //
-//
+//  remove the embeddable's meshes
 //
 MEDLEY.Embeddable.prototype.selfDestroy = function() {
     MEDLEY.embeddables.remove(this);
-    MEDLEY.everything.remove(this._meshes);
+    
+    var __removeFrom = function(object, parent) {
+        for(c of parent.children) {
+            if(c == object) {
+                parent.remove(c);
+                return;
+            }
+            if(c.children != undefined && c.children.length > 0) {
+                __removeFrom(object, c);
+            }
+        }
+    }
+
+    __removeFrom(this._meshes, MEDLEY.everything);
 }
 
 XAC.updateSlider = function(sldr, value, mapFunc) {
-    var sldrValue = mapFunc(sldr);
+    var sldrValue = sldr.slider('option', 'value');
+    value = mapFunc(value, sldr);
     if (sldrValue != value) {
         sldr.slider('value', value);
         // log([sldrValue, value])
