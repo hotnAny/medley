@@ -28,14 +28,14 @@ $(document).ready(function() {
 
     $(document.body).append(panel);
 
-    XAC.enableDragDrop(function(files){
+    XAC.enableDragDrop(function(files) {
         for (var i = files.length - 1; i >= 0; i--) {
-			var reader = new FileReader();
-			reader.onload = (function(e) {
-				XAC.loadStl(e.target.result, MEDLEY.onStlLoaded);
-			});
-			reader.readAsBinaryString(files[i]);
-		}
+            var reader = new FileReader();
+            reader.onload = (function(e) {
+                XAC.loadStl(e.target.result, MEDLEY.onStlLoaded);
+            });
+            reader.readAsBinaryString(files[i]);
+        }
     });
 
     XAC.ignoreMouseFromPanel = true;
@@ -98,15 +98,19 @@ $(document).ready(function() {
         }
     });
 
-    MEDLEY.sldrMapFunc = function(sldr) {
+    MEDLEY.sldrMapFunc = function(value, sldr) {
         var max = sldr.slider("option", "max");
-        return sldr.slider('option', 'value') * 1.0 / max;
+        // return sldr.slider('option', 'value') * 1.0 / max;
+        return value * max;
     }
 
     // delete using keyboard
     XAC.on(XAC.DELETE, function() {
         for (object of XAC._selecteds) {
-            if (object.embeddable != undefined) object.embeddable.selfDestroy();
+            if (object.embeddable != undefined) {
+                object.embeddable.selfDestroy();
+                XAC.scene.remove(object.embeddable.extra);
+            }
         }
     });
 
