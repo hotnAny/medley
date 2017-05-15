@@ -15,6 +15,8 @@ $(document).ready(function() {
 });
 
 MEDLEY.onStlLoaded = function(object) {
+    MEDLEY.everything.children = [];
+
     MEDLEY.everything.add(object);
 
     //
@@ -26,6 +28,8 @@ MEDLEY.onStlLoaded = function(object) {
         time('[loading object] buffergeometry converted');
     }
 
+    object.geometry.center();
+
     object.geometry.computeFaceNormals();
     object.geometry.computeVertexNormals();
     time('[loading object] computed normals');
@@ -34,17 +38,36 @@ MEDLEY.onStlLoaded = function(object) {
     object.geometry.assignVerticesToFaces();
     time('[loading object] assigned vertices to faces');
 
-    if (XAC.octree != undefined) {
-        XAC.octree.add(object, {
-            useFaces: true
-        });
-        XAC.octree.update();
-        time('[loading object] added object to octree');
-        XAC.octree.setVisibility(false);
-    }
+    //
+    //  octree
+    //
+    XAC.octree = new THREE.Octree({
+        undeferred: true,
+        depthMax: Infinity,
+        objectsThreshold: 8,
+    });
+
+    XAC.octree.add(object, {
+        useFaces: true
+    });
+    XAC.octree.update();
+    time('[loading object] added object to octree');
+    XAC.octree.setVisibility(false);
+
 
     object.geometry.createNeighborList(XAC.octree);
     time('[loading object] created neighbor list for each face');
+
+
+    //
+    //  input techniques
+    //
+    $(document.body).on('mousedown', XAC.mousedown);
+    $(document.body).on('mousemove', XAC.mousemove);
+    $(document.body).on('mouseup', XAC.mouseup);
+    $(document.body).on('keydown', XAC.keydown);
+    $(document.body).on('keyup', XAC.keyup);
+    XAC._activeHits = [];
 
     object.inputTechniques = [];
 
