@@ -187,12 +187,12 @@ XAC._dispatchInputEvents = function(e, type) {
 }
 
 $(document).ready(function() {
-    $(document.body).on('mousedown', XAC.mousedown);
-    $(document.body).on('mousemove', XAC.mousemove);
-    $(document.body).on('mouseup', XAC.mouseup);
-    $(document.body).on('keydown', XAC.keydown);
-    $(document.body).on('keyup', XAC.keyup);
-    XAC._activeHits = [];
+    // $(document.body).on('mousedown', XAC.mousedown);
+    // $(document.body).on('mousemove', XAC.mousemove);
+    // $(document.body).on('mouseup', XAC.mouseup);
+    // $(document.body).on('keydown', XAC.keydown);
+    // $(document.body).on('keyup', XAC.keyup);
+    // XAC._activeHits = [];
 });
 
 
