@@ -24,7 +24,7 @@ MEDLEY.selectToCreateEmbeddables = function(info) {
 
     // clean up points
     var toRemove = [];
-    var eps = 5;
+    var eps = 2;
     var p0 = info.points[0];
     for (var i = 1; i < info.points.length; i++) {
         var p1 = info.points[i];
@@ -51,7 +51,12 @@ MEDLEY.selectToCreateEmbeddables = function(info) {
     info.normal.divideScalar(info.normals.length);
 
     // find cross plane and store the projection points
-    info.paramsCross = XAC.findPlaneToFitPoints(info.points);
+    try {
+        info.paramsCross = XAC.findPlaneToFitPoints(info.points);
+    } catch (e) {
+        console.error(e);
+        return;
+    }
     info.projCrossPlane = [];
     for (var i = 0; i < info.points.length; i++) {
         var proj = XAC.getPointProjectionOnPlane(
@@ -66,7 +71,12 @@ MEDLEY.selectToCreateEmbeddables = function(info) {
         var p = info.points[i].clone().add(info.normals[i].clone().multiplyScalar(diagnal));
         pointsExtended.push(p);
     }
-    info.paramsNormal = XAC.findPlaneToFitPoints(info.points.concat(pointsExtended));
+    try {
+        info.paramsNormal = XAC.findPlaneToFitPoints(info.points.concat(pointsExtended));
+    } catch (e) {
+        console.error(e);
+        return;
+    }
     info.projNormalPlane = [];
     for (var i = 0; i < info.points.length; i++) {
         var proj = XAC.getPointProjectionOnPlane(
