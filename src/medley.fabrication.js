@@ -235,3 +235,41 @@ MEDLEY.make1dFabricatable = function(embeddable) {
     var layerPause = (nlayers * percPause - 0.5) | 0;
     console.info('pause at layer #' + layerPause + ' of ' + (nlayers | 0));
 }
+
+//
+//  fix the normals of a mesh (e.g., faces facing inwards, faces inside the mesh)
+//
+MEDLEY.fixFaces = function(mesh) {
+    var eps = 0.01;
+    mesh.material.side = THREE.BackSide;
+    mesh.geometry.computeFaceNormals();
+    mesh.geometry.computeCentroids();
+    var rayCaster = new THREE.Raycaster();
+    var toRemove = [];
+    for(face of mesh.geometry.faces) {
+        // flip the normal if it intersects with itself from the inside
+        var p = face.centroid.clone().add(face.normal.clone().multiplyScalar(eps));
+        rayCaster.ray.set(p, face.normal);
+        var hits = rayCaster.intersectObjects([mesh]);
+        if(hits.length > 0) {
+            var temp = face.a;
+            face.a = face.b;
+            face.b = temp;
+            face.normal.multiplyScalar(-1);
+        }
+
+        // if still intersecting after flipping, the face is inside the mesh, remove
+        p = face.centroid.clone().add(face.normal.clone().multiplyScalar(eps));
+        rayCaster.ray.set(p, face.normal);
+        hits = rayCaster.intersectObjects([mesh]);
+        if(hits.length > 0) {
+            toRemove.push(face);
+        }
+    }
+
+    for(face of toRemove) mesh.geometry.faces.remove(face);
+
+    // mesh.geometry.computeFaceNormals();
+    mesh.geometry.normalsNeedUpdate = true;
+    mesh.material.side = THREE.FrontSide;
+}
