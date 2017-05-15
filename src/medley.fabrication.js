@@ -15,7 +15,7 @@ var MEDLEY = MEDLEY || {};
 //  - points: a set of points representing the polyline underneath the geometry
 //  - r: material's bend radius
 //
-MEDLEY.fit1dBendRadius = function(info, points, r) {
+MEDLEY.fit1dBendRadius = function (info, points, r) {
     var eps = 10e-4;
     var lambda = 0.382;
     var nitr = 0;
@@ -69,11 +69,11 @@ MEDLEY.fit1dBendRadius = function(info, points, r) {
 //  solve fabrication-related problems for 1d (wire/tube/etc.) embeddable geometry
 //  - embeddable: the embeddable that needs to be embedded
 //
-MEDLEY.make1dFabricatable = function(embeddable) {
+MEDLEY.make1dFabricatable = function (embeddable) {
     var mat = XAC.MATERIALCONTRAST.clone();
     mat.opacity = 0.25;
 
-    var sq = function(x) {
+    var sq = function (x) {
         return Math.pow(x, 2);
     }
 
@@ -83,7 +83,7 @@ MEDLEY.make1dFabricatable = function(embeddable) {
     //  - p: an end point of a polyline
     //  - v: the tangent vector at p
     //  - r: the bend radius of the material
-    var __findCenter = function(k, b, p, v, r) {
+    var __findCenter = function (k, b, p, v, r) {
         //  computed by solving the following linear system
         //  - ||cp|| = r
         //  - cp dot v = 0
@@ -114,7 +114,7 @@ MEDLEY.make1dFabricatable = function(embeddable) {
     //  - v: the tangent vector at p
     //  - h: the height at which to slice and insert
     //  - r: the bend radius of the material
-    var __findOpening = function(p, v, h, r) {
+    var __findOpening = function (p, v, h, r) {
         var eps = 10e-6;
 
         // the vertical plane that contains the 'tunnel': kx - z + b = 0
@@ -239,37 +239,44 @@ MEDLEY.make1dFabricatable = function(embeddable) {
 //
 //  fix the normals of a mesh (e.g., faces facing inwards, faces inside the mesh)
 //
-MEDLEY.fixFaces = function(mesh) {
+MEDLEY.fixFaces = function (mesh) {
     var eps = 0.01;
     mesh.material.side = THREE.BackSide;
-    mesh.geometry.computeFaceNormals();
-    mesh.geometry.computeCentroids();
+    var geometry = mesh.geometry; //gettg(mesh);
+    geometry.computeFaceNormals();
+    geometry.computeCentroids();
     var rayCaster = new THREE.Raycaster();
     var toRemove = [];
-    for(face of mesh.geometry.faces) {
+    for (face of geometry.faces) {
         // flip the normal if it intersects with itself from the inside
         var p = face.centroid.clone().add(face.normal.clone().multiplyScalar(eps));
         rayCaster.ray.set(p, face.normal);
         var hits = rayCaster.intersectObjects([mesh]);
-        if(hits.length > 0) {
+        if (hits.length > 0) {
             var temp = face.a;
             face.a = face.b;
             face.b = temp;
             face.normal.multiplyScalar(-1);
+        } else {
+            continue;
         }
 
         // if still intersecting after flipping, the face is inside the mesh, remove
         p = face.centroid.clone().add(face.normal.clone().multiplyScalar(eps));
         rayCaster.ray.set(p, face.normal);
         hits = rayCaster.intersectObjects([mesh]);
-        if(hits.length > 0) {
+        if (hits.length > 0) {
             toRemove.push(face);
+            // _balls.remove(addABall(p, 0x00ff00, 0.25));
         }
     }
 
-    for(face of toRemove) mesh.geometry.faces.remove(face);
+    for (face of toRemove) geometry.faces.remove(face);
+
+    log(toRemove.length + ' faces removed');
 
     // mesh.geometry.computeFaceNormals();
-    mesh.geometry.normalsNeedUpdate = true;
+    geometry.normalsNeedUpdate = true;
+    mesh.geometry = geometry;
     mesh.material.side = THREE.FrontSide;
 }
