@@ -371,7 +371,7 @@ XAC.pointNormalOfPlane = function(a, b, c, d) {
 
 
 //
-//	get a plance from a point and two vectors
+//	get a plane from a point and two vectors
 //
 XAC.getPlaneFromPointVectors = function(pt, v1, v2) {
     var cp = new THREE.Vector3().crossVectors(v1, v2);
@@ -389,6 +389,9 @@ XAC.getPlaneFromPointVectors = function(pt, v1, v2) {
     };
 }
 
+//
+//  get a plane from a point and a vector as normal
+//
 XAC.getPlaneFromPointNormal = function(p, nml) {
     return {
         A: nml.x,
