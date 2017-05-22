@@ -175,7 +175,7 @@ MEDLEY.make1dFabricatable = function (embeddable) {
     ymax += MEDLEY._layerHeight;
 
     //
-    // compute tangents at the twoend points
+    // compute tangents at the two end points
     //
     var p0 = embeddable.points[0].clone().applyMatrix4(embeddable._meshes.matrixWorld);
     var p1 = embeddable.points[1].clone().applyMatrix4(embeddable._meshes.matrixWorld);
@@ -189,37 +189,39 @@ MEDLEY.make1dFabricatable = function (embeddable) {
 
     var info = info0.angle < infon.angle ? info0 : infon;
 
-    var step = 5 * Math.PI / 180;
-    var angleBetween = Math.acos(1 - info.angle);
-    var axis = info.p.clone().sub(info.c).cross(info.q.clone().sub(info.c)).normalize();
-    embeddable.extra = new THREE.Object3D();
-    var matTunnel = XAC.MATERIALFOCUS.clone();
-    matTunnel.transparent = false;
+    // var step = 5 * Math.PI / 180;
+    // var angleBetween = Math.acos(1 - info.angle);
+    // var axis = info.p.clone().sub(info.c).cross(info.q.clone().sub(info.c)).normalize();
+    // embeddable.extra = new THREE.Object3D();
+    // var matTunnel = XAC.MATERIALFOCUS.clone();
+    // matTunnel.transparent = false;
 
     //
     //  generate geometry for the 'tunnel'
     //
-    var joint = new XAC.Sphere(embeddable._matobj.radius, matTunnel, false);
-    if (joint.m.geometry.isBufferGeometry)
-        joint.m.geometry = new THREE.Geometry().fromBufferGeometry(joint.m.geometry);
-    joint.update(undefined, info.p);
-    embeddable.extra.add(joint.m);
-    for (var theta = step, p0 = info.p; theta < angleBetween; theta += step) {
+    // var joint = new XAC.Sphere(embeddable._matobj.radius, matTunnel, false);
+    // if (joint.m.geometry.isBufferGeometry)
+    //     joint.m.geometry = new THREE.Geometry().fromBufferGeometry(joint.m.geometry);
+    // joint.update(undefined, info.p);
+    // embeddable.extra.add(joint.m);
+    // for (var theta = step, p0 = info.p; theta < angleBetween; theta += step) {
 
-        var p1 = info.p.clone().applyAxisAngleOnPoint(axis, info.c, theta);
-        var segment = new XAC.ThickLine(p0, p1, embeddable._matobj.radius, matTunnel);
-        if (segment.m.geometry.isBufferGeometry)
-            segment.m.geometry = new THREE.Geometry().fromBufferGeometry(segment.m.geometry);
-        embeddable.extra.add(segment.m);
+    //     var p1 = info.p.clone().applyAxisAngleOnPoint(axis, info.c, theta);
+    //     var segment = new XAC.ThickLine(p0, p1, embeddable._matobj.radius, matTunnel);
+    //     if (segment.m.geometry.isBufferGeometry)
+    //         segment.m.geometry = new THREE.Geometry().fromBufferGeometry(segment.m.geometry);
+    //     embeddable.extra.add(segment.m);
 
-        joint = new XAC.Sphere(embeddable._matobj.radius, matTunnel, false);
-        if (joint.m.geometry.isBufferGeometry)
-            joint.m.geometry = new THREE.Geometry().fromBufferGeometry(joint.m.geometry);
-        joint.update(undefined, p1);
-        embeddable.extra.add(joint.m);
+    //     joint = new XAC.Sphere(embeddable._matobj.radius, matTunnel, false);
+    //     if (joint.m.geometry.isBufferGeometry)
+    //         joint.m.geometry = new THREE.Geometry().fromBufferGeometry(joint.m.geometry);
+    //     joint.update(undefined, p1);
+    //     embeddable.extra.add(joint.m);
 
-        p0 = p1;
-    }
+    //     p0 = p1;
+    // }
+
+    MEDLEY._digTunnel(info, embeddable);
 
     if (embeddable.extra.children.length > 0) {
         XAC.scene.add(embeddable.extra);
@@ -279,4 +281,36 @@ MEDLEY.fixFaces = function (mesh) {
     geometry.normalsNeedUpdate = true;
     mesh.geometry = geometry;
     mesh.material.side = THREE.FrontSide;
+}
+
+//
+//
+//
+MEDLEY.getBoundingBox = function (object3d) {
+    var bbox = {
+        min: new THREE.Vector3(Number.MAX_VALUE, Number.MAX_VALUE, Number.MAX_VALUE),
+        max: new THREE.Vector3(Number.MIN_VALUE, Number.MIN_VALUE, Number.MIN_VALUE)
+    };
+
+    var __merge = function (bbox2) {
+        bbox.min.x = Math.min(bbox.min.x, bbox2.min.x);
+        bbox.min.y = Math.min(bbox.min.y, bbox2.min.y);
+        bbox.min.z = Math.min(bbox.min.z, bbox2.min.z);
+
+        bbox.max.x = Math.max(bbox.max.x, bbox2.max.x);
+        bbox.max.y = Math.max(bbox.max.y, bbox2.max.y);
+        bbox.max.z = Math.max(bbox.max.z, bbox2.max.z);
+    }
+
+    for (object of object3d.children) {
+        if (object.children != undefined && object.children.length > 0) {
+            __merge(MEDLEY.getBoundingBox(object));
+        } else {
+            var gt = gettg(object);
+            gt.computeBoundingBox();
+            __merge(gt.boundingBox);
+        }
+    }
+
+    return bbox;
 }
