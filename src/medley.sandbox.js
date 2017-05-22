@@ -47,8 +47,14 @@ $(document).ready(function () {
     XAC.on('S', function () {
         var embeddable = MEDLEY.embeddables.last();
         time();
-        MEDLEY.getFabReady(embeddable);
+        var meshReady = MEDLEY.getFabReady(embeddable);
         time('merged all embeddable components');
+
+        var stlStr = stlFromGeometry(meshReady.geometry);
+        var blob = new Blob([stlStr], {
+            type: 'text/plain'
+        });
+        saveAs(blob, 'embeddable.stl');
     });
 
     // XXX for debugging
@@ -84,26 +90,26 @@ MEDLEY.getFabReady = function (embeddable) {
             embeddable._meshes.updateMatrixWorld();
             var m = embeddable._meshes.matrixWorld;
 
-            var joints, segments;
+            var segments = embeddable._segments.concat(embeddable._extraSegments || []);
 
-            for (var i = 0; i < embeddable.points.length; i++) {
-                var p = embeddable.points[i].clone().applyMatrix4(m);
-                var joint = new XAC.Sphere(embeddable._matobj.radius, embeddable._material, false);
-                if (joint.m.geometry.isBufferGeometry)
-                    joint.m.geometry = new THREE.Geometry().fromBufferGeometry(joint.m.geometry);
-                joint.update(undefined, p);
+            // for (var i = 0; i < embeddable.points.length; i++) {
+            //     var p = embeddable.points[i].clone().applyMatrix4(m);
+            //     var joint = new XAC.Sphere(embeddable._matobj.radius, embeddable._material, false);
+            //     if (joint.m.geometry.isBufferGeometry)
+            //         joint.m.geometry = new THREE.Geometry().fromBufferGeometry(joint.m.geometry);
+            //     joint.update(undefined, p);
+            for (var i = 0; i < segments.length; i++) {
+                var mesh = segments[i].m;
                 if (i == 0) {
                     // merged = new THREE.Mesh(gettg(joint.m), joint.m.material);
-                    merged = new THREE.Mesh(gettg(embeddable._segments[i].m), joint.m.material);
+                    merged = new THREE.Mesh(gettg(mesh), mesh.material);
                     // segments = new THREE.Mesh(gettg(embeddable._segments[i].m),
                     //     embeddable._segments[i].m.material.clone());
                     // origin = joint.m.position; //embeddable.points[i].clone().applyMatrix4(m);
                     // for (v of merged.geometry.vertices) v.add(origin);
                 } else {
                     // merged.geometry.merge(gettg(joint.m));
-                    if (i < embeddable._segments.length) {
-                        merged.geometry.merge(gettg(embeddable._segments[i].m));
-                    }
+                    merged.geometry.merge(gettg(mesh));
                 }
 
             }
@@ -134,12 +140,15 @@ MEDLEY.getFabReady = function (embeddable) {
 
 
     XAC.scene.remove(MEDLEY.everything);
+    XAC.scene.remove(embeddable.extra);
     var csgObject = new ThreeBSP(embeddable._object);
     var csgEmbeddable = new ThreeBSP(merged);
     csgObject = csgObject.subtract(csgEmbeddable);
-
-    XAC.scene.add(csgObject.toMesh(material));
-    // XAC.scene.add(csgEmbeddable.toMesh(material));
+    // csgObject = csgObject.intersect(csgEmbeddable);
+    var meshReady = csgObject.toMesh(material);
+    // MEDLEY.fixFaces(meshReady);
+    XAC.scene.add(meshReady);
+    return meshReady;
 }
 
 //
@@ -173,127 +182,5 @@ MEDLEY.rotateEverything = function (anglex, anglez, confirmed) {
 
             }
         }, 100);
-    }
-}
-
-//
-//  find insertion point externally (supposed to be for 1d only)
-//
-MEDLEY.findExternalInsertion = function (embeddable) {
-    // compute end points and tangents
-    var p0 = embeddable.points[0].clone().applyMatrix4(embeddable._meshes.matrixWorld);
-    var p1 = embeddable.points[1].clone().applyMatrix4(embeddable._meshes.matrixWorld);
-    var tangent0 = new THREE.Vector3().subVectors(p0, p1).normalize();
-    var info0 = MEDLEY._searchForClosetInsertionPoint(p0, tangent0, embeddable);
-
-    var pn = embeddable.points.last().clone().applyMatrix4(embeddable._meshes.matrixWorld);
-    var pn1 = embeddable.points.lastBut(1).clone().applyMatrix4(embeddable._meshes.matrixWorld);
-    var tangentn = new THREE.Vector3().subVectors(pn, pn1).normalize();
-    var infon = MEDLEY._searchForClosetInsertionPoint(pn, tangentn, embeddable);
-
-    var info = info0.angle < infon.angle ? info0 : infon;
-
-    MEDLEY._digTunnel(info, embeddable);
-
-    if (embeddable.extra.children.length > 0) {
-        XAC.scene.add(embeddable.extra);
-    } else {
-        log('no extra tunnel required')
-    }
-};
-
-//
-//  search for the closest insertion point (supposed to be for 1d only)
-//
-MEDLEY._searchForClosetInsertionPoint = function (p, v, embeddable) {
-    // find plane perp. to p and v
-    var r = embeddable._matobj.bendRadius;
-    var params = XAC.getPlaneFromPointNormal(p, v.clone().normalize());
-
-    // find a set of potential centers
-    var centers = [];
-    var nsteps = 36;
-    var yUp = new THREE.Vector3(0, 1, 0);
-    var angle = yUp.angleTo(v);
-    var axis = yUp.clone().cross(v);
-    var tunnelStep = 5 * Math.PI / 180;
-    var rayCaster = new THREE.Raycaster();
-    var eps = 10e-3;
-
-    var info = {
-        p: p,
-        q: undefined,
-        c: undefined,
-        angle: Math.PI * 2
-    }
-    var minAngle = Math.PI * 2;
-    for (var i = 0; i < nsteps; i++) {
-        var theta = i * 2 * Math.PI / nsteps;
-        var x = r * Math.sin(theta);
-        var z = r * Math.cos(theta);
-        var c = new THREE.Vector3(x, 0, z);
-        c.applyAxisAngle(axis, angle);
-        c.add(p);
-        centers.push(c);
-        // _balls.remove(addABall(c, 0xff0000, 1));
-
-        // compute the tunnel rotation axis
-        var tunnelAxis = v.clone().normalize().cross(c.clone().sub(p)).normalize();
-
-        // for each step, compute when it hits the object
-        for (var phi = tunnelStep, p0 = p.clone(); phi < Math.PI * 2; phi += tunnelStep) {
-            var p1 = p.clone().applyAxisAngleOnPoint(tunnelAxis, c, phi);
-            // addALine(p0, p1, 0xff0000);
-            rayCaster.ray.set(p1, p0.clone().sub(p1).normalize());
-            var hits = rayCaster.intersectObjects([embeddable._object]);
-            if (hits.length > 0) {
-                q = hits[0].point;
-                if (q.distanceTo(p0) + q.distanceTo(p1) <= p0.distanceTo(p1) + eps) {
-                    // _balls.remove(addABall(hits[0].point, 0xff0000, 0.5));
-                    if (phi < info.angle) {
-                        info.angle = phi;
-                        info.c = c;
-                        info.q = q;
-                    }
-                }
-            }
-            p0 = p1;
-
-        }
-        // break;
-    }
-
-    return info;
-};
-
-//
-//  make a tunnel based on starting/ending points and center
-//
-MEDLEY._digTunnel = function (info, embeddable) {
-    var step = 5 * Math.PI / 180;
-    var axis = info.p.clone().sub(info.c).cross(info.q.clone().sub(info.c)).normalize();
-    embeddable.extra = new THREE.Object3D();
-    var matTunnel = XAC.MATERIALFOCUS.clone();
-    matTunnel.transparent = false;
-
-    var joint = new XAC.Sphere(embeddable._matobj.radius, matTunnel, false);
-    if (joint.m.geometry.isBufferGeometry)
-        joint.m.geometry = new THREE.Geometry().fromBufferGeometry(joint.m.geometry);
-    joint.update(undefined, info.p);
-    embeddable.extra.add(joint.m);
-    for (var theta = step, p0 = info.p; theta < info.angle; theta += step) {
-        var p1 = info.p.clone().applyAxisAngleOnPoint(axis, info.c, theta);
-        var segment = new XAC.ThickLine(p0, p1, embeddable._matobj.radius, matTunnel);
-        if (segment.m.geometry.isBufferGeometry)
-            segment.m.geometry = new THREE.Geometry().fromBufferGeometry(segment.m.geometry);
-        embeddable.extra.add(segment.m);
-
-        joint = new XAC.Sphere(embeddable._matobj.radius, matTunnel, false);
-        if (joint.m.geometry.isBufferGeometry)
-            joint.m.geometry = new THREE.Geometry().fromBufferGeometry(joint.m.geometry);
-        joint.update(undefined, p1);
-        embeddable.extra.add(joint.m);
-
-        p0 = p1;
     }
 }
