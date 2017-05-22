@@ -40,9 +40,8 @@ $(document).ready(function () {
         // MEDLEY.rotateEverything(anglex, anglez, true);
         // XXX done
 
-        // setTimeout(function() {
-        MEDLEY.make1dFabricatable(embeddable);
-        // }, 100);
+        // MEDLEY.make1dFabricatable(embeddable);
+        MEDLEY.findExternalInsertion(embeddable);
     });
 
     XAC.on('S', function () {
@@ -178,28 +177,100 @@ MEDLEY.rotateEverything = function (anglex, anglez, confirmed) {
 }
 
 //
-//
+//  find insertion point externally (supposed to be for 1d only)
 //
 MEDLEY.findExternalInsertion = function (embeddable) {
     // compute end points and tangents
     var p0 = embeddable.points[0].clone().applyMatrix4(embeddable._meshes.matrixWorld);
     var p1 = embeddable.points[1].clone().applyMatrix4(embeddable._meshes.matrixWorld);
     var tangent0 = new THREE.Vector3().subVectors(p0, p1).normalize();
-    var info0 = FORTE._searchForCloestInserationPoint(p0, tangent0, embeddable._object);
+    var info0 = MEDLEY._searchForClosetInsertionPoint(p0, tangent0, embeddable);
 
     var pn = embeddable.points.last().clone().applyMatrix4(embeddable._meshes.matrixWorld);
     var pn1 = embeddable.points.lastBut(1).clone().applyMatrix4(embeddable._meshes.matrixWorld);
     var tangentn = new THREE.Vector3().subVectors(pn, pn1).normalize();
-    var infon = FORTE._searchForCloestInserationPoint(pn, tangentn, embeddable._object);
+    var infon = MEDLEY._searchForClosetInsertionPoint(pn, tangentn, embeddable);
 
     var info = info0.angle < infon.angle ? info0 : infon;
 
-    FORTE._digTunnel(info, embeddable);
-}
+    MEDLEY._digTunnel(info, embeddable);
 
+    if (embeddable.extra.children.length > 0) {
+        XAC.scene.add(embeddable.extra);
+    } else {
+        log('no extra tunnel required')
+    }
+};
+
+//
+//  search for the closest insertion point (supposed to be for 1d only)
+//
+MEDLEY._searchForClosetInsertionPoint = function (p, v, embeddable) {
+    // find plane perp. to p and v
+    var r = embeddable._matobj.bendRadius;
+    var params = XAC.getPlaneFromPointNormal(p, v.clone().normalize());
+
+    // find a set of potential centers
+    var centers = [];
+    var nsteps = 36;
+    var yUp = new THREE.Vector3(0, 1, 0);
+    var angle = yUp.angleTo(v);
+    var axis = yUp.clone().cross(v);
+    var tunnelStep = 5 * Math.PI / 180;
+    var rayCaster = new THREE.Raycaster();
+    var eps = 10e-3;
+
+    var info = {
+        p: p,
+        q: undefined,
+        c: undefined,
+        angle: Math.PI * 2
+    }
+    var minAngle = Math.PI * 2;
+    for (var i = 0; i < nsteps; i++) {
+        var theta = i * 2 * Math.PI / nsteps;
+        var x = r * Math.sin(theta);
+        var z = r * Math.cos(theta);
+        var c = new THREE.Vector3(x, 0, z);
+        c.applyAxisAngle(axis, angle);
+        c.add(p);
+        centers.push(c);
+        // _balls.remove(addABall(c, 0xff0000, 1));
+
+        // compute the tunnel rotation axis
+        var tunnelAxis = v.clone().normalize().cross(c.clone().sub(p)).normalize();
+
+        // for each step, compute when it hits the object
+        for (var phi = tunnelStep, p0 = p.clone(); phi < Math.PI * 2; phi += tunnelStep) {
+            var p1 = p.clone().applyAxisAngleOnPoint(tunnelAxis, c, phi);
+            // addALine(p0, p1, 0xff0000);
+            rayCaster.ray.set(p1, p0.clone().sub(p1).normalize());
+            var hits = rayCaster.intersectObjects([embeddable._object]);
+            if (hits.length > 0) {
+                q = hits[0].point;
+                if (q.distanceTo(p0) + q.distanceTo(p1) <= p0.distanceTo(p1) + eps) {
+                    // _balls.remove(addABall(hits[0].point, 0xff0000, 0.5));
+                    if (phi < info.angle) {
+                        info.angle = phi;
+                        info.c = c;
+                        info.q = q;
+                    }
+                }
+            }
+            p0 = p1;
+
+        }
+        // break;
+    }
+
+    return info;
+};
+
+//
+//  make a tunnel based on starting/ending points and center
+//
 MEDLEY._digTunnel = function (info, embeddable) {
     var step = 5 * Math.PI / 180;
-    var angleBetween = Math.acos(1 - info.angle);
     var axis = info.p.clone().sub(info.c).cross(info.q.clone().sub(info.c)).normalize();
     embeddable.extra = new THREE.Object3D();
     var matTunnel = XAC.MATERIALFOCUS.clone();
@@ -210,8 +281,7 @@ MEDLEY._digTunnel = function (info, embeddable) {
         joint.m.geometry = new THREE.Geometry().fromBufferGeometry(joint.m.geometry);
     joint.update(undefined, info.p);
     embeddable.extra.add(joint.m);
-    for (var theta = step, p0 = info.p; theta < angleBetween; theta += step) {
-
+    for (var theta = step, p0 = info.p; theta < info.angle; theta += step) {
         var p1 = info.p.clone().applyAxisAngleOnPoint(axis, info.c, theta);
         var segment = new XAC.ThickLine(p0, p1, embeddable._matobj.radius, matTunnel);
         if (segment.m.geometry.isBufferGeometry)
