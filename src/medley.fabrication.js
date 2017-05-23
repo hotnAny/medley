@@ -189,46 +189,14 @@ MEDLEY.make1dFabricatable = function (embeddable) {
 
     var info = info0.angle < infon.angle ? info0 : infon;
 
-    // var step = 5 * Math.PI / 180;
-    // var angleBetween = Math.acos(1 - info.angle);
-    // var axis = info.p.clone().sub(info.c).cross(info.q.clone().sub(info.c)).normalize();
-    // embeddable.extra = new THREE.Object3D();
-    // var matTunnel = XAC.MATERIALFOCUS.clone();
-    // matTunnel.transparent = false;
-
-    //
-    //  generate geometry for the 'tunnel'
-    //
-    // var joint = new XAC.Sphere(embeddable._matobj.radius, matTunnel, false);
-    // if (joint.m.geometry.isBufferGeometry)
-    //     joint.m.geometry = new THREE.Geometry().fromBufferGeometry(joint.m.geometry);
-    // joint.update(undefined, info.p);
-    // embeddable.extra.add(joint.m);
-    // for (var theta = step, p0 = info.p; theta < angleBetween; theta += step) {
-
-    //     var p1 = info.p.clone().applyAxisAngleOnPoint(axis, info.c, theta);
-    //     var segment = new XAC.ThickLine(p0, p1, embeddable._matobj.radius, matTunnel);
-    //     if (segment.m.geometry.isBufferGeometry)
-    //         segment.m.geometry = new THREE.Geometry().fromBufferGeometry(segment.m.geometry);
-    //     embeddable.extra.add(segment.m);
-
-    //     joint = new XAC.Sphere(embeddable._matobj.radius, matTunnel, false);
-    //     if (joint.m.geometry.isBufferGeometry)
-    //         joint.m.geometry = new THREE.Geometry().fromBufferGeometry(joint.m.geometry);
-    //     joint.update(undefined, p1);
-    //     embeddable.extra.add(joint.m);
-
-    //     p0 = p1;
-    // }
-
     info.angle = Math.acos(1 - info.angle);
     MEDLEY._digTunnel(info, embeddable);
 
-    if (embeddable.extra.children.length > 0) {
-        XAC.scene.add(embeddable.extra);
-    } else {
-        log('no extra tunnel required')
-    }
+    // if (embeddable.extra.children.length > 0) {
+    //     XAC.scene.add(embeddable.extra);
+    // } else {
+    //     log('no extra tunnel required')
+    // }
 
     //
     //  compute pausing layer
@@ -334,12 +302,6 @@ MEDLEY.findExternalInsertion = function (embeddable) {
     var info = info0.angle < infon.angle ? info0 : infon;
 
     MEDLEY._digTunnel(info, embeddable);
-
-    if (embeddable.extra.children.length > 0) {
-        XAC.scene.add(embeddable.extra);
-    } else {
-        log('no extra tunnel required')
-    }
 };
 
 //
@@ -421,21 +383,35 @@ MEDLEY._digTunnel = function (info, embeddable) {
     //     joint.m.geometry = new THREE.Geometry().fromBufferGeometry(joint.m.geometry);
     // joint.update(undefined, info.p);
     // embeddable.extra.add(joint.m);
-    embeddable._extraSegments = [];
-    for (var theta = step, p0 = info.p; theta <= info.angle + step; theta += step) {
-        var p1 = info.p.clone().applyAxisAngleOnPoint(axis, info.c, theta);
-        var segment = new XAC.ThickLine(p0, p1, embeddable._matobj.radius, matTunnel);
-        embeddable._extraSegments.push(segment);
-        if (segment.m.geometry.isBufferGeometry)
-            segment.m.geometry = new THREE.Geometry().fromBufferGeometry(segment.m.geometry);
-        embeddable.extra.add(segment.m);
+    // embeddable._extraSegments = [];
+    // for (var theta = step, p0 = info.p; theta <= info.angle + step; theta += step) {
+    //     var p1 = info.p.clone().applyAxisAngleOnPoint(axis, info.c, theta);
+    //     var segment = new XAC.ThickLine(p0, p1, embeddable._matobj.radius, matTunnel);
+    //     embeddable._extraSegments.push(segment);
+    //     if (segment.m.geometry.isBufferGeometry)
+    //         segment.m.geometry = new THREE.Geometry().fromBufferGeometry(segment.m.geometry);
+    //     embeddable.extra.add(segment.m);
 
-        // joint = new XAC.Sphere(embeddable._matobj.radius, matTunnel, false);
-        // if (joint.m.geometry.isBufferGeometry)
-        //     joint.m.geometry = new THREE.Geometry().fromBufferGeometry(joint.m.geometry);
-        // joint.update(undefined, p1);
-        // embeddable.extra.add(joint.m);
+    //     // joint = new XAC.Sphere(embeddable._matobj.radius, matTunnel, false);
+    //     // if (joint.m.geometry.isBufferGeometry)
+    //     //     joint.m.geometry = new THREE.Geometry().fromBufferGeometry(joint.m.geometry);
+    //     // joint.update(undefined, p1);
+    //     // embeddable.extra.add(joint.m);
 
-        p0 = p1;
+    //     p0 = p1;
+    // }
+
+    var points = [info.p]
+    for (var theta = step; theta <= info.angle + step; theta += step) {
+        var p = info.p.clone().applyAxisAngleOnPoint(axis, info.c, theta);
+        points.push(p);
+    }
+
+    if (points.length > 2) {
+        var shape = XAC.circularShape(embeddable._matobj.radius, 32);
+        embeddable._extraSegments = new XAC.Polyline(shape, points, matTunnel);
+        XAC.scene.add(embeddable._extraSegments.m);
+    } else {
+        log('no extra tunnel required')
     }
 }

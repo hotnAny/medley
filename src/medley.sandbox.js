@@ -6,7 +6,7 @@ MEDLEY._layerHeight = 0.2;
 
 // XXX
 MEDLEY._matobjSelected = {
-    radius: 1, // mm
+    radius: 0.5, // mm
     dim: 1,
     thickness: 1, // mm
     bendRadius: 10 //mm
@@ -78,7 +78,7 @@ $(document).ready(function () {
 //
 //
 MEDLEY.getFabReady = function (embeddable) {
-    var merged;
+    var merged, extra;
     var material = XAC.MATERIALNORMAL.clone();
     switch (embeddable._dim) {
         case 1:
@@ -120,6 +120,7 @@ MEDLEY.getFabReady = function (embeddable) {
             // merged.geometry.computeFaceNormals();
             // merged.geometry.computeVertexNormals();
             merged = embeddable._extrudedSegments.m;
+            extra = embeddable._extraSegments == undefined ? undefined : embeddable._extraSegments.m;
             break;
         case 2:
         case 3:
@@ -140,13 +141,15 @@ MEDLEY.getFabReady = function (embeddable) {
 
 
     XAC.scene.remove(MEDLEY.everything);
-    XAC.scene.remove(embeddable.extra);
     var csgObject = new ThreeBSP(embeddable._object);
     var csgEmbeddable = new ThreeBSP(merged);
     csgObject = csgObject.subtract(csgEmbeddable);
-    // csgObject = csgObject.intersect(csgEmbeddable);
+    if (extra != undefined) {
+        XAC.scene.remove(extra);
+        var csgExtra = new ThreeBSP(extra);
+        csgObject = csgObject.subtract(csgExtra);
+    }
     var meshReady = csgObject.toMesh(material);
-    // MEDLEY.fixFaces(meshReady);
     XAC.scene.add(meshReady);
     return meshReady;
 }
