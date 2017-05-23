@@ -82,43 +82,44 @@ MEDLEY.getFabReady = function (embeddable) {
     var material = XAC.MATERIALNORMAL.clone();
     switch (embeddable._dim) {
         case 1:
-            for (mesh of embeddable._meshes.children) {
-                if (mesh.geometry.isBufferGeometry)
-                    mesh.geometry = new THREE.Geometry().fromBufferGeometry(mesh.geometry);
-            }
+            // for (mesh of embeddable._meshes.children) {
+            //     if (mesh.geometry.isBufferGeometry)
+            //         mesh.geometry = new THREE.Geometry().fromBufferGeometry(mesh.geometry);
+            // }
 
-            embeddable._meshes.updateMatrixWorld();
-            var m = embeddable._meshes.matrixWorld;
+            // embeddable._meshes.updateMatrixWorld();
+            // var m = embeddable._meshes.matrixWorld;
 
-            var segments = embeddable._segments.concat(embeddable._extraSegments || []);
+            // var segments = embeddable._segments.concat(embeddable._extraSegments || []);
 
-            // for (var i = 0; i < embeddable.points.length; i++) {
-            //     var p = embeddable.points[i].clone().applyMatrix4(m);
-            //     var joint = new XAC.Sphere(embeddable._matobj.radius, embeddable._material, false);
-            //     if (joint.m.geometry.isBufferGeometry)
-            //         joint.m.geometry = new THREE.Geometry().fromBufferGeometry(joint.m.geometry);
-            //     joint.update(undefined, p);
-            for (var i = 0; i < segments.length; i++) {
-                var mesh = segments[i].m;
-                if (i == 0) {
-                    // merged = new THREE.Mesh(gettg(joint.m), joint.m.material);
-                    merged = new THREE.Mesh(gettg(mesh), mesh.material);
-                    // segments = new THREE.Mesh(gettg(embeddable._segments[i].m),
-                    //     embeddable._segments[i].m.material.clone());
-                    // origin = joint.m.position; //embeddable.points[i].clone().applyMatrix4(m);
-                    // for (v of merged.geometry.vertices) v.add(origin);
-                } else {
-                    // merged.geometry.merge(gettg(joint.m));
-                    merged.geometry.merge(gettg(mesh));
-                }
+            // // for (var i = 0; i < embeddable.points.length; i++) {
+            // //     var p = embeddable.points[i].clone().applyMatrix4(m);
+            // //     var joint = new XAC.Sphere(embeddable._matobj.radius, embeddable._material, false);
+            // //     if (joint.m.geometry.isBufferGeometry)
+            // //         joint.m.geometry = new THREE.Geometry().fromBufferGeometry(joint.m.geometry);
+            // //     joint.update(undefined, p);
+            // for (var i = 0; i < segments.length; i++) {
+            //     var mesh = segments[i].m;
+            //     if (i == 0) {
+            //         // merged = new THREE.Mesh(gettg(joint.m), joint.m.material);
+            //         merged = new THREE.Mesh(gettg(mesh), mesh.material);
+            //         // segments = new THREE.Mesh(gettg(embeddable._segments[i].m),
+            //         //     embeddable._segments[i].m.material.clone());
+            //         // origin = joint.m.position; //embeddable.points[i].clone().applyMatrix4(m);
+            //         // for (v of merged.geometry.vertices) v.add(origin);
+            //     } else {
+            //         // merged.geometry.merge(gettg(joint.m));
+            //         merged.geometry.merge(gettg(mesh));
+            //     }
 
-            }
+            // }
 
-            // for (v of merged.geometry.vertices) v.sub(origin);
-            // MEDLEY.fixFaces(merged);
+            // // for (v of merged.geometry.vertices) v.sub(origin);
+            // // MEDLEY.fixFaces(merged);
 
-            merged.geometry.computeFaceNormals();
-            merged.geometry.computeVertexNormals();
+            // merged.geometry.computeFaceNormals();
+            // merged.geometry.computeVertexNormals();
+            merged = embeddable._extrudedSegments.m;
             break;
         case 2:
         case 3:
@@ -132,7 +133,6 @@ MEDLEY.getFabReady = function (embeddable) {
             }
 
             MEDLEY.fixFaces(merged);
-
             break;
         default:
             break;

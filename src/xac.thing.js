@@ -1,8 +1,8 @@
 // ........................................................................................................
 //
-//  generating 3d things v0.3
+//  generating 3d things v0.4
 //
-//  by xiangchen@acm.org, 04/2017
+//  by xiangchen@acm.org, 05/2017
 //
 // ........................................................................................................
 
@@ -47,7 +47,7 @@ XAC.MATERIALINVISIBLE = new THREE.MeshPhongMaterial({
 	opacity: 0.2
 });
 
-XAC.Thing = function(m) {
+XAC.Thing = function (m) {
 	this._g = undefined; // the original geometry, always!
 	this._m = m;
 	this._opacity = 1;
@@ -73,10 +73,22 @@ XAC.Thing.prototype = {
 	}
 }
 
+XAC.circularShape = function (r, n) {
+	var shape = new THREE.Shape();
+	var step = Math.PI * 2 / n;
+	for (var i = 0, theta = 0; i <= n; i++, theta += step) {
+		var x = r * Math.cos(theta);
+		var y = r * Math.sin(theta);
+		if (i > 0) shape.lineTo(x, y);
+		shape.moveTo(x, y);
+	}
+	return shape;
+}
+
 //
 //	line
 //
-XAC.Line = function(p1, p2, clr) {
+XAC.Line = function (p1, p2, clr) {
 	this._g = new THREE.Geometry();
 	this._g.vertices.push(p1);
 	this._g.vertices.push(p2);
@@ -91,7 +103,7 @@ XAC.Line.prototype = Object.create(XAC.Thing.prototype);
 //
 //	thick line
 //
-XAC.ThickLine = function(p1, p2, r, mat) {
+XAC.ThickLine = function (p1, p2, r, mat) {
 	var h = p1.distanceTo(p2);
 	this._line = new XAC.Cylinder(r, h, mat, false);
 	this._g = this._line.g;
@@ -105,7 +117,7 @@ XAC.ThickLine = function(p1, p2, r, mat) {
 	this._r = r;
 }
 XAC.ThickLine.prototype = Object.create(XAC.Thing.prototype);
-XAC.ThickLine.prototype.update = function(p1, p2, r) {
+XAC.ThickLine.prototype.update = function (p1, p2, r) {
 	var h = p1.distanceTo(p2);
 	this._line.update(r, h, undefined, false);
 
@@ -116,7 +128,7 @@ XAC.ThickLine.prototype.update = function(p1, p2, r) {
 	var ctr = p1.clone().add(p2).multiplyScalar(0.5);
 	this._m.position.copy(ctr);
 }
-XAC.ThickLine.prototype.updateEfficiently = function(p1, p2, r) {
+XAC.ThickLine.prototype.updateEfficiently = function (p1, p2, r) {
 	var dir = p2.clone().sub(p1);
 	if (dir.length() > XAC.EPSILON && this._dir.length() > XAC.EPSILON) {
 		// rotate back
@@ -143,13 +155,13 @@ XAC.ThickLine.prototype.updateEfficiently = function(p1, p2, r) {
 //
 //	plane
 //
-XAC.Plane = function(w, l, mat) {
+XAC.Plane = function (w, l, mat) {
 	this._g = new THREE.CubeGeometry(w, 1, l);
 	this._m = new THREE.Mesh(this._g, mat == undefined ? XAC.MATERIALNORMAL.clone() :
 		mat.clone());
 }
 XAC.Plane.prototype = Object.create(XAC.Thing.prototype);
-XAC.Plane.prototype.fitTo = function(p, a, b, c) {
+XAC.Plane.prototype.fitTo = function (p, a, b, c) {
 	rotateObjTo(this._m, new THREE.Vector3(a, b, c));
 	this._m.position.copy(p);
 }
@@ -157,7 +169,7 @@ XAC.Plane.prototype.fitTo = function(p, a, b, c) {
 //
 //	sphere
 //
-XAC.Sphere = function(r, mat, highFi) {
+XAC.Sphere = function (r, mat, highFi) {
 	this._r = r;
 	this._highFi = highFi;
 	this._g = this._highFi == true ? new THREE.SphereBufferGeometry(r, 32, 32) : new THREE
@@ -166,7 +178,7 @@ XAC.Sphere = function(r, mat, highFi) {
 		mat.clone());
 };
 XAC.Sphere.prototype = Object.create(XAC.Thing.prototype);
-XAC.Sphere.prototype.update = function(r, ctr) {
+XAC.Sphere.prototype.update = function (r, ctr) {
 	if (r != undefined)
 		this._m.geometry = this._highFi == true ? new THREE.SphereBufferGeometry(r, 32, 32) :
 		new THREE.SphereBufferGeometry(r, 8, 8);
@@ -177,11 +189,11 @@ XAC.Sphere.prototype.update = function(r, ctr) {
 //
 // cylinder
 //
-XAC.Cylinder = function(r, h, mat, openEnded) {
+XAC.Cylinder = function (r, h, mat, openEnded) {
 	this.update(r, h, mat, openEnded)
 }
 XAC.Cylinder.prototype = Object.create(XAC.Thing.prototype);
-XAC.Cylinder.prototype.update = function(r, h, mat, openEnded) {
+XAC.Cylinder.prototype.update = function (r, h, mat, openEnded) {
 	this._h = h;
 	if (r.r1 != undefined && r.r2 != undefined) {
 		this._r1 = r.r1;
@@ -204,12 +216,12 @@ XAC.Cylinder.prototype.update = function(r, h, mat, openEnded) {
 //
 //	box
 //
-XAC.Box = function(w, t, l, mat) {
+XAC.Box = function (w, t, l, mat) {
 	this._material = mat;
 	this.update(w, t, l, this._material);
 }
 XAC.Box.prototype = Object.create(XAC.Thing.prototype);
-XAC.Box.prototype.update = function(w, t, l) {
+XAC.Box.prototype.update = function (w, t, l) {
 	this._g = new THREE.CubeGeometry(w, t, l);
 	this._m = new THREE.Mesh(this._g,
 		this._material == undefined ? MATERIALNORMAL.clone() : this._material.clone()
@@ -218,10 +230,10 @@ XAC.Box.prototype.update = function(w, t, l) {
 
 //
 // 	polyhedron
-//	@param vertices - an array of THREE.Vector3
-//	@param faces - which vertices each face corresponds to
+//	  - vertices - an array of THREE.Vector3
+//	  - faces - which vertices each face corresponds to
 //
-XAC.Polygon = function(vertices, faces, mat) {
+XAC.Polygon = function (vertices, faces, mat) {
 	this._g = new THREE.Geometry();
 	this._g.vertices = vertices;
 	this._g.faces = faces;
@@ -230,6 +242,44 @@ XAC.Polygon = function(vertices, faces, mat) {
 }
 XAC.Polygon.prototype = Object.create(XAC.Thing.prototype);
 
+
+//
+//	polyline
+//
+XAC.Polyline = function (shape, points, mat) {
+	this._curvePath = new THREE.CurvePath();
+	this._shape = shape;
+	this._material = mat;
+	this.update(points);
+}
+XAC.Polyline.prototype = Object.create(XAC.Thing.prototype);
+XAC.Polyline.prototype.update = function (points) {
+	for (var i = 0; i < points.length - 1; i++) {
+		var p0 = points[i];
+		var p1 = points[i + 1];
+		if (this._curvePath.curves[i] == undefined) {
+			var curve = new THREE.LineCurve(p0, p1);
+			this._curvePath.add(curve);
+		} else {
+			this._curvePath.curves[i].v1.copy(p0);
+			this._curvePath.curves[i].v2.copy(p1);
+		}
+	}
+
+	var extrudeSettings = {
+		steps: points.length,
+		amount: 16,
+		extrudePath: this._curvePath
+	};
+
+	this._g = new THREE.ExtrudeGeometry(this._shape, extrudeSettings);
+	this._material == undefined ? MATERIALNORMAL.clone() : this._material.clone()
+	this._m = new THREE.Mesh(this._g, this._material);
+}
+
+//
+//	ad hoc shape helpers
+//
 _balls = [];
 
 function addABall(point, color, radius, opacity) {

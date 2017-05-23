@@ -22,9 +22,9 @@
 
 var MEDLEY = MEDLEY || {};
 
-MEDLEY.Embeddable = function(object, matobj) {
+MEDLEY.Embeddable = function (object, matobj) {
     this._object = object;
-    
+
     if (matobj != undefined) {
         this._matobj = matobj;
         this._dim = matobj.dim;
@@ -44,12 +44,12 @@ MEDLEY.Embeddable = function(object, matobj) {
     this._material.side = THREE.DoubleSide;
 
     // map a [0,1] depth ratio to a slightly large interval
-    this._mapDepth = function(d) {
+    this._mapDepth = function (d) {
         return -this.DEPTHEPS + (1 + 2 * this.DEPTHEPS) * d;
     };
 
     // map a [0,1] thickness ratio to a slightly large interval
-    this._mapThickness = function(t) {
+    this._mapThickness = function (t) {
         var eps = this.DEPTHEPS * 3;
         return t + eps;
     }
@@ -63,7 +63,7 @@ MEDLEY.Embeddable.prototype = {
 //  set the depth of an embeddable (into the object)
 //   - d: [0, 1] interpolate between control points/faces
 //
-MEDLEY.Embeddable.prototype.setDepth = function(d) {
+MEDLEY.Embeddable.prototype.setDepth = function (d) {
     switch (this._dim) {
         case 1:
             this._generate1dGeometry({
@@ -87,7 +87,7 @@ MEDLEY.Embeddable.prototype.setDepth = function(d) {
 //  set the thickness of an embeddable
 //  - t: [0, 1] interpolate between min thickness and (maxDepth-minDepth)
 //
-MEDLEY.Embeddable.prototype.setThickness = function(t) {
+MEDLEY.Embeddable.prototype.setThickness = function (t) {
 
     switch (this._dim) {
         case 1:
@@ -106,7 +106,7 @@ MEDLEY.Embeddable.prototype.setThickness = function(t) {
 //  set the width of an embeddable
 //  - w: [0, 1] ranging between base width and maximum width
 //
-MEDLEY.Embeddable.prototype.setWidth = function(w, isLite) {
+MEDLEY.Embeddable.prototype.setWidth = function (w, isLite) {
     switch (this._dim) {
         case 1:
             break;
@@ -138,7 +138,7 @@ MEDLEY.Embeddable.prototype.setWidth = function(w, isLite) {
 //
 //  generate 1d geometry (polyline-based tube/tunnel)
 //
-MEDLEY.Embeddable.prototype._generate1dGeometry = function(params) {
+MEDLEY.Embeddable.prototype._generate1dGeometry = function (params) {
     if (params != undefined) {
         this._depthRatio = params.depthRatio || this._depthRatio;
     }
@@ -151,26 +151,40 @@ MEDLEY.Embeddable.prototype._generate1dGeometry = function(params) {
 
     if (this._meshes == undefined) {
         this._meshes = new THREE.Object3D();
-        this._segments = [];
-        for (var i = 0; i < this.points.length - 1; i++) {
-            var segment = new XAC.ThickLine(this.points[i], this.points[i + 1], this._matobj
-                .radius, this._material.clone());
-            this._meshes.add(segment.m);
-            this._segments.push(segment);
-        }
-
+        var shape = XAC.circularShape(this._matobj.radius, 32);
+        this._extrudedSegments = new XAC.Polyline(shape, this.points, this._material.clone());
         this._makeInteractive();
     } else {
-        for (var i = 0; i < this.points.length - 1; i++) {
-            this._segments[i].updateEfficiently(this.points[i], this.points[i + 1], this._matobj.radius);
-        }
+        this._meshes.remove(this._extrudedSegments.m);
+        this._extrudedSegments.update(this.points);
     }
+
+    this._meshes.add(this._extrudedSegments.m);
+
+
+
+    // if (this._meshes == undefined) {
+    //     this._meshes = new THREE.Object3D();
+    //     this._segments = [];
+    //     for (var i = 0; i < this.points.length - 1; i++) {
+    //         var segment = new XAC.ThickLine(this.points[i], this.points[i + 1], this._matobj
+    //             .radius, this._material.clone());
+    //         this._meshes.add(segment.m);
+    //         this._segments.push(segment);
+    //     }
+
+    //     this._makeInteractive();
+    // } else {
+    //     for (var i = 0; i < this.points.length - 1; i++) {
+    //         this._segments[i].updateEfficiently(this.points[i], this.points[i + 1], this._matobj.radius);
+    //     }
+    // }
 };
 
 //
 //  generate 2d geometry (slab extruded from a polyline)
 //
-MEDLEY.Embeddable.prototype._generate2dGeometry = function(params) {
+MEDLEY.Embeddable.prototype._generate2dGeometry = function (params) {
     if (params != undefined) {
         this._depthRatio = params.depthRatio || this._depthRatio;
         this._widthRatio = params.widthRatio || this._widthRatio;
@@ -253,7 +267,7 @@ MEDLEY.Embeddable.prototype._generate2dGeometry = function(params) {
 //
 //  generate 3d geometry (solid extruded from users' 3d drawing)
 //
-MEDLEY.Embeddable.prototype._generate3dGeometry = function(params) {
+MEDLEY.Embeddable.prototype._generate3dGeometry = function (params) {
     if (params != undefined) {
         this._depthRatio = params.depthRatio || this._depthRatio;
         this._thicknessRatio = params.thicknessRatio || this._thicknessRatio;
@@ -320,7 +334,7 @@ MEDLEY.Embeddable.prototype._generate3dGeometry = function(params) {
 //
 //  generate a surface given a set of face vertices
 //
-MEDLEY.Embeddable.prototype._generateSurface = function(faces) {
+MEDLEY.Embeddable.prototype._generateSurface = function (faces) {
     var geometry = new THREE.Geometry();
     var nvertices = 0;
     for (vertices of faces) {
@@ -341,7 +355,7 @@ MEDLEY.Embeddable.prototype._generateSurface = function(faces) {
 //
 //  stitch two surfaces together by forming a lateral area
 //
-MEDLEY.Embeddable.prototype._stitchSurfaces = function(mesh0, mesh1) {
+MEDLEY.Embeddable.prototype._stitchSurfaces = function (mesh0, mesh1) {
     var geometry = new THREE.Geometry();
     var nvertices = 0;
     console.assert(mesh0.geometry.vertices.length == mesh1.geometry.vertices.length,
@@ -373,14 +387,14 @@ MEDLEY.Embeddable.prototype._stitchSurfaces = function(mesh0, mesh1) {
 //
 //  make each embeddable selectable, and associated with sliders on depth, width and thickness
 //
-MEDLEY.Embeddable.prototype._makeInteractive = function() {
+MEDLEY.Embeddable.prototype._makeInteractive = function () {
     this._meshes.embeddable = this;
     for (mesh of this._meshes.children) {
         mesh.object3d = this._meshes;
         XAC.objects.push(mesh);
     }
 
-    this._meshes.selectable(true, function() {
+    this._meshes.selectable(true, function () {
         for (mesh of this.children) {
             mesh.material.color.setHex(COLORHIGHLIGHT);
             mesh.material.needsUpdate = true;
@@ -388,7 +402,7 @@ MEDLEY.Embeddable.prototype._makeInteractive = function() {
         XAC.updateSlider(MEDLEY._sldrDepth, this.embeddable._depthRatio, MEDLEY.sldrMapFunc);
         XAC.updateSlider(MEDLEY._sldrThickness, this.embeddable._thicknessRatio, MEDLEY.sldrMapFunc);
         XAC.updateSlider(MEDLEY._sldrWidth, this.embeddable._widthRatio, MEDLEY.sldrMapFunc);
-    }, function() {
+    }, function () {
         for (mesh of this.children) {
             mesh.material.color.setHex(COLORCONTRAST);
             mesh.material.needsUpdate = true;
@@ -406,16 +420,16 @@ MEDLEY.Embeddable.prototype._makeInteractive = function() {
 //
 //  remove the embeddable's meshes
 //
-MEDLEY.Embeddable.prototype.selfDestroy = function() {
+MEDLEY.Embeddable.prototype.selfDestroy = function () {
     MEDLEY.embeddables.remove(this);
-    
-    var __removeFrom = function(object, parent) {
-        for(c of parent.children) {
-            if(c == object) {
+
+    var __removeFrom = function (object, parent) {
+        for (c of parent.children) {
+            if (c == object) {
                 parent.remove(c);
                 return;
             }
-            if(c.children != undefined && c.children.length > 0) {
+            if (c.children != undefined && c.children.length > 0) {
                 __removeFrom(object, c);
             }
         }
@@ -424,7 +438,7 @@ MEDLEY.Embeddable.prototype.selfDestroy = function() {
     __removeFrom(this._meshes, MEDLEY.everything);
 }
 
-XAC.updateSlider = function(sldr, value, mapFunc) {
+XAC.updateSlider = function (sldr, value, mapFunc) {
     var sldrValue = sldr.slider('option', 'value');
     value = mapFunc(value, sldr);
     if (sldrValue != value) {
