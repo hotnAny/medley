@@ -371,46 +371,36 @@ function getEndPointsAlong2(obj, dir) {
 	return endPoints;
 }
 
-// function removeDisconnectedComponents(pt, pts, dist) {
-// 	var ctr = getCenter(pts);
-// 	var axis = ctr.clone().sub(pt);
-// 	var midDist = axis.length();
-// 	axis.normalize();
-// 	var minPosDist = Infinity;
-// 	var maxNegDist = -Infinity;
 //
+// find the principal axis given a set of points
 //
-// 	var toKeep = [];
-// 	for (var i = pts.length - 1; i >= 0; i--) {
-// 		// determine the sign of the dist measure
-// 		var dToPt = (pts[i].clone().sub(pt)).dot(axis);
-// 		var sign = dToPt < midDist ? 1 : -1;
-//
-// 		// measure the abs dist to ctr
-// 		var d = (pts[i].clone().sub(ctr)).dot(axis);
-//
-// 		// add a distance threshold so that only nearby points are selected
-// 		if (sign > 0 && Math.abs(d) > dist) {
-// 			minPosDist = Math.min(Math.abs(d), minPosDist);
-// 			toKeep.push(pts[i]);
-// 			// addABall(pts[i], 0x00ff00)
-// 		} else {
-// 			maxNegDist = Math.max(-Math.abs(d), maxNegDist);
-// 			// addABall(pts[i], 0x0000ff)
-// 		}
-// 	}
-//
-// 	// if there is a 'gap', discard the set of far away points
-// 	if (minPosDist != Infinity && maxNegDist != -Infinity && minPosDist - maxNegDist > dist) {
-// 		return toKeep;
-// 	} else {
-// 		return pts;
-// 	}
-// }
+XAC.findPrincipalAxis = function (points) {
+    var params = XAC.findPlaneToFitPoints(points);
+    var G = [];
+    var yUp = new THREE.Vector3(0, 1, 0);
+    var normal = new THREE.Vector3(params.A, params.B, params.C).normalize();
+    var angle = normal.angleTo(yUp);
+    var axis = normal.clone().cross(yUp);
+    var qcenter = new THREE.Vector3();
+    for (p of points) {
+        var q = XAC.getPointProjectionOnPlane(p, params.A, params.B, params.C, params.D);
+        // _balls.remove(addABall(q, 0xff0000, 0.2));
+        q.applyAxisAngle(axis, angle);
+        qcenter.add(q);
+        // _balls.remove(addABall(q, 0x0eeff0, 0.2));
+        G.push([q.x, q.z, 1]);
+    }
+    // pcenter.divideScalar(points.length);
+    qcenter.divideScalar(points.length);
+    var usv = numeric.svd(G);
+    var a = usv.V[0][2];
+    var b = usv.V[1][2];
 
-// function computeFaceNormal(u, v, w) {
-// 	var uv = v.clone().sub(u);
-// 	var vw = w.clone().sub(v);
-// 	var nml = new THREE.Vector3().crossVectors(uv, vw);
-// 	return nml;
-// }
+    // addAnArrow(qcenter, new THREE.Vector3(b, 0, -a), 10, 0xff00ff);
+    var q2 = qcenter.clone().add(new THREE.Vector3(b, 0, -a));
+    qcenter.applyAxisAngle(axis, -angle);
+    q2.applyAxisAngle(axis, -angle);
+    var principalAxis = q2.sub(qcenter);
+    // addAnArrow(qcenter, principalAxis.clone(), 10, 0xff0000);
+    return principalAxis;
+}
