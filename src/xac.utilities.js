@@ -1,8 +1,8 @@
 //	........................................................................................................
 //
-//	useful recurring routines
+//	useful recurring routines, v0.1
 //
-//  by xiangchen@acm.org, 03/2017
+//  by xiangchen@acm.org, 06/2017
 //
 //	........................................................................................................
 
@@ -25,7 +25,7 @@ function time(desc) {
 //
 //	load models from stl binary/ascii data
 //
-XAC.loadStl = function(data, onStlLoaded) {
+XAC.loadStl = function (data, onStlLoaded) {
 	var stlLoader = new THREE.STLLoader();
 	var geometry = stlLoader.parse(data);
 	var object = new THREE.Mesh(geometry, XAC.MATERIALNORMAL);
@@ -54,4 +54,26 @@ XAC.loadStl = function(data, onStlLoaded) {
 	if (onStlLoaded != undefined) {
 		onStlLoaded(object);
 	}
+}
+
+//
+//	read text file from local path
+//
+XAC.readFile = function (file, onSuccess, onFailure) {
+	var rawFile = new XMLHttpRequest();
+	rawFile.responseType = 'arraybuffer';
+	rawFile.open("GET", file, true);
+	rawFile.onreadystatechange = function () {
+		if (rawFile.readyState === 4) {
+			if (rawFile.status === 200 || rawFile.status == 0) {
+				if (onSuccess != undefined) onSuccess(rawFile.response);
+				return true;
+			}
+		}
+
+		if (onFailure != undefined) onFailure();
+		return false;
+	}
+
+	rawFile.send(null);
 }
