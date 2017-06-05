@@ -23,25 +23,24 @@
 var MEDLEY = MEDLEY || {};
 
 MEDLEY.Embeddable = function (object, matobj) {
-    this._object = object;
-
-    if (matobj != undefined) {
-        this._matobj = matobj;
-        this._dim = matobj.dim;
-        this.bendRadius = matobj.bendRadius;
+    if (matobj == undefined) {
+        console.error('missing material properties of embeddable!');
+        return;
     }
 
+    this._object = object;
+
+    this._matobj = matobj;
+    this._dim = matobj.dim;
+    this.bendRadius = matobj.bendRadius;
+
+    // design parameters of an embeddable
     this.DEPTHEPS = 0.02; // small depth pertubation to avoid z fighting
     this._depthRatio = 0;
     this._thicknessRatio = 0; // starting thickness ratio for 3d embeddable
     this._baseThickness = matobj.thickness; // starting width for xsec embeddable
     this._baseWidth = 5; // starting width for a cross sectional selection
     this._widthRatio = 0;
-
-    this._material = XAC.MATERIALHIGHLIGHT.clone();
-    this._material.opacity = 1;
-    this._material.transparent = false;
-    this._material.side = THREE.DoubleSide;
 
     // map a [0,1] depth ratio to a slightly large interval
     this._mapDepth = function (d) {
@@ -53,6 +52,27 @@ MEDLEY.Embeddable = function (object, matobj) {
         var eps = this.DEPTHEPS * 3;
         return t + eps;
     }
+
+    if (matobj.meshPath != undefined) {
+        time();
+        XAC.readFile(MEDLEY._matobjSelected.meshPath, function (data) {
+            var stlLoader = new THREE.STLLoader();
+            var geometry = stlLoader.parse(data);
+            var object = new THREE.Mesh(geometry, XAC.MATERIALNORMAL);
+            if (object.geometry.isBufferGeometry)
+                object.geometry = new THREE.Geometry().fromBufferGeometry(object.geometry);
+            this._mesh = object;
+            time('loaded embeddable mesh');
+
+            // XAC.scene.add(this._mesh);
+            this._paxis = XAC.findPrincipalAxis(this._mesh.geometry.vertices);
+        }.bind(this));
+    }
+
+    this._material = XAC.MATERIALHIGHLIGHT.clone();
+    this._material.opacity = 1;
+    this._material.transparent = false;
+    this._material.side = THREE.DoubleSide;
 };
 
 MEDLEY.Embeddable.prototype = {
@@ -153,32 +173,15 @@ MEDLEY.Embeddable.prototype._generate1dGeometry = function (params) {
         this._meshes = new THREE.Object3D();
         var shape = XAC.circularShape(this._matobj.radius, 32);
         this._extrudedSegments = new XAC.Polyline(shape, this.points, this._material.clone());
+        this._meshes.add(this._extrudedSegments.m);
         this._makeInteractive();
     } else {
         this._meshes.remove(this._extrudedSegments.m);
         this._extrudedSegments.update(this.points);
+        this._meshes.add(this._extrudedSegments.m);
     }
 
-    this._meshes.add(this._extrudedSegments.m);
 
-
-
-    // if (this._meshes == undefined) {
-    //     this._meshes = new THREE.Object3D();
-    //     this._segments = [];
-    //     for (var i = 0; i < this.points.length - 1; i++) {
-    //         var segment = new XAC.ThickLine(this.points[i], this.points[i + 1], this._matobj
-    //             .radius, this._material.clone());
-    //         this._meshes.add(segment.m);
-    //         this._segments.push(segment);
-    //     }
-
-    //     this._makeInteractive();
-    // } else {
-    //     for (var i = 0; i < this.points.length - 1; i++) {
-    //         this._segments[i].updateEfficiently(this.points[i], this.points[i + 1], this._matobj.radius);
-    //     }
-    // }
 };
 
 //
