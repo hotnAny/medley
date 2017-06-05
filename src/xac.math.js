@@ -651,3 +651,43 @@ XAC.fitSphere = function(points) {
         r: r
     };
 }
+
+/*
+	fitting a straight line to a set of (x, y) points in p
+	
+	@author
+		xiang 'anthony' chen, xiangchen@acm.org
+	@return
+		b0, b1 where y = b0 + b1 * x, 
+		err: mean square error
+	@references
+		http://www.stat.purdue.edu/~jennings/stat514/stat512notes/topic3.pdf
+*/
+XAC.fitLine = function(p) {
+	var X = [],
+		Xt, Y = [],
+		b;
+	n = p.length;
+	for (i = 0; i < n; i++) {
+		X.push([1, p[i][0]]);
+		Y.push(p[i][1]);
+	}
+
+	Xt = numeric.transpose(X);
+	var XtX = numeric.dot(Xt, X);
+	var XtY = numeric.dot(Xt, Y);
+	b = numeric.solve(XtX, XtY);
+
+	/*
+		computing errors
+	*/
+	var err = numeric.norm2(numeric.sub(numeric.dot(X, b), Y));
+	err = Math.sqrt(err * err / n);
+	console.log("fitting line error: " + err);
+
+	return {
+		b0: b[0],
+		b1: b[1],
+		err: err
+	};
+}
