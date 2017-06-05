@@ -414,6 +414,6 @@ XAC.findPrincipalAxis = function (points) {
 	qcenter.applyAxisAngle(axis, -angle);
 	q2.applyAxisAngle(axis, -angle);
 	principalAxis = q2.sub(qcenter);
-	addAnArrow(qcenter, principalAxis.clone(), 10, 0xff0000);
+	// addAnArrow(qcenter, principalAxis.clone(), 10, 0xff0000);
 	return principalAxis;
 }
