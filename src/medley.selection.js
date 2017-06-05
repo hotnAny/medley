@@ -12,7 +12,7 @@ var MEDLEY = MEDLEY || {};
 //
 //  select part of an object to create embeddables based on the painting technique (xac.input.painting.js)
 //
-MEDLEY.selectToCreateEmbeddables = function(info) {
+MEDLEY.selectToCreateEmbeddables = function (info) {
     info.object.updateMatrixWorld();
     info.matrixWorld = info.object.matrixWorld.clone();
 
@@ -35,9 +35,11 @@ MEDLEY.selectToCreateEmbeddables = function(info) {
         }
     }
 
-    for (p of toRemove) {
-        info.points.remove(p);
-    }
+    for (p of toRemove) info.points.remove(p);
+
+    info.center = new THREE.Vector3();
+    for (p of info.points) info.center.add(p);
+    info.center.divideScalar(info.points.length);
 
     log('# of points: ' + info.points.length);
 
@@ -98,6 +100,9 @@ MEDLEY.selectToCreateEmbeddables = function(info) {
         XAC._selecteds = [];
 
         switch (embeddable._dim) {
+            case 0:
+                MEDLEY._specifyObjectPlacement(embeddable, info);
+                break;
             case 1:
                 embeddable._info = info;
                 if (XAC._footprint > 50) MEDLEY._select1dSegments(embeddable, info);
@@ -130,9 +135,21 @@ MEDLEY.selectToCreateEmbeddables = function(info) {
 };
 
 //
+//
+//
+MEDLEY._specifyObjectPlacement = function (embeddable, info) {
+    var paxis = XAC.findPrincipalAxis(info.points);
+    var angle = embeddable._matobj.paxis.angleTo(paxis);
+    var axis = embeddable._matobj.paxis.clone().cross(paxis).normalize();
+    embeddable._mesh.rotateOnAxis(axis, angle);
+    embeddable._mesh.position.copy(info.center);
+    XAC.scene.add(embeddable._mesh);
+}
+
+//
 //  select poly-line segments to create embeddable
 //
-MEDLEY._select1dSegments = function(embeddable, info) {
+MEDLEY._select1dSegments = function (embeddable, info) {
     // impose ranges for each point
     embeddable.points0 = [];
     embeddable.points1 = [];
@@ -161,7 +178,7 @@ MEDLEY._select1dSegments = function(embeddable, info) {
 //
 //  select a (fixed-shape) patch from the object to create embeddable
 //
-MEDLEY._select2dPatch = function(embeddable, info) {
+MEDLEY._select2dPatch = function (embeddable, info) {
     // info to project input points on the 'normal plane'
     var params = info.paramsNormal;
     var nmlNormalPlane = new THREE.Vector3(params.A, params.B, params.C).normalize();
@@ -170,7 +187,7 @@ MEDLEY._select2dPatch = function(embeddable, info) {
     var axisToRotate = new THREE.Vector3().crossVectors(nmlNormalPlane, zAxis).normalize();
 
     // [internal helper] routines to fix given points to a bend radius
-    var __fixBendRadius = function(info, points, bendRadius) {
+    var __fixBendRadius = function (info, points, bendRadius) {
         // project points on the normal plane
         var projsXY = [];
         for (var i = 0; i < points.length; i++) {
@@ -226,12 +243,12 @@ MEDLEY._select2dPatch = function(embeddable, info) {
 //
 //  select a 2d strip around part of an object as embeddable
 //
-MEDLEY._select2dStrip = function(embeddable, info) {
+MEDLEY._select2dStrip = function (embeddable, info) {
     // info.object.updateMatrixWorld();
     // var matrixWorld = info.object.matrixWorld.clone();
 
     // [internal helper] find connected/neighboring faces that intersect the cross plane
-    var __findIntersectingNeighbors = function(face, a, b, c, d, center, radius) {
+    var __findIntersectingNeighbors = function (face, a, b, c, d, center, radius) {
         if (face.visited) return [];
         face.visited = true;
         facesVisited.push(face);
@@ -333,19 +350,19 @@ MEDLEY._select2dStrip = function(embeddable, info) {
 //
 //  select a (freeform) patch from the object to create embeddable
 //
-MEDLEY._select3dPatch = function(embeddable, info) {
+MEDLEY._select3dPatch = function (embeddable, info) {
     info.object.updateMatrixWorld();
     var matrixWorld = info.object.matrixWorld.clone();
 
     var vertices = info.object.geometry.vertices.clone();
 
     // [internal helper] interpolate between p1 and p2 with t
-    var __interpolate = function(p1, p2, t) {
+    var __interpolate = function (p1, p2, t) {
         return p1.clone().add(p2.clone().sub(p1).multiplyScalar(t));
     }
 
     // [internal helper] recursively find neighbors located within the given circle
-    var __findEnclosingNeighbors = function(face, center, radius) {
+    var __findEnclosingNeighbors = function (face, center, radius) {
         face.visited = true;
         var enclosingNeighbors = [];
         for (neighbor of face.neighbors) {
@@ -365,7 +382,7 @@ MEDLEY._select3dPatch = function(embeddable, info) {
     }
 
     // [internal helper] debug abnormal faces
-    var __debugFace = function(face) {
+    var __debugFace = function (face) {
         for (var k = 0; k < face.points.length; k++) {
             var p0 = face.points[k];
             var p1 = face.points[(k + 1) % face.points.length];
@@ -609,7 +626,7 @@ MEDLEY._select3dPatch = function(embeddable, info) {
 //      the length of the dimension perpendicular to cross sections
 //  - isLite: in a light version, show simple visuals rather than generating a full mesh
 //
-MEDLEY._select3dStrip = function(embeddable, info, width, isLite) {
+MEDLEY._select3dStrip = function (embeddable, info, width, isLite) {
     // info.object.updateMatrixWorld();
     // var matrixWorld = info.object.matrixWorld.clone();
 
@@ -644,7 +661,7 @@ MEDLEY._select3dStrip = function(embeddable, info, width, isLite) {
     }
 
     // [internal helper] debug problematic faces
-    var __debugFace = function(face, points) {
+    var __debugFace = function (face, points) {
         info.object.geometry.highlightFace(face, 0xffff00, XAC.scene);
         for (var k = 0; k < points.length; k++) {
             var p0 = points[k];
@@ -659,7 +676,7 @@ MEDLEY._select3dStrip = function(embeddable, info, width, isLite) {
     //  - a, b, c, d0/d1, width: two parallel planes with width apart,
     //      controling the range of cross section
     //  - center, radius: bounding sphere, if applicable, to remove far-away irrelevant faces
-    var __remeshSelectedNeighbors = function(face, a, b, c, d0, d1, width, center, radius) {
+    var __remeshSelectedNeighbors = function (face, a, b, c, d0, d1, width, center, radius) {
         // book keep which faces were visited
         if (face.visited) return [];
         face.visited = true;
@@ -885,7 +902,7 @@ MEDLEY._select3dStrip = function(embeddable, info, width, isLite) {
 //
 //  detect if a drawing is a loop or line (non-loop) or unsure
 //
-MEDLEY._isLoop = function(info) {
+MEDLEY._isLoop = function (info) {
     var minGapRatio = 0.2;
     var maxGapRatio = 0.9;
     info.footprint = 0;
@@ -908,7 +925,7 @@ MEDLEY._isLoop = function(info) {
 //
 //  common internal helper: sort four points so they form a non-self-intersecting polygon
 //
-XAC._sortFourPoints = function(points) {
+XAC._sortFourPoints = function (points) {
     if (points.length != 4) return;
 
     var v0 = points[1].clone().sub(points[0]);
@@ -925,7 +942,7 @@ XAC._sortFourPoints = function(points) {
 //  find available (bounding) range of an object at a given point,
 //  using the given direction as an axis
 //
-MEDLEY._findAvailableWidthRange = function(object, point, direction) {
+MEDLEY._findAvailableWidthRange = function (object, point, direction) {
     var materialBbox = XAC.MATERIALINVISIBLE.clone();
     materialBbox.side = THREE.DoubleSide;
     var bbox = XAC.getBoundingBoxMesh(object, materialBbox);

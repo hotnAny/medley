@@ -53,21 +53,7 @@ MEDLEY.Embeddable = function (object, matobj) {
         return t + eps;
     }
 
-    if (matobj.meshPath != undefined) {
-        time();
-        XAC.readFile(MEDLEY._matobjSelected.meshPath, function (data) {
-            var stlLoader = new THREE.STLLoader();
-            var geometry = stlLoader.parse(data);
-            var object = new THREE.Mesh(geometry, XAC.MATERIALNORMAL);
-            if (object.geometry.isBufferGeometry)
-                object.geometry = new THREE.Geometry().fromBufferGeometry(object.geometry);
-            this._mesh = object;
-            time('loaded embeddable mesh');
-
-            // XAC.scene.add(this._mesh);
-            this._paxis = XAC.findPrincipalAxis(this._mesh.geometry.vertices);
-        }.bind(this));
-    }
+    this._mesh = matobj.mesh.clone();
 
     this._material = XAC.MATERIALHIGHLIGHT.clone();
     this._material.opacity = 1;
