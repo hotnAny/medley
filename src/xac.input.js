@@ -14,8 +14,6 @@ XAC.MOUSEMOVE = -2;
 XAC.MOUSEUP = -3;
 XAC.KEYUP = -4;
 
-// TODO global mouse event handlers
-
 // keyboard events
 XAC.LEFTARROW = 37;
 XAC.UPARROW = 38;
@@ -24,6 +22,9 @@ XAC.DOWNARROW = 40;
 XAC.ENTER = 13;
 XAC.SHIFT = 16;
 XAC.DELETE = 46;
+
+// misc
+XAC.NOMOVETHRESHOLD = 100;
 
 XAC.keydowns = {};
 
@@ -118,7 +119,7 @@ XAC._dispatchInputEvents = function(e, type) {
         case XAC.MOUSEUP:
             var tempSelecteds = XAC._selecteds.clone();
             for (object of tempSelecteds) {
-                if (e.which == LEFTMOUSE && XAC._footprint < 50) {
+                if (e.which == LEFTMOUSE && XAC._footprint < XAC.NOMOVETHRESHOLD) {
                     if (object._selectable) {
                         if (object._selected && !e.shiftKey) {
                             if (object._onDeselected) object._onDeselected();
