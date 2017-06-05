@@ -8,15 +8,14 @@
 
 var MEDLEY = MEDLEY || {};
 
-$(document).ready(function() {
+$(document).ready(function () {
     MEDLEY.embeddables = [];
     MEDLEY.everything = new THREE.Object3D();
     XAC.scene.add(MEDLEY.everything);
 });
 
-MEDLEY.onStlLoaded = function(object) {
+MEDLEY.onStlLoaded = function (object) {
     MEDLEY.everything.children = [];
-
     MEDLEY.everything.add(object);
 
     //
@@ -80,7 +79,7 @@ MEDLEY.onStlLoaded = function(object) {
 //
 //
 //
-MEDLEY.updateEverything = function(object) {
+MEDLEY.updateEverything = function (object) {
     var everythingOld = MEDLEY.everything;
     XAC.scene.remove(everythingOld);
     MEDLEY.everything = new THREE.Object3D();
