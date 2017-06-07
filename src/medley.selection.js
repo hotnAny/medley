@@ -935,7 +935,7 @@ MEDLEY._findAvailableWidthRange = function (object, point, direction) {
 }
 
 //
-//
+//  specify the placement of embeddable objects (dof=0)
 //
 MEDLEY._specifyObjectPlacement = function (embeddable, info) {
     info.paxis = XAC.findPrincipalAxis(info.points);
@@ -955,11 +955,11 @@ MEDLEY._specifyObjectPlacement = function (embeddable, info) {
     var hits = rayCaster.intersectObjects([info.object]);
     if (hits.length > 0) embeddable.p1 = hits[0].point;
 
-    // MEDLEY.enableRotationAroundPrimaryAxis(embeddable, info);
+    MEDLEY.enableRotationAroundPrimaryAxis(embeddable, info);
 }
 
 //
-//
+//  enable mouse move to rotate an embeddable object around its principal axis
 //
 MEDLEY.enableRotationAroundPrimaryAxis = function (embeddable, info) {
     //  add an invisible sphere
