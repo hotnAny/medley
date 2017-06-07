@@ -10,8 +10,8 @@ MEDLEY._matobjSelected = {
     dim: 0,
     thickness: 1, // mm
     bendRadius: 50, // mm
-    meshPath: 'embeddables/penny.stl'
-    // meshPath: 'embeddables/screw_phillips.stl'
+    // meshPath: 'embeddables/penny.stl'
+    meshPath: 'embeddables/screw_phillips.stl'
     // meshPath: 'embeddables/screw_fh1.5in.stl'
     // meshPath: 'things/spoon.stl'
 };

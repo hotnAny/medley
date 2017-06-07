@@ -53,12 +53,15 @@ MEDLEY.Embeddable = function (object, matobj) {
         return t + eps;
     }
 
-    this._mesh = new THREE.Mesh(matobj.mesh.geometry.clone(), matobj.mesh.material);
-
     this._material = XAC.MATERIALHIGHLIGHT.clone();
     this._material.opacity = 1;
     this._material.transparent = false;
     this._material.side = THREE.DoubleSide;
+
+    this._meshes = new THREE.Object3D();
+    this._mesh = new THREE.Mesh(matobj.mesh.geometry.clone(), this._material);
+    this._meshes.add(this._mesh);
+    this._makeInteractive();
 };
 
 MEDLEY.Embeddable.prototype = {
@@ -71,6 +74,11 @@ MEDLEY.Embeddable.prototype = {
 //
 MEDLEY.Embeddable.prototype.setDepth = function (d) {
     switch (this._dim) {
+        case 0:
+            this._place0dGeometry({
+                depthRatio: d
+            });
+            break;
         case 1:
             this._generate1dGeometry({
                 depthRatio: d
@@ -142,12 +150,22 @@ MEDLEY.Embeddable.prototype.setWidth = function (w, isLite) {
 }
 
 //
+//
+//
+MEDLEY.Embeddable.prototype._place0dGeometry = function (params) {
+    if (this.p0 == undefined || this.p1 == undefined) return;
+    if (params != undefined) this._depthRatio = params.depthRatio || this._depthRatio;
+    var d = this._mapDepth(this._depthRatio);
+    var p = this.p0.clone().multiplyScalar(1 - d).add(this.p1.clone().multiplyScalar(d));
+    this._meshes.position.copy(p);
+}
+
+//
 //  generate 1d geometry (polyline-based tube/tunnel)
 //
 MEDLEY.Embeddable.prototype._generate1dGeometry = function (params) {
-    if (params != undefined) {
-        this._depthRatio = params.depthRatio || this._depthRatio;
-    }
+    if (params != undefined) this._depthRatio = params.depthRatio || this._depthRatio;
+
     this.points = [];
     var d = this._mapDepth(this._depthRatio);
     for (var i = 0; i < this.points0.length; i++) {

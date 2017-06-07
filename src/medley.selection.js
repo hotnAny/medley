@@ -89,8 +89,6 @@ MEDLEY.selectToCreateEmbeddables = function (info) {
 
     // sampling based on material's dimension
     if (MEDLEY._matobjSelected != undefined) {
-        var embeddable = new MEDLEY.Embeddable(info.object, MEDLEY._matobjSelected);
-
         // remove all active embeddables to focus on this new one
         for (object of XAC._selecteds) {
             if (object._onDeselected) {
@@ -99,9 +97,9 @@ MEDLEY.selectToCreateEmbeddables = function (info) {
         }
         XAC._selecteds = [];
 
+        var embeddable = new MEDLEY.Embeddable(info.object, MEDLEY._matobjSelected);
         switch (embeddable._dim) {
             case 0:
-                ;
                 MEDLEY._specifyObjectPlacement(embeddable, info);
                 break;
             case 1:
@@ -109,19 +107,13 @@ MEDLEY.selectToCreateEmbeddables = function (info) {
                 if (XAC._footprint > 50) MEDLEY._select1dSegments(embeddable, info);
                 break;
             case 2:
-                if (MEDLEY.shiftPressed) {
-                    MEDLEY._select2dStrip(embeddable, info);
-                } else {
-                    MEDLEY._select2dPatch(embeddable, info);
-                }
+                if (MEDLEY.shiftPressed) MEDLEY._select2dStrip(embeddable, info);
+                else MEDLEY._select2dPatch(embeddable, info);
                 break;
             case 3:
                 var isLoop = MEDLEY._isLoop(info);
-                if (isLoop) {
-                    MEDLEY._select3dPatch(embeddable, info);
-                } else {
-                    MEDLEY._select3dStrip(embeddable, info, embeddable._baseWidth, false);
-                }
+                if (isLoop) MEDLEY._select3dPatch(embeddable, info);
+                else MEDLEY._select3dStrip(embeddable, info, embeddable._baseWidth, false);
                 break;
         }
 
@@ -953,9 +945,17 @@ MEDLEY._specifyObjectPlacement = function (embeddable, info) {
     mr.makeRotationAxis(axis, angle);
     embeddable._mesh.geometry.applyMatrix(mr);
     embeddable._paxis = embeddable._matobj.paxis.clone().applyAxisAngle(axis, angle);
-    embeddable._mesh.position.copy(info.center);
-    XAC.scene.add(embeddable._mesh);
-    MEDLEY.enableRotationAroundPrimaryAxis(embeddable, info);
+    embeddable._meshes.position.copy(info.center);
+    XAC.scene.add(embeddable._meshes);
+
+    info.object.material.side = THREE.BackSide;
+    var rayCaster = new THREE.Raycaster();
+    embeddable.p0 = info.center;
+    rayCaster.ray.set(embeddable.p0, info.normal.clone().multiplyScalar(-1));
+    var hits = rayCaster.intersectObjects([info.object]);
+    if (hits.length > 0) embeddable.p1 = hits[0].point;
+
+    // MEDLEY.enableRotationAroundPrimaryAxis(embeddable, info);
 }
 
 //
@@ -997,7 +997,7 @@ MEDLEY.enableRotationAroundPrimaryAxis = function (embeddable, info) {
                 var mr = new THREE.Matrix4();
                 mr.makeRotationAxis(axis, -angle);
                 MEDLEY._objectToRotate.geometry.applyMatrix(mr);
-              
+
             }
             MEDLEY._projPrev = proj;
 
