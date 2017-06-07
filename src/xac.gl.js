@@ -297,7 +297,7 @@ function getBoundingBoxVolume(obj) {
 //
 //	get the radius of an object's bounding sphere
 //
-function getBoundingSphereRadius(obj) {
+XAC.getBoundingSphereRadius = function(obj) {
 	var gt = gettg(obj);
 	gt.computeBoundingSphere();
 	return gt.boundingSphere.radius;

@@ -42,7 +42,7 @@ XAC.loadStl = function (data, onStlLoaded) {
 	XAC.scene.add(XAC.grid);
 
 	// relocate the camera
-	var r = Math.max(25, getBoundingSphereRadius(object));
+	var r = Math.max(25, XAC.getBoundingSphereRadius(object));
 	XAC.camera.position.copy(XAC.posCam.clone().normalize().multiplyScalar(r * 2));
 
 	// re-lookAt for the camera

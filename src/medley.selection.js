@@ -101,6 +101,7 @@ MEDLEY.selectToCreateEmbeddables = function (info) {
 
         switch (embeddable._dim) {
             case 0:
+                ;
                 MEDLEY._specifyObjectPlacement(embeddable, info);
                 break;
             case 1:
@@ -133,18 +134,6 @@ MEDLEY.selectToCreateEmbeddables = function (info) {
     // reorg the everything object3d
     if (embeddable._meshes != undefined) MEDLEY.updateEverything(embeddable._meshes);
 };
-
-//
-//
-//
-MEDLEY._specifyObjectPlacement = function (embeddable, info) {
-    var paxis = XAC.findPrincipalAxis(info.points);
-    var angle = embeddable._matobj.paxis.angleTo(paxis);
-    var axis = embeddable._matobj.paxis.clone().cross(paxis).normalize();
-    embeddable._mesh.rotateOnAxis(axis, angle);
-    embeddable._mesh.position.copy(info.center);
-    XAC.scene.add(embeddable._mesh);
-}
 
 //
 //  select poly-line segments to create embeddable
@@ -951,4 +940,69 @@ MEDLEY._findAvailableWidthRange = function (object, point, direction) {
     var projRange = XAC.getRangeOfPointsOnAxis(gettg(bbox).vertices, direction);
     var margin = 0.1;
     return Math.min(projCenter - projRange[0], projRange[1] - projCenter) * (2 - margin);
+}
+
+//
+//
+//
+MEDLEY._specifyObjectPlacement = function (embeddable, info) {
+    info.paxis = XAC.findPrincipalAxis(info.points);
+    var angle = embeddable._matobj.paxis.angleTo(info.paxis);
+    var axis = embeddable._matobj.paxis.clone().cross(info.paxis).normalize();
+    var mr = new THREE.Matrix4();
+    mr.makeRotationAxis(axis, angle);
+    embeddable._mesh.geometry.applyMatrix(mr);
+    embeddable._paxis = embeddable._matobj.paxis.clone().applyAxisAngle(axis, angle);
+    embeddable._mesh.position.copy(info.center);
+    XAC.scene.add(embeddable._mesh);
+    MEDLEY.enableRotationAroundPrimaryAxis(embeddable, info);
+}
+
+//
+//
+//
+MEDLEY.enableRotationAroundPrimaryAxis = function (embeddable, info) {
+    //  add an invisible sphere
+    var radius = 512; //XAC.getBoundingSphereRadius(embeddable._mesh) * 2;
+    var cdGain = 5;
+
+    MEDLEY._trackball = new XAC.Sphere(radius, XAC.MATERIALINVISIBLE, true);
+    MEDLEY._trackball.update(radius, info.center);
+    XAC.scene.add(MEDLEY._trackball.m);
+    MEDLEY._objectToRotate = embeddable._mesh;
+    MEDLEY._rotationAxis = info.paxis; // info.paxis.clone().normalize();
+    MEDLEY._rotationPlane = XAC.getPlaneFromPointNormal(info.center, MEDLEY._rotationAxis);
+
+    //  add mouse move and down
+    MEDLEY._rotationDone = XAC.on(XAC.MOUSEDOWN, function (e) {
+        if (e.which != LEFTMOUSE) return;
+        XAC.mousemoves.remove(MEDLEY._rotateAroundAxis);
+        XAC.mousedowns.remove(MEDLEY._rotationDone);
+        XAC.scene.remove(MEDLEY._trackball.m);
+        MEDLEY._projPrev = undefined;
+    });
+
+    MEDLEY._rotateAroundAxis = XAC.on(XAC.MOUSEMOVE, function (e) {
+        var intersects = rayCast(e.clientX, e.clientY, [MEDLEY._trackball.m]);
+        var a = MEDLEY._rotationPlane.A,
+            b = MEDLEY._rotationPlane.B,
+            c = MEDLEY._rotationPlane.C,
+            d = MEDLEY._rotationPlane.D;
+        if (intersects.length > 0) {
+            var point = intersects[0].point;
+            var proj = XAC.getPointProjectionOnPlane(point, a, b, c, d).sub(MEDLEY._trackball.m.position);
+            if (MEDLEY._projPrev != undefined) {
+                var angle = MEDLEY._projPrev.angleTo(proj) * cdGain;
+                var axis = MEDLEY._projPrev.cross(proj).normalize();
+                var mr = new THREE.Matrix4();
+                mr.makeRotationAxis(axis, -angle);
+                MEDLEY._objectToRotate.geometry.applyMatrix(mr);
+              
+            }
+            MEDLEY._projPrev = proj;
+
+            // XAC.scene.remove(MEDLEY._arrow);
+            // MEDLEY._arrow = addAnArrow(MEDLEY._trackball.m.position, proj, 15, 0x00ff00);
+        }
+    });
 }

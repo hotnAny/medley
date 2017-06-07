@@ -42,9 +42,10 @@ XAC.MATERIALFOCUS = new THREE.MeshPhongMaterial({
 });
 
 XAC.MATERIALINVISIBLE = new THREE.MeshPhongMaterial({
-	color: 0x000000,
+	color: 0xffffff,
 	transparent: true,
-	opacity: 0.2
+	opacity: 0.0,
+	side: THREE.BackSide,
 });
 
 XAC.Thing = function (m) {

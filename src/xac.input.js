@@ -26,6 +26,9 @@ XAC.DELETE = 46;
 // misc
 XAC.NOMOVETHRESHOLD = 100;
 
+XAC.mousedowns = [];
+XAC.mousemoves = [];
+XAC.mouseups = [];
 XAC.keydowns = {};
 
 XAC._selecteds = [];
@@ -34,7 +37,7 @@ XAC.mousedownEventHandlers = {};
 //
 //  [internal helper] compute mouse footprint since last mousedown
 //
-XAC._updateFootprint = function(x, y) {
+XAC._updateFootprint = function (x, y) {
     if (x == undefined || y == undefined) {
         XAC._prevCooord = undefined;
         return;
@@ -51,47 +54,52 @@ XAC._updateFootprint = function(x, y) {
     XAC._prevCooord = [x, y];
 }
 
-XAC.mousedown = function(e) {
+XAC.mousedown = function (e) {
+    // hack
     if (e.target.nodeName != 'CANVAS') return;
+
     XAC._updateFootprint();
+    for (handler of XAC.mousedowns) handler(e);
     XAC._dispatchInputEvents(e, XAC.MOUSEDOWN);
 };
 
-XAC.mousemove = function(e) {
+XAC.mousemove = function (e) {
     XAC._updateFootprint(e.clientX, e.clientY);
+    for (handler of XAC.mousemoves) handler(e);
     XAC._dispatchInputEvents(e, XAC.MOUSEMOVE);
 };
 
-XAC.mouseup = function(e) {
+XAC.mouseup = function (e) {
     XAC._updateFootprint(e.clientX, e.clientY);
+    for (handler of XAC.mouseups) handler(e);
     XAC._dispatchInputEvents(e, XAC.MOUSEUP);
 };
 
-XAC.keydown = function(e) {
+XAC.keydown = function (e) {
     XAC._dispatchInputEvents(e, XAC.KEYDOWN);
     if (XAC.keydowns != undefined) {
         (XAC.keydowns[e.keyCode] || console.error)();
     }
 }
 
-XAC.keyup = function(e) {
-    if(XAC.keyups != undefined) {
-        for(handler of XAC.keyups) {
+XAC.keyup = function (e) {
+    if (XAC.keyups != undefined) {
+        for (handler of XAC.keyups) {
             handler(e);
         }
     }
 }
 
-XAC.on = function(cue, handler) {
+XAC.on = function (cue, handler) {
     switch (cue) {
         case XAC.MOUSEDOWN:
-            // TODO:
+            XAC.mousedowns.push(handler);
             break;
         case XAC.MOUSEMOVE:
-            // TODO
+            XAC.mousemoves.push(handler);
             break;
         case XAC.MOUSEUP:
-            // TODO
+            XAC.mouseups.push(handler);
             break;
         case XAC.KEYUP:
             XAC.keyups = XAC.keyups || [];
@@ -99,7 +107,7 @@ XAC.on = function(cue, handler) {
             break;
         default:
             XAC.keydowns = XAC.keydowns || {};
-            if (typeof(cue) == 'string') {
+            if (typeof (cue) == 'string') {
                 var key = cue.charCodeAt(0);
                 XAC.keydowns[key] = handler;
             } else {
@@ -107,9 +115,10 @@ XAC.on = function(cue, handler) {
             }
             break;
     }
+    return handler;
 }
 
-XAC._dispatchInputEvents = function(e, type) {
+XAC._dispatchInputEvents = function (e, type) {
     if (type == XAC.MOUSEDOWN) {
         XAC._activeHits = rayCast(e.clientX, e.clientY, XAC.objects);
     }
@@ -187,7 +196,7 @@ XAC._dispatchInputEvents = function(e, type) {
     }
 }
 
-$(document).ready(function() {
+$(document).ready(function () {
     // $(document.body).on('mousedown', XAC.mousedown);
     // $(document.body).on('mousemove', XAC.mousemove);
     // $(document.body).on('mouseup', XAC.mouseup);
@@ -200,16 +209,16 @@ $(document).ready(function() {
 //
 //
 //
-XAC.enableDragDrop = function(filesHandler) {
+XAC.enableDragDrop = function (filesHandler) {
     // drag & drop 3d model file
-    $(document).on('dragover', function(e) {
+    $(document).on('dragover', function (e) {
         e.stopPropagation();
         e.preventDefault();
         e.dataTransfer = e.originalEvent.dataTransfer;
         e.dataTransfer.dropEffect = 'copy';
     });
 
-    $(document).on('drop', function(e) {
+    $(document).on('drop', function (e) {
         e.stopPropagation();
         e.preventDefault();
         e.dataTransfer = e.originalEvent.dataTransfer;
@@ -224,7 +233,7 @@ XAC.enableDragDrop = function(filesHandler) {
 //
 //
 //
-XAC.makeSlider = function(id, label, min, max, value, parent) {
+XAC.makeSlider = function (id, label, min, max, value, parent) {
     var sldrRow = $('<tr></tr>');
     var sldrCell = $('<td><label class="ui-widget">' + label + '</label></td><td width="200px"></td>');
     var sldr = $('<div id="' + id + '"></div>');

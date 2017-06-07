@@ -53,7 +53,7 @@ MEDLEY.Embeddable = function (object, matobj) {
         return t + eps;
     }
 
-    this._mesh = matobj.mesh.clone();
+    this._mesh = new THREE.Mesh(matobj.mesh.geometry.clone(), matobj.mesh.material);
 
     this._material = XAC.MATERIALHIGHLIGHT.clone();
     this._material.opacity = 1;

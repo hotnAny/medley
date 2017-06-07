@@ -6,10 +6,14 @@ MEDLEY._layerHeight = 0.2;
 
 // XXX
 MEDLEY._matobjSelected = {
-    radius: 0.5, // mm
-    dim: 1,
+    radius: 0.75, // mm
+    dim: 0,
     thickness: 1, // mm
-    bendRadius: 10 //mm
+    bendRadius: 50, // mm
+    meshPath: 'embeddables/penny.stl'
+    // meshPath: 'embeddables/screw_phillips.stl'
+    // meshPath: 'embeddables/screw_fh1.5in.stl'
+    // meshPath: 'things/spoon.stl'
 };
 
 
@@ -20,7 +24,7 @@ $(document).ready(function () {
     });
     XAC.on('2', function () {
         MEDLEY._matobjSelected.dim = 2;
-    });
+    }); 
     XAC.on('3', function () {
         MEDLEY._matobjSelected.dim = 3;
     });
@@ -40,7 +44,7 @@ $(document).ready(function () {
         // MEDLEY.rotateEverything(anglex, anglez, true);
         // XXX done
 
-        // MEDLEY.make1dFabricatable(embeddable);
+        //         MEDLEY.make1dFabricatable(embeddable);
         MEDLEY.findExternalInsertion(embeddable);
     });
 
@@ -64,14 +68,23 @@ $(document).ready(function () {
     // 	side: THREE.DoubleSide
     // });
 
-    // var testObject = {
-    //     x: 5,
-    //     f: function(y) {
-    //         log(this.x + y)
-    //     }
-    // };
+    if (MEDLEY._matobjSelected.meshPath != undefined) {
+        time();
+        XAC.readFile(MEDLEY._matobjSelected.meshPath, function (data) {
+            var stlLoader = new THREE.STLLoader();
+            var geometry = stlLoader.parse(data);
+            var object = new THREE.Mesh(geometry, XAC.MATERIALCONTRAST);
+            if (object.geometry.isBufferGeometry)
+                object.geometry = new THREE.Geometry().fromBufferGeometry(object.geometry);
 
-    // testObject.f(4);
+            MEDLEY._matobjSelected.mesh = object;
+            MEDLEY._matobjSelected.paxis = XAC.findPrincipalAxis(
+                MEDLEY._matobjSelected.mesh.geometry.vertices);
+            MEDLEY._matobjSelected.mesh.geometry.center();
+            // XAC.scene.add(MEDLEY._matobjSelected.mesh);
+            time('loaded embeddable mesh');
+        });
+    }
 });
 
 //
@@ -82,43 +95,6 @@ MEDLEY.getFabReady = function (embeddable) {
     var material = XAC.MATERIALNORMAL.clone();
     switch (embeddable._dim) {
         case 1:
-            // for (mesh of embeddable._meshes.children) {
-            //     if (mesh.geometry.isBufferGeometry)
-            //         mesh.geometry = new THREE.Geometry().fromBufferGeometry(mesh.geometry);
-            // }
-
-            // embeddable._meshes.updateMatrixWorld();
-            // var m = embeddable._meshes.matrixWorld;
-
-            // var segments = embeddable._segments.concat(embeddable._extraSegments || []);
-
-            // // for (var i = 0; i < embeddable.points.length; i++) {
-            // //     var p = embeddable.points[i].clone().applyMatrix4(m);
-            // //     var joint = new XAC.Sphere(embeddable._matobj.radius, embeddable._material, false);
-            // //     if (joint.m.geometry.isBufferGeometry)
-            // //         joint.m.geometry = new THREE.Geometry().fromBufferGeometry(joint.m.geometry);
-            // //     joint.update(undefined, p);
-            // for (var i = 0; i < segments.length; i++) {
-            //     var mesh = segments[i].m;
-            //     if (i == 0) {
-            //         // merged = new THREE.Mesh(gettg(joint.m), joint.m.material);
-            //         merged = new THREE.Mesh(gettg(mesh), mesh.material);
-            //         // segments = new THREE.Mesh(gettg(embeddable._segments[i].m),
-            //         //     embeddable._segments[i].m.material.clone());
-            //         // origin = joint.m.position; //embeddable.points[i].clone().applyMatrix4(m);
-            //         // for (v of merged.geometry.vertices) v.add(origin);
-            //     } else {
-            //         // merged.geometry.merge(gettg(joint.m));
-            //         merged.geometry.merge(gettg(mesh));
-            //     }
-
-            // }
-
-            // // for (v of merged.geometry.vertices) v.sub(origin);
-            // // MEDLEY.fixFaces(merged);
-
-            // merged.geometry.computeFaceNormals();
-            // merged.geometry.computeVertexNormals();
             merged = embeddable._extrudedSegments.m;
             extra = embeddable._extraSegments == undefined ? undefined : embeddable._extraSegments.m;
             break;
