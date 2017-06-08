@@ -1,8 +1,8 @@
 //	........................................................................................................
 //
-//  extensions for javascript array class
+//  extensions for javascript array class, v0.1
 //
-//	by xiangchen@acm.org, 03/2017
+//	by xiangchen@acm.org, 06/2017
 //
 //	........................................................................................................
 
@@ -237,4 +237,20 @@ Array.prototype.insert = function(elm, idx) {
 	var tail = this.splice(idx);
 	this.push(elm);
 	this.copy(this.concat(tail));
+}
+
+
+//
+//
+//
+XAC.initMDArray = function(dims, val) {
+	if (dims.length == 1) {
+		return new Array(dims[0]).fill(val);
+	}
+
+	var array = [];
+	for (var i = 0; i < dims[0]; i++) {
+		array.push(XAC.initMDArray(dims.slice(1), val));
+	}
+	return array;
 }

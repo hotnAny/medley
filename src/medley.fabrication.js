@@ -378,29 +378,6 @@ MEDLEY._digTunnel = function (info, embeddable) {
     var matTunnel = XAC.MATERIALFOCUS.clone();
     matTunnel.transparent = false;
 
-    // var joint = new XAC.Sphere(embeddable._matobj.radius, matTunnel, false);
-    // if (joint.m.geometry.isBufferGeometry)
-    //     joint.m.geometry = new THREE.Geometry().fromBufferGeometry(joint.m.geometry);
-    // joint.update(undefined, info.p);
-    // embeddable.extra.add(joint.m);
-    // embeddable._extraSegments = [];
-    // for (var theta = step, p0 = info.p; theta <= info.angle + step; theta += step) {
-    //     var p1 = info.p.clone().applyAxisAngleOnPoint(axis, info.c, theta);
-    //     var segment = new XAC.ThickLine(p0, p1, embeddable._matobj.radius, matTunnel);
-    //     embeddable._extraSegments.push(segment);
-    //     if (segment.m.geometry.isBufferGeometry)
-    //         segment.m.geometry = new THREE.Geometry().fromBufferGeometry(segment.m.geometry);
-    //     embeddable.extra.add(segment.m);
-
-    //     // joint = new XAC.Sphere(embeddable._matobj.radius, matTunnel, false);
-    //     // if (joint.m.geometry.isBufferGeometry)
-    //     //     joint.m.geometry = new THREE.Geometry().fromBufferGeometry(joint.m.geometry);
-    //     // joint.update(undefined, p1);
-    //     // embeddable.extra.add(joint.m);
-
-    //     p0 = p1;
-    // }
-
     var points = [info.p]
     for (var theta = step; theta <= info.angle + step; theta += step) {
         var p = info.p.clone().applyAxisAngleOnPoint(axis, info.c, theta);
