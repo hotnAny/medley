@@ -81,30 +81,46 @@ $(document).ready(function () {
         });
     }
 
+    // var sortable = new XAC.Sortable(XAC.Sortable.INSERTION);
+    // log(sortable.insert(44.4958342));
+    // sortable.print();
+    // log(sortable.insert(58.45431));
+    // sortable.print(); //
+    // log(sortable.insert(95.345347));
+    // sortable.print(); //);
+    // log(sortable.insert(81.4565));
+    // sortable.print(); //);
+    // log(sortable.insert(559.0565));
+    // sortable.print(); //);
+    // log(sortable.insert(46.345654));
+    // sortable.print(); //);
+    // log(sortable.insert(12.45658));
+    // sortable.print(); //);
 
+    var maxHeight = 5;
+    var bboxes = [];
+    var __insertBox = function (x0, x1, y0, y1, z0, z1, bboxes) {
+        bboxes.push({
+            min: {
+                x: x0,
+                y: y0,
+                z: z0
+            },
+            max: {
+                x: x1,
+                y: y1,
+                z: z1
+            }
+        });
+    }
 
-    // var box1 = {
-    //     min: {
-    //         x: -1,
-    //         z: 3
-    //     },
-    //     max: {
-    //         x: 4,
-    //         z: 5
-    //     }
-    // };
-    // var box2 = {
-    //     min: {
-    //         x: -2,
-    //         z: 4
-    //     },
-    //     max: {
-    //         x: 3,
-    //         z: 6
-    //     }
-    // };
+    __insertBox(0, 3, 0, 1, 0, 2, bboxes);
+    __insertBox(-1, 1, 1, 2, -1, 1, bboxes);
+    __insertBox(-2, 2, 2, 3, -2, 3, bboxes);
+    __insertBox(-1, 1, 3, 4, 0, 2, bboxes);
+    __insertBox(3, 4, 4, 5, -2, 0, bboxes);
 
-    // log(__compute2DIntersectionArea(box1, box2));
+    
 });
 
 //
@@ -250,50 +266,74 @@ MEDLEY.find0dInternalInsertion = function (embeddable) {
     //     XAC.scene.add(box);
     // }
 
-    var __getIntersectionBox = function (box1, box2) {
-        // var w = Math.min(box1.max.x, box2.max.x) - Math.max(box1.min.x, box2.min.x);
-        // var l = Math.min(box1.max.z, box2.max.z) - Math.max(box1.min.z, box2.min.z);
-        var box = {
-            min: {
-                x: Math.max(box1.min.x, box2.min.x),
-                z: Math.max(box1.min.z, box2.min.z)
-            },
-            max: {
-                x: Math.min(box1.max.x, box2.max.x),
-                z: Math.min(box1.max.z, box2.max.z)
+    // var __getIntersectionBox = function (box1, box2) {
+    //     // var w = Math.min(box1.max.x, box2.max.x) - Math.max(box1.min.x, box2.min.x);
+    //     // var l = Math.min(box1.max.z, box2.max.z) - Math.max(box1.min.z, box2.min.z);
+    //     var box = {
+    //         min: {
+    //             x: Math.max(box1.min.x, box2.min.x),
+    //             z: Math.max(box1.min.z, box2.min.z)
+    //         },
+    //         max: {
+    //             x: Math.min(box1.max.x, box2.max.x),
+    //             z: Math.min(box1.max.z, box2.max.z)
+    //         }
+    //     };
+
+    //     // var w = box.max.x - box.min.x;
+    //     // var l = box.max.z - box.min.z;
+
+    //     return box;
+    // };
+
+
+    var __findUnionArea = function (start, end, xlist, boxes) {
+        if (boxes.length == 0) return 0;
+        var area = 0;
+        for (var i = start; i < end; i++) {
+            var xmin = xlist[i],
+                xmax = xlist[i + 1];
+            var zmin = Number.MAX_VALUE;
+            var zmax = -Number.MAX_VALUE;
+            for (box of boxes) {
+                if (box.min.x <= xmin && box.max.x >= xmax) {
+                    zmin = Math.min(zmin, box.min.z);
+                    zmax = Math.max(zmax, box.max.z);
+                }
             }
-        };
 
-        // var w = box.max.x - box.min.x;
-        // var l = box.max.z - box.min.z;
+            if (zmin == Number.MAX_VALUE || zmax == Number.MIN_VALUE) area += 0;
+            else area += (xmax - xmin) * (zmax - zmin);
+        }
+        return area;
+    }
 
-        return box;
-    };
-}
+    var sumVols = 0;
+    var xvalues = [];
+    var bboxesPrev = [];
+    var schedule = new XAC.Sortable(XAC.Sortable.INSERTION);
+    for (var i = 0; i < bboxes.length; i++) {
+        var bbox = bboxes[i];
+        var start = schedule.insert(bbox.min.x);
+        var end = schedule.insert(bbox.max.x);
+        var xlist = schedule.getSortedList();
 
-// aggregate to compute the total volume that needs to be cut off
-var sumVols = 0;
-for (var i = 0; i < nlevels; i++) {
-    var bbox = bboxes[i];
-    var w = bbox.max.x - bbox.min.x;
-    var t = maxHeight - bbox.min.y;
-    var l = bbox.max.z - bbox.min.z;
-    // log([w, t, l]);
-    var areaIntersected = 0;
-    var intBoxes = [];
-    for (var j = 0; j < i; j++)
-        var box = __getIntersectionBox(bbox, bboxes[j]);
+        var area = __findUnionArea(start, end, xlist, bboxesPrev);
+        bboxesPrev.push(bbox);
+        var areaNew = __findUnionArea(start, end, xlist, bboxesPrev);
 
-    var vol = Math.max(w * l - areaIntersected, 0) * t;
-    log(vol)
-    sumVols += vol;
-}
+        areaNew -= area;
+        var vol = areaNew * (maxHeight - bbox.min.y);
+        log(vol)
+        sumVols += vol;
+        // xvalues = xvaluesNew;
+    }
 
-log(sumVols)
+    log(sumVols)
 
-// rotate the object back
-// rotateGeoTo(obj, dirInsertion);
-rotateGeoTo(embeddable._mesh, dirInsertion, true);
+    // rotate the object back
+    // rotateGeoTo(obj, dirInsertion);
+    rotateGeoTo(embeddable._mesh, dirInsertion, true);
 
-// generate cut-off part and align it with the object
+    // generate cut-off part and align it with the object
 }
