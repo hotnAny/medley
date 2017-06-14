@@ -58,10 +58,12 @@ MEDLEY.Embeddable = function (object, matobj) {
     this._material.transparent = false;
     this._material.side = THREE.DoubleSide;
 
-    this._meshes = new THREE.Object3D();
-    this._mesh = new THREE.Mesh(matobj.mesh.geometry.clone(), this._material);
-    this._meshes.add(this._mesh);
-    this._makeInteractive();
+    if (this._dim == 0) {
+        this._meshes = new THREE.Object3D();
+        this._mesh = new THREE.Mesh(this._matobj.mesh.geometry.clone(), this._material);
+        this._meshes.add(this._mesh);
+        this._makeInteractive();
+    }
 };
 
 MEDLEY.Embeddable.prototype = {
