@@ -392,3 +392,268 @@ MEDLEY._digTunnel = function (info, embeddable) {
         log('no extra tunnel required')
     }
 }
+
+//
+//  find optimal insertaion direction for embeddable objects (dof=0)
+//
+MEDLEY.find0dInternalInsertion = function (embeddable) {
+    //
+    // [internal helper] find the unioned area of polygons (boxes),
+    //  between start and end on the x axis, 
+    //  where xlist is sorted list of polygons' end points
+    //
+    var __findUnionArea = function (start, end, xlist, boxes) {
+        if (boxes.length == 0) return 0;
+        var area = 0;
+        // for each consecutive x pair, find the max/min z coordinates to make a slab
+        for (var i = start; i < end; i++) {
+            var xmin = xlist[i],
+                xmax = xlist[i + 1];
+            var zmin = Number.MAX_VALUE,
+                zmax = -Number.MAX_VALUE;
+            for (box of boxes) {
+                if (box.min.x <= xmin && box.max.x >= xmax) {
+                    zmin = Math.min(zmin, box.min.z);
+                    zmax = Math.max(zmax, box.max.z);
+                }
+            }
+
+            if (zmin == Number.MAX_VALUE || zmax == Number.MIN_VALUE) area += 0;
+            else area += (xmax - xmin) * (zmax - zmin);
+        }
+        return area;
+    }
+
+    //
+    //  [internal helper] update a bounding box with a new point
+    //
+    var __updateBbox = function (bboxes, idx, v) {
+        bboxes[idx].min.x = Math.min(bboxes[idx].min.x, v.x);
+        bboxes[idx].min.z = Math.min(bboxes[idx].min.z, v.z);
+        bboxes[idx].max.x = Math.max(bboxes[idx].max.x, v.x);
+        bboxes[idx].max.z = Math.max(bboxes[idx].max.z, v.z);
+        bboxes[idx].updated = true;
+    }
+
+    // higest point and normal, which is where the print will pause for insertation
+    var yUp = new THREE.Vector3(0, 1, 0);
+    var vertices = embeddable._mesh.geometry.vertices.clone();
+    var highestPoint = new THREE.Vector3(0, -Number.MAX_VALUE, 0);
+    for (v of vertices) highestPoint = highestPoint.y < v.y ? v.clone() : highestPoint;
+    var highestNormal = yUp.clone();
+    // _balls.remove(addABall(highestPoint, 0xff0000, 2.5))
+
+    //
+    //  a step-wise search for minimum extra cut-off space in order to insert the embeddable
+    //
+    var minInsertionAngle = 45 * Math.PI / 180; // don't insert at lower than this angle
+    var step = 15 * Math.PI / 180;  // search step
+    var minVols = Number.MAX_VALUE; // to keep track of min overall cut-off volumes
+    var minVolsDirection = undefined;   // the corresponding insertion direction
+    var minBboxes = undefined;  // the corresponding boxes that encapsualte the object
+    var rayCaster = new THREE.Raycaster();
+    var inflation = 1.1;    // making the boxes slightly larger
+
+    time();
+    for (var theta = 0; theta < Math.PI * 2; theta += step) {
+        for (var phi = minInsertionAngle; phi <= Math.PI / 2; phi += step) {
+            var dirInsertion = new THREE.Vector3(Math.sin(theta) * Math.cos(phi),
+                Math.sin(phi), Math.cos(theta) * Math.cos(phi)).normalize();
+
+            // matrix to rotate things towards the insertion direction
+            var mr = new THREE.Matrix4();
+            var angleToRotate = -yUp.angleTo(dirInsertion);
+            var axisToRotate = new THREE.Vector3().crossVectors(yUp, dirInsertion).normalize();
+            mr.makeRotationAxis(axisToRotate, angleToRotate);
+
+            // layer height
+            var dh = MEDLEY._layerHeight; // / Math.cos(angleToRotate * Math.PI / 180);
+
+            // find the bounding box of the rotated object
+            var tg = embeddable._mesh.geometry.clone();
+            tg.applyMatrix(mr);
+            tg.computeBoundingBox();
+            var minHeight = tg.boundingBox.min.y;
+            var maxHeight = tg.boundingBox.max.y;
+            var nlevels = ((maxHeight - minHeight) / dh + 1) | 0;
+
+            // the transformed highest point and normal
+            var __highestPoint = highestPoint.clone().applyAxisAngle(axisToRotate, angleToRotate);
+            var __highestNormal = highestNormal.clone().applyAxisAngle(axisToRotate, angleToRotate).normalize();
+            // the plane that corresponds to the stop-and-insert layer
+            var ceilingPlane = XAC.getPlaneFromPointNormal(__highestPoint, __highestNormal);
+            var _a = ceilingPlane.A,
+                _b = ceilingPlane.B,
+                _c = ceilingPlane.C,
+                _d = ceilingPlane.D;
+
+            // scan the object's vertices, put them into different layers
+            var bboxes = [];
+            for (var i = 0; i < nlevels; i++) {
+                bboxes.push({
+                    min: new THREE.Vector3(Number.MAX_VALUE, minHeight + i * dh, Number.MAX_VALUE),
+                    max: new THREE.Vector3(-Number.MAX_VALUE, minHeight + (i + 1) * dh, -Number.MAX_VALUE),
+                    updated: false
+                });
+            }
+
+            for (u of tg.vertices) {
+                var idx = (nlevels * (u.y - minHeight) / (maxHeight - minHeight)) | 0;
+                idx = Math.min(nlevels - 1, idx);
+                __updateBbox(bboxes, idx, u);
+            }
+
+            // another pass, at each box, do ray casting to get a more precise bounding box
+            var nscan = 36;
+            var __material = XAC.MATERIALCONTRAST.clone();
+            __material.side = THREE.BackSide;
+            var __object = new THREE.Mesh(tg, __material);
+            XAC.scene.add(__object);
+            for (var j = 0; j < bboxes.length; j++) {
+                // if the box hasn't been updated, use the closet ones to approximate
+                var box = bboxes[j];
+                if (!box.updated) {
+                    console.error('missed bbox at layer #' + j)
+                    var k = j - 1;
+                    while (k >= 0 && !bboxes[k].updated) k--;
+                    __updateBbox(bboxes, j, bboxes[k].min);
+                    __updateBbox(bboxes, j, bboxes[k].max);
+                    k = j + 1;
+                    while (k < bboxes.length && !bboxes[k].updated) k++;
+                    __updateBbox(bboxes, j, bboxes[k].min);
+                    __updateBbox(bboxes, j, bboxes[k].max);
+                }
+
+                var bboxCenter = new THREE.Vector3().addVectors(box.min, box.max).divideScalar(2);
+                for (var i = 0; i < nscan; i++) {
+                    var alpha = 2 * Math.PI * i / nscan;
+                    var dir = new THREE.Vector3(Math.sin(alpha), 0, Math.cos(alpha));
+
+                    rayCaster.ray.set(bboxCenter, dir.normalize());
+                    var hits = rayCaster.intersectObjects([__object]);
+                    if (hits.length > 0) {
+                        var vhit = hits[0].point.clone().sub(bboxCenter).multiplyScalar(inflation);;
+                        __updateBbox(bboxes, j, bboxCenter.clone().add(vhit));
+                        // _balls.remove(addABall(hits[0].point, 0xff0000, 0.25));
+                    }
+                }
+            }
+
+            //
+            // compute the volume of cut-off
+            // the area of each layer (box) is a union of itself and all the previous layers'
+            // the volume of each layer is its area times h, 
+            //      where h is the distance from the layer's center to the ceiling plane (see above)
+            // to compute the overall volumes without redundantly adding overlapping volumes:
+            //  1. compute the effective area of each layer (box), where a is individual area
+            //      ea_i = U(a_0, ... , a_i) - U(a_0, ...,  a_i-1)
+            //  2. V = ∑ea_i * h_i
+            //
+            var sumVols = 0;
+            var bboxesPrev = [];
+            var schedule = new XAC.Sortable(XAC.Sortable.INSERTION);
+            for (var i = 0; i < bboxes.length; i++) {
+                var bbox = bboxes[i];
+                var start = schedule.insert(bbox.min.x);
+                var end = schedule.insert(bbox.max.x);
+                var xlist = schedule.getSortedList();
+
+                var area = __findUnionArea(start, end, xlist, bboxesPrev);
+                bboxesPrev.push(bbox);
+                var areaNew = __findUnionArea(start, end, xlist, bboxesPrev);
+
+                areaNew -= area;
+
+                var center = new THREE.Vector3().addVectors(bbox.min, bbox.max).divideScalar(2);
+                var ymax = bbox.max.y;
+                if (_b != 0) {
+                    var y0 = (_a * center.x + _c * center.z + _d) / (-_b);
+                    var y1 = (_a * bbox.min.x + _c * bbox.min.z + _d) / (-_b);
+                    var y2 = (_a * bbox.max.x + _c * bbox.max.z + _d) / (-_b);
+                    ymax = Math.max(center.y + dh, y0);
+                    bbox.max.y = Math.max(bbox.min.y + dh, Math.max(y1, y2));
+                }
+
+                var vol = areaNew * (ymax - bbox.min.y);
+                sumVols += vol;
+            }
+
+            if (sumVols < minVols) {
+                minVols = sumVols;
+                minVolsDirection = dirInsertion;
+                minBboxes = bboxes;
+            }
+
+            XAC.scene.remove(__object);
+
+            time('theta: ' + ((theta / Math.PI * 180) | 0) +
+                ', phi: ' + ((phi / Math.PI * 180) | 0) +
+                ', vol: ' + XAC.trim(sumVols, 0));
+        }
+    }
+
+    log('min vols: ' + minVols);
+
+    //
+    // assembling the boxes
+    //
+    var mr = new THREE.Matrix4();
+    var yUp = new THREE.Vector3(0, 1, 0);
+    var angleToRotate = yUp.angleTo(minVolsDirection);
+    var axisToRotate = new THREE.Vector3().crossVectors(yUp, minVolsDirection).normalize();
+    mr.makeRotationAxis(axisToRotate, angleToRotate);
+    var layerBoxes = new THREE.Object3D();
+    var __material = XAC.MATERIALWIRED.clone();
+    for (bbox of minBboxes) {
+        var w = bbox.max.x - bbox.min.x;
+        var t = bbox.max.y - bbox.min.y;
+        var l = bbox.max.z - bbox.min.z;
+        // log([w, t, l])
+        var box = new XAC.Box(w, t, l, __material).m;
+        box.position.copy(new THREE.Vector3().addVectors(bbox.max, bbox.min).multiplyScalar(0.5));
+        layerBoxes.add(box);
+    }
+
+    var center = embeddable._meshes.position;
+    addAnArrow(center, minVolsDirection, 10, 0xff0000);
+    layerBoxes.rotateOnAxis(axisToRotate, angleToRotate);
+    layerBoxes.position.copy(center);
+    // XAC.scene.add(layerBoxes);
+
+    layerBoxes.updateMatrixWorld();
+    var matrixWorld = layerBoxes.matrixWorld.clone();
+    for (mesh of layerBoxes.children) {
+        mesh.applyMatrix(matrixWorld);
+        // XAC.scene.add(mesh);
+    }
+
+    // var __plane = new XAC.Plane(64, 64, XAC.MATERIALCONTRAST);
+    // __plane.fitTo(highestPoint.add(center), highestNormal.x, highestNormal.y, highestNormal.z);
+    // XAC.scene.add(__plane.m);
+
+    //
+    // generate cut-off part and align it with the object
+    //
+    time()
+    var cutoff = XAC.union(layerBoxes.children, XAC.MATERIALWIRED);
+    time('unioned the layers')
+
+    var bboxCutoff = XAC.getBoundingBoxEverything(cutoff);
+    var cutoffTop = XAC.getBoundingBoxMesh(cutoff, XAC.MATERIALCONTRAST);
+    cutoffTop.position.y += highestPoint.clone().add(center).y - bboxCutoff.cmin.y;
+    cutoff = XAC.subtract(cutoff, cutoffTop, XAC.MATERIALWIRED);
+    // XAC.scene.add(cutoffTop);
+    XAC.scene.add(cutoff);
+    embeddable._cutoff = cutoff;
+
+    // XAC.scene.remove(embeddable._object);
+    // var meshReady = XAC.subtract(embeddable._object, cutoff, embeddable._object.material);
+    // XAC.scene.add(meshReady);
+
+    // var stlStr = stlFromGeometry(meshReady.geometry);
+    // var blob = new Blob([stlStr], {
+    //     type: 'text/plain'
+    // });
+    // saveAs(blob, 'embeddable.stl');
+    // return meshReady;
+}
