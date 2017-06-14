@@ -94,7 +94,7 @@ XAC.union = function (meshes, material) {
 	var __mergeUnion = function (meshes) {
 		if (meshes.length > 2) {
 			var merged1 = __mergeUnion(meshes.slice(0, meshes.length / 2));
-			var merged2 = __mergeUnion(meshes.slice(meshes.length / 2 + 1));
+			var merged2 = __mergeUnion(meshes.slice(meshes.length / 2));
 			return merged1.union(merged2);
 		} else if (meshes.length == 2)
 			return new ThreeBSP(meshes[0]).union(new ThreeBSP(meshes[1]));
@@ -102,6 +102,7 @@ XAC.union = function (meshes, material) {
 			return new ThreeBSP(meshes[0]);
 	};
 	var csgMesh = __mergeUnion(meshes);
+	if (csgMesh == undefined) log(meshes)
 	return csgMesh.toMesh(material == undefined ? XAC.MATERIALNORMAL : material);
 }
 
