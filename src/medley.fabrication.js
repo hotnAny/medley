@@ -634,26 +634,24 @@ MEDLEY.find0dInternalInsertion = function (embeddable) {
     //
     // generate cut-off part and align it with the object
     //
-    time()
+    // time()
     var cutoff = XAC.union(layerBoxes.children, XAC.MATERIALWIRED);
-    time('unioned the layers')
+    // time('unioned the layers')
 
+    var pausePoint = highestPoint.clone().add(center);
     var bboxCutoff = XAC.getBoundingBoxEverything(cutoff);
     var cutoffTop = XAC.getBoundingBoxMesh(cutoff, XAC.MATERIALCONTRAST);
-    cutoffTop.position.y += highestPoint.clone().add(center).y - bboxCutoff.cmin.y;
+    cutoffTop.position.y += pausePoint.y - bboxCutoff.cmin.y;
     cutoff = XAC.subtract(cutoff, cutoffTop, XAC.MATERIALWIRED);
-    // XAC.scene.add(cutoffTop);
     XAC.scene.add(cutoff);
     embeddable._cutoff = cutoff;
 
-    // XAC.scene.remove(embeddable._object);
-    // var meshReady = XAC.subtract(embeddable._object, cutoff, embeddable._object.material);
-    // XAC.scene.add(meshReady);
-
-    // var stlStr = stlFromGeometry(meshReady.geometry);
-    // var blob = new Blob([stlStr], {
-    //     type: 'text/plain'
-    // });
-    // saveAs(blob, 'embeddable.stl');
-    // return meshReady;
+    //
+    //  output pause info
+    //
+    var bbox = MEDLEY.getBoundingBox(MEDLEY.everything);
+    var nlayers = (bbox.max.y - bbox.min.y) / MEDLEY._layerHeight;
+    var percPause = (pausePoint.y - bbox.min.y) / (bbox.max.y - bbox.min.y);
+    var layerPause = (nlayers * percPause - 0.5) | 0;
+    console.info('pause at layer #' + layerPause + ' of ' + (nlayers | 0));
 }
