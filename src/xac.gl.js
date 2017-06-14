@@ -216,7 +216,7 @@ function getBoundingCylinder(obj, dir) {
 //	get the bounding box (as a mesh) of an object
 //
 XAC.getBoundingBoxMesh = function (obj, material) {
-	var params = getBoundingBoxEverything(obj);
+	var params = XAC.getBoundingBoxEverything(obj);
 	var g = new THREE.BoxGeometry(params.lenx, params.leny, params.lenz);
 	var m = material == undefined ? XAC.MATERIALCONTRAST : material;
 	var bbox = new THREE.Mesh(g, m);
@@ -227,7 +227,7 @@ XAC.getBoundingBoxMesh = function (obj, material) {
 //
 //	get all the information about the bounding box of an object
 //
-function getBoundingBoxEverything(obj) {
+XAC.getBoundingBoxEverything = function (obj) {
 	var gt = gettg(obj);
 	gt.computeBoundingBox();
 	var cmax = gt.boundingBox.max;
