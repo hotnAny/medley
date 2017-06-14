@@ -104,3 +104,12 @@ XAC.union = function (meshes, material) {
 	var csgMesh = __mergeUnion(meshes);
 	return csgMesh.toMesh(material == undefined ? XAC.MATERIALNORMAL : material);
 }
+
+//
+//	boolean operation - subtract mesh1 from mesh0
+//
+XAC.subtract = function (mesh0, mesh1, material) {
+	var csgMesh0 = new ThreeBSP(mesh0);
+	var csgMesh1 = new ThreeBSP(mesh1);
+	return csgMesh0.subtract(csgMesh1).toMesh(material == undefined ? XAC.MATERIALNORMAL : material);
+}
