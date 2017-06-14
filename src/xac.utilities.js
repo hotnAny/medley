@@ -77,3 +77,30 @@ XAC.readFile = function (file, onSuccess, onFailure) {
 
 	rawFile.send(null);
 }
+
+//
+//
+//
+XAC.trim = function (value, ndigits) {
+	if (ndigits < 0) return value;
+	var divider = Math.pow(10, ndigits);
+	return ((value * divider) | 0) / (divider * 1.0);
+}
+
+//
+//	boolean operation - union a set of meshes
+//
+XAC.union = function (meshes, material) {
+	var __mergeUnion = function (meshes) {
+		if (meshes.length > 2) {
+			var merged1 = __mergeUnion(meshes.slice(0, meshes.length / 2));
+			var merged2 = __mergeUnion(meshes.slice(meshes.length / 2 + 1));
+			return merged1.union(merged2);
+		} else if (meshes.length == 2)
+			return new ThreeBSP(meshes[0]).union(new ThreeBSP(meshes[1]));
+		else if (meshes.length == 1)
+			return new ThreeBSP(meshes[0]);
+	};
+	var csgMesh = __mergeUnion(meshes);
+	return csgMesh.toMesh(material == undefined ? XAC.MATERIALNORMAL : material);
+}
