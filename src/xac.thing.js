@@ -48,6 +48,11 @@ XAC.MATERIALINVISIBLE = new THREE.MeshPhongMaterial({
 	side: THREE.BackSide,
 });
 
+XAC.MATERIALWIRED = new THREE.MeshBasicMaterial({
+	color: 0x000000,
+	wireframe: true
+});
+
 XAC.Thing = function (m) {
 	this._g = undefined; // the original geometry, always!
 	this._m = m;
@@ -157,7 +162,7 @@ XAC.ThickLine.prototype.updateEfficiently = function (p1, p2, r) {
 //	plane
 //
 XAC.Plane = function (w, l, mat) {
-	this._g = new THREE.CubeGeometry(w, 1, l);
+	this._g = new THREE.CubeGeometry(w, 0.1, l);
 	this._m = new THREE.Mesh(this._g, mat == undefined ? XAC.MATERIALNORMAL.clone() :
 		mat.clone());
 }
