@@ -447,12 +447,12 @@ MEDLEY.find0dInternalInsertion = function (embeddable) {
     //  a step-wise search for minimum extra cut-off space in order to insert the embeddable
     //
     var minInsertionAngle = 45 * Math.PI / 180; // don't insert at lower than this angle
-    var step = 15 * Math.PI / 180;  // search step
+    var step = 15 * Math.PI / 180; // search step
     var minVols = Number.MAX_VALUE; // to keep track of min overall cut-off volumes
-    var minVolsDirection = undefined;   // the corresponding insertion direction
-    var minBboxes = undefined;  // the corresponding boxes that encapsualte the object
+    var minVolsDirection = undefined; // the corresponding insertion direction
+    var minBboxes = undefined; // the corresponding boxes that encapsualte the object
     var rayCaster = new THREE.Raycaster();
-    var inflation = 1.1;    // making the boxes slightly larger
+    var inflation = 1.1; // making the boxes slightly larger
 
     time();
     for (var theta = 0; theta < Math.PI * 2; theta += step) {
@@ -493,6 +493,7 @@ MEDLEY.find0dInternalInsertion = function (embeddable) {
                 bboxes.push({
                     min: new THREE.Vector3(Number.MAX_VALUE, minHeight + i * dh, Number.MAX_VALUE),
                     max: new THREE.Vector3(-Number.MAX_VALUE, minHeight + (i + 1) * dh, -Number.MAX_VALUE),
+                    _ymax: minHeight + (i + 1) * dh,
                     updated: false
                 });
             }
@@ -513,7 +514,7 @@ MEDLEY.find0dInternalInsertion = function (embeddable) {
                 // if the box hasn't been updated, use the closet ones to approximate
                 var box = bboxes[j];
                 if (!box.updated) {
-                    console.error('missed bbox at layer #' + j)
+                    console.warn('missed bbox at layer #' + j)
                     var k = j - 1;
                     while (k >= 0 && !bboxes[k].updated) k--;
                     __updateBbox(bboxes, j, bboxes[k].min);
@@ -602,31 +603,43 @@ MEDLEY.find0dInternalInsertion = function (embeddable) {
     var angleToRotate = yUp.angleTo(minVolsDirection);
     var axisToRotate = new THREE.Vector3().crossVectors(yUp, minVolsDirection).normalize();
     mr.makeRotationAxis(axisToRotate, angleToRotate);
-    var layerBoxes = new THREE.Object3D();
-    var __material = XAC.MATERIALWIRED.clone();
+    var layerBoxes = []; //new THREE.Object3D();
+    var layerBoxes2 = [];
+    var __material = XAC.MATERIALFOCUS.clone();
     for (bbox of minBboxes) {
         var w = bbox.max.x - bbox.min.x;
         var t = bbox.max.y - bbox.min.y;
         var l = bbox.max.z - bbox.min.z;
         // log([w, t, l])
-        var box = new XAC.Box(w, t, l, __material).m;
+        var box = new XAC.Box(w, t, l, XAC.MATERIALWIRED).m;
         box.position.copy(new THREE.Vector3().addVectors(bbox.max, bbox.min).multiplyScalar(0.5));
-        layerBoxes.add(box);
+        layerBoxes.push(box);
+
+        // var box2 = new XAC.Box(w * inflation, (bbox._ymax - bbox.min.y), l * inflation, __material).m;
+        // var bboxMax = bbox.max.clone();
+        // bboxMax.y = bbox._ymax;
+        // box2.position.copy(new THREE.Vector3().addVectors(bboxMax, bbox.min).multiplyScalar(0.5));
+        // layerBoxes2.push(box2);
+    }
+
+    // [internal helper] transform a set of meshes
+    var __unionAndTransform = function (meshes, center, axis, angle, material) {
+        var unioned = XAC.union(meshes, material);
+        var __o3dCutoff = new THREE.Object3D();
+        __o3dCutoff.add(unioned);
+        __o3dCutoff.rotateOnAxis(axisToRotate, angleToRotate);
+        __o3dCutoff.position.copy(center);
+        __o3dCutoff.updateMatrixWorld();
+        unioned.applyMatrix(__o3dCutoff.matrixWorld);
+        return unioned;
     }
 
     var center = embeddable._meshes.position;
     addAnArrow(center, minVolsDirection, 10, 0xff0000);
-    layerBoxes.rotateOnAxis(axisToRotate, angleToRotate);
-    layerBoxes.position.copy(center);
-    // XAC.scene.add(layerBoxes);
+    var cutoff = __unionAndTransform(layerBoxes, center, axisToRotate, angleToRotate, XAC.MATERIALWIRED);
+    // var cutoff2 = __unionAndTransform(layerBoxes2, center, axisToRotate, angleToRotate, XAC.MATERIALCONTRAST);
 
-    layerBoxes.updateMatrixWorld();
-    var matrixWorld = layerBoxes.matrixWorld.clone();
-    for (mesh of layerBoxes.children) {
-        mesh.applyMatrix(matrixWorld);
-        // XAC.scene.add(mesh);
-    }
-
+    // [debug]
     // var __plane = new XAC.Plane(64, 64, XAC.MATERIALCONTRAST);
     // __plane.fitTo(highestPoint.add(center), highestNormal.x, highestNormal.y, highestNormal.z);
     // XAC.scene.add(__plane.m);
@@ -634,16 +647,14 @@ MEDLEY.find0dInternalInsertion = function (embeddable) {
     //
     // generate cut-off part and align it with the object
     //
-    // time()
-    var cutoff = XAC.union(layerBoxes.children, XAC.MATERIALWIRED);
-    // time('unioned the layers')
-
     var pausePoint = highestPoint.clone().add(center);
     var bboxCutoff = XAC.getBoundingBoxEverything(cutoff);
-    var cutoffTop = XAC.getBoundingBoxMesh(cutoff, XAC.MATERIALCONTRAST);
+    var cutoffTop = XAC.getBoundingBoxMesh(cutoff, XAC.MATERIALWIRED);
     cutoffTop.position.y += pausePoint.y - bboxCutoff.cmin.y;
     cutoff = XAC.subtract(cutoff, cutoffTop, XAC.MATERIALWIRED);
     XAC.scene.add(cutoff);
+    // cutoff2 = XAC.subtract(cutoff, cutoff2, XAC.MATERIALCONTRAST);
+    // XAC.scene.add(cutoff2);
     embeddable._cutoff = cutoff;
 
     //
