@@ -79,7 +79,7 @@ XAC.readFile = function (file, onSuccess, onFailure) {
 }
 
 //
-//
+//	trim a number to certain digits after decimal point
 //
 XAC.trim = function (value, ndigits) {
 	if (ndigits < 0) return value;

@@ -77,9 +77,7 @@ XAC.mouseup = function (e) {
 
 XAC.keydown = function (e) {
     XAC._dispatchInputEvents(e, XAC.KEYDOWN);
-    if (XAC.keydowns != undefined) {
-        (XAC.keydowns[e.keyCode] || console.error)();
-    }
+    if (XAC.keydowns != undefined)(XAC.keydowns[e.keyCode] || console.error)();
 }
 
 XAC.keyup = function (e) {
