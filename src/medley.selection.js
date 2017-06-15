@@ -98,12 +98,12 @@ MEDLEY.selectToCreateEmbeddables = function (info) {
         XAC._selecteds = [];
 
         var embeddable = new MEDLEY.Embeddable(info.object, MEDLEY._matobjSelected);
+        embeddable._info = info;
         switch (embeddable._dim) {
             case 0:
                 MEDLEY._specifyObjectPlacement(embeddable, info);
                 break;
             case 1:
-                embeddable._info = info;
                 if (XAC._footprint > 50) MEDLEY._select1dSegments(embeddable, info);
                 break;
             case 2:
