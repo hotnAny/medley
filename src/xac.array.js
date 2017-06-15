@@ -254,3 +254,13 @@ XAC.initMDArray = function(dims, val) {
 	}
 	return array;
 }
+
+//
+//	trim each number in the array to a given precision
+//
+Array.prototype.trim = function(numDigits) {
+	for (i = 0; i < this.length; i++) {
+		this[i] = Number(this[i].toFixed(numDigits));
+	}
+	return this;
+}
