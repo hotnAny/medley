@@ -287,27 +287,37 @@ MEDLEY.getBoundingBox = function (object3d) {
 //
 //  find insertion point externally (supposed to be for 1d only)
 //
-MEDLEY.findExternalInsertion = function (embeddable) {
-    // compute end points and tangents
-    var p0 = embeddable.points[0].clone().applyMatrix4(embeddable._meshes.matrixWorld);
-    var p1 = embeddable.points[1].clone().applyMatrix4(embeddable._meshes.matrixWorld);
-    var tangent0 = new THREE.Vector3().subVectors(p0, p1).normalize();
-    var info0 = MEDLEY._searchForClosetInsertionPoint(p0, tangent0, embeddable);
+MEDLEY.findPostPrintInsertion = function (embeddable) {
+    switch (embeddable._dim) {
+        case 1:
+            // compute end points and tangents
+            var p0 = embeddable.points[0].clone().applyMatrix4(embeddable._meshes.matrixWorld);
+            var p1 = embeddable.points[1].clone().applyMatrix4(embeddable._meshes.matrixWorld);
+            var tangent0 = new THREE.Vector3().subVectors(p0, p1).normalize();
+            var info0 = MEDLEY._searchForBendingInsertionPoint(p0, tangent0, embeddable);
 
-    var pn = embeddable.points.last().clone().applyMatrix4(embeddable._meshes.matrixWorld);
-    var pn1 = embeddable.points.lastBut(1).clone().applyMatrix4(embeddable._meshes.matrixWorld);
-    var tangentn = new THREE.Vector3().subVectors(pn, pn1).normalize();
-    var infon = MEDLEY._searchForClosetInsertionPoint(pn, tangentn, embeddable);
+            var pn = embeddable.points.last().clone().applyMatrix4(embeddable._meshes.matrixWorld);
+            var pn1 = embeddable.points.lastBut(1).clone().applyMatrix4(embeddable._meshes.matrixWorld);
+            var tangentn = new THREE.Vector3().subVectors(pn, pn1).normalize();
+            var infon = MEDLEY._searchForBendingInsertionPoint(pn, tangentn, embeddable);
 
-    var info = info0.angle < infon.angle ? info0 : infon;
+            var info = info0.angle < infon.angle ? info0 : infon;
 
-    MEDLEY._digTunnel(info, embeddable);
+            MEDLEY._digTunnel(info, embeddable);
+            break;
+        case 0:
+        case 2:
+        case 3:
+            MEDLEY._searchForUnbendingInsertionPoint(embeddable);
+            break;
+    }
+
 };
 
 //
 //  search for the closest insertion point (supposed to be for 1d only)
 //
-MEDLEY._searchForClosetInsertionPoint = function (p, v, embeddable) {
+MEDLEY._searchForBendingInsertionPoint = function (p, v, embeddable) {
     // find plane perp. to p and v
     var r = embeddable._matobj.bendRadius;
     var params = XAC.getPlaneFromPointNormal(p, v.clone().normalize());
@@ -369,6 +379,75 @@ MEDLEY._searchForClosetInsertionPoint = function (p, v, embeddable) {
 };
 
 //
+//
+//
+MEDLEY._searchForUnbendingInsertionPoint = function (embeddable) {
+    var mesh;
+    if (embeddable._dim == 0) {
+        mesh = embeddable._mesh;
+    } else if (embeddable._dim >= 2) {
+        for (m of embeddable._meshes.children)
+            if (mesh == undefined) mesh = new THREE.Mesh(gettg(m), m.material);
+            else mesh.geometry.merge(gettg(m));
+        MEDLEY.fixFaces(mesh);
+    }
+    var tg = mesh.geometry.clone();
+    tg.computeFaceNormals();
+    tg.computeCentroids();
+
+    // var vertices = mesh.geometry.vertices.clone();
+    var faces = tg.faces;
+    embeddable._meshes.updateMatrixWorld();
+    // for (v of vertices) v.applyMatrix4(embeddable._meshes.matrixWorld);
+    for (f of faces) f.centroid.applyMatrix4(embeddable._meshes.matrixWorld);
+
+
+    embeddable._object.material.side = THREE.BackSide;
+    var step = 15 * Math.PI / 180; // search step
+    // var yUp = new THREE.Vector3(0, 1, 0);
+    // var dirInsertion = new THREE.Vector3(1, 1, 0).normalize();
+    var rayCaster = new THREE.Raycaster();
+    var minDist = Number.MAX_VALUE;
+    var minDirection;
+
+    time();
+    var alpha = Math.PI * Math.random();
+    var beta = -Math.PI * Math.random();
+    for (var theta = alpha; theta < Math.PI * 2 + alpha; theta += step) {
+        for (var phi = beta; phi < 2 * Math.PI + beta; phi += step) {
+            var dirInsertion = new THREE.Vector3(Math.sin(theta) * Math.cos(phi),
+                Math.sin(phi), Math.cos(theta) * Math.cos(phi)).normalize();
+
+            var avgDistToInsertionPoint = 0;
+            var ncounted = 0;
+            for (f of faces) {
+                // if (f.normal.dot(dirInsertion) > -0.8141) continue;
+                var v = f.centroid;
+                // _balls.remove(addABall(v, 0x00ff00, 0.2));
+                rayCaster.ray.set(v, dirInsertion);
+                var hits = rayCaster.intersectObjects([embeddable._object]);
+                if (hits.length > 0) avgDistToInsertionPoint += hits[0].point.distanceTo(v);
+                ncounted++;
+                if(avgDistToInsertionPoint/ncounted > minDist) break;
+            }
+            avgDistToInsertionPoint /= ncounted;
+
+            log(avgDistToInsertionPoint);
+
+            if (avgDistToInsertionPoint < minDist) {
+                minDist = avgDistToInsertionPoint;
+                minDirection = dirInsertion;
+            }
+        }
+    }
+    time('searched for closest insertion point')
+
+    addAnArrow(embeddable._meshes.position, minDirection, 15, 0x00ff00);
+
+    embeddable._object.material.side = THREE.FrontSide;
+}
+
+//
 //  make a tunnel based on starting/ending points and center
 //
 MEDLEY._digTunnel = function (info, embeddable) {
@@ -397,6 +476,17 @@ MEDLEY._digTunnel = function (info, embeddable) {
 //  find optimal insertaion direction for embeddable objects (dof=0)
 //
 MEDLEY.find0dInternalInsertion = function (embeddable) {
+    var mesh;
+    if (embeddable._dim == 0) {
+        mesh = embeddable._mesh;
+    } else if (embeddable._dim >= 2) {
+        for (m of embeddable._meshes.children)
+            if (mesh == undefined) mesh = new THREE.Mesh(gettg(m), m.material);
+            else mesh.geometry.merge(gettg(m));
+        MEDLEY.fixFaces(mesh);
+    }
+    var vertices = mesh.geometry.vertices.clone();
+
     //
     // [internal helper] find the unioned area of polygons (boxes),
     //  between start and end on the x axis, 
@@ -437,7 +527,6 @@ MEDLEY.find0dInternalInsertion = function (embeddable) {
 
     // higest point and normal, which is where the print will pause for insertation
     var yUp = new THREE.Vector3(0, 1, 0);
-    var vertices = embeddable._mesh.geometry.vertices.clone();
     var highestPoint = new THREE.Vector3(0, -Number.MAX_VALUE, 0);
     for (v of vertices) highestPoint = highestPoint.y < v.y ? v.clone() : highestPoint;
     var highestNormal = yUp.clone();
@@ -452,7 +541,7 @@ MEDLEY.find0dInternalInsertion = function (embeddable) {
     var minVolsDirection = undefined; // the corresponding insertion direction
     var minBboxes = undefined; // the corresponding boxes that encapsualte the object
     var rayCaster = new THREE.Raycaster();
-    var inflation = 1.1; // making the boxes slightly larger
+    var inflation = 1; // making the boxes slightly larger
 
     time();
     for (var theta = 0; theta < Math.PI * 2; theta += step) {
@@ -470,7 +559,7 @@ MEDLEY.find0dInternalInsertion = function (embeddable) {
             var dh = MEDLEY._layerHeight; // / Math.cos(angleToRotate * Math.PI / 180);
 
             // find the bounding box of the rotated object
-            var tg = embeddable._mesh.geometry.clone();
+            var tg = mesh.geometry.clone();
             tg.applyMatrix(mr);
             tg.computeBoundingBox();
             var minHeight = tg.boundingBox.min.y;
@@ -614,12 +703,6 @@ MEDLEY.find0dInternalInsertion = function (embeddable) {
         var box = new XAC.Box(w, t, l, XAC.MATERIALWIRED).m;
         box.position.copy(new THREE.Vector3().addVectors(bbox.max, bbox.min).multiplyScalar(0.5));
         layerBoxes.push(box);
-
-        // var box2 = new XAC.Box(w * inflation, (bbox._ymax - bbox.min.y), l * inflation, __material).m;
-        // var bboxMax = bbox.max.clone();
-        // bboxMax.y = bbox._ymax;
-        // box2.position.copy(new THREE.Vector3().addVectors(bboxMax, bbox.min).multiplyScalar(0.5));
-        // layerBoxes2.push(box2);
     }
 
     // [internal helper] transform a set of meshes
