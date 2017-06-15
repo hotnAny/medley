@@ -232,13 +232,19 @@ MEDLEY.fixFaces = function (mesh) {
             continue;
         }
 
+        var q = hits[0].point;
+
         // if still intersecting after flipping, the face is inside the mesh, remove
         p = face.centroid.clone().add(face.normal.clone().multiplyScalar(eps));
         rayCaster.ray.set(p, face.normal);
         hits = rayCaster.intersectObjects([mesh]);
         if (hits.length > 0) {
             toRemove.push(face);
-            // _balls.remove(addABall(p, 0x00ff00, 0.25));
+            // addALine(face.centroid, q, 0x0000ff);
+            // _balls.remove(addABall(q, 0x0000ff, 0.25));
+            // addALine(face.centroid, hits[0].point, 0x00ff00);
+            // _balls.remove(addABall(hits[0].point, 0x00ff00, 0.25));
+            return;
         }
     }
 
@@ -387,32 +393,38 @@ MEDLEY._searchForUnbendingInsertionPoint = function (embeddable) {
         mesh = embeddable._mesh;
     } else if (embeddable._dim >= 2) {
         for (m of embeddable._meshes.children)
-            if (mesh == undefined) mesh = new THREE.Mesh(gettg(m), m.material);
+            if (mesh == undefined) mesh = new THREE.Mesh(gettg(m), m.material.clone());
             else mesh.geometry.merge(gettg(m));
         MEDLEY.fixFaces(mesh);
     }
+
     var tg = mesh.geometry.clone();
     tg.computeFaceNormals();
     tg.computeCentroids();
 
     // var vertices = mesh.geometry.vertices.clone();
-    var faces = tg.faces;
+    var faces = tg.faces.clone();
     embeddable._meshes.updateMatrixWorld();
-    // for (v of vertices) v.applyMatrix4(embeddable._meshes.matrixWorld);
-    for (f of faces) f.centroid.applyMatrix4(embeddable._meshes.matrixWorld);
+    var center = new THREE.Vector3();
+    for (f of faces) {
+        f.centroid.applyMatrix4(embeddable._meshes.matrixWorld);
+        center.add(f.centroid);
+    }
+    center.divideScalar(faces.length);
 
-
-    embeddable._object.material.side = THREE.BackSide;
+    // var originalSide = embeddable._object.material.side;
     var step = 15 * Math.PI / 180; // search step
     // var yUp = new THREE.Vector3(0, 1, 0);
     // var dirInsertion = new THREE.Vector3(1, 1, 0).normalize();
     var rayCaster = new THREE.Raycaster();
     var minDist = Number.MAX_VALUE;
     var minDirection;
+    var eps = 1e-4;
+    var lambda = 0.1;
 
     time();
-    var alpha = Math.PI * Math.random();
-    var beta = -Math.PI * Math.random();
+    var alpha = 0; // Math.PI * Math.random();
+    var beta = 0; // Math.PI * Math.random();
     for (var theta = alpha; theta < Math.PI * 2 + alpha; theta += step) {
         for (var phi = beta; phi < 2 * Math.PI + beta; phi += step) {
             var dirInsertion = new THREE.Vector3(Math.sin(theta) * Math.cos(phi),
@@ -421,28 +433,36 @@ MEDLEY._searchForUnbendingInsertionPoint = function (embeddable) {
             var avgDistToInsertionPoint = 0;
             var ncounted = 0;
             for (f of faces) {
-                // if (f.normal.dot(dirInsertion) > -0.8141) continue;
                 var v = f.centroid;
                 // _balls.remove(addABall(v, 0x00ff00, 0.2));
                 rayCaster.ray.set(v, dirInsertion);
-                var hits = rayCaster.intersectObjects([embeddable._object]);
-                if (hits.length > 0) avgDistToInsertionPoint += hits[0].point.distanceTo(v);
+                embeddable._object.material.side = THREE.DoubleSide;
+                var hitsDouble = rayCaster.intersectObjects([embeddable._object]);
+                embeddable._object.material.side = THREE.BackSide;
+                var hitsBack = rayCaster.intersectObjects([embeddable._object]);
+                if (hitsDouble.length > 0 && hitsBack.length > 0 &&
+                    Math.abs(hitsDouble[0].distance - hitsBack[0].distance) < eps) {
+                    avgDistToInsertionPoint += hitsBack[0].distance;
+                }
                 ncounted++;
-                if(avgDistToInsertionPoint/ncounted > minDist) break;
+
+                if (avgDistToInsertionPoint * 2 / faces.length > minDist) break;
             }
             avgDistToInsertionPoint /= ncounted;
 
-            log(avgDistToInsertionPoint);
-
-            if (avgDistToInsertionPoint < minDist) {
+            if (avgDistToInsertionPoint > 0 && avgDistToInsertionPoint + eps < minDist) {
                 minDist = avgDistToInsertionPoint;
-                minDirection = dirInsertion;
+                minDirection = dirInsertion.clone();
+                log(minDirection.toArray().trim(3).concat(XAC.trim(avgDistToInsertionPoint, 3)));
             }
         }
     }
     time('searched for closest insertion point')
+    log(minDist)
 
-    addAnArrow(embeddable._meshes.position, minDirection, 15, 0x00ff00);
+    // var center = mesh.position.clone().applyMatrix4(embeddable._meshes.matrixWorld);
+    // addAnArrow(center, embeddable._info.normal, 15, 0x00ff00);
+    addAnArrow(center, minDirection, 15, 0xffff00);
 
     embeddable._object.material.side = THREE.FrontSide;
 }
