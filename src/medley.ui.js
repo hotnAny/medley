@@ -12,7 +12,7 @@ $(document).ready(function () {
     // });
 
     var panel = $('<div></div>');
-    panel.css('width', WIDTHPANEL + 'px');
+    panel.css('width', MEDLEY.WIDTHPANEL + 'px');
     panel.css('height', '100%');
     panel.css('color', '#000000');
     panel.css('background-color', 'rgba(192, 192, 192, 0.5)');
@@ -136,10 +136,6 @@ $(document).ready(function () {
     // listSearchOutput.css('columns', MEDLEY.NUMSEARCHRESULTSCOLS.toString());
     listSearchOutput.css('padding', MEDLEY.PADDINGSEARCHRESULTS);
     MEDLEY.showSearchResults(listSearchOutput, MEDLEY.WIDTHSEARCHRESULTITEM);
-    // var div = $('<div></div>')
-    // div.css('overflow-y', 'auto');
-    // div.css('min-height', '100.2%');
-    // div.css('margin-bottom', '1px');
     tdSearchOutput.append(listSearchOutput);
     // tdSearchOutput.append(div);
     trSearchOutput.append(tdSearchOutput);
@@ -172,7 +168,7 @@ MEDLEY.showSearchResults = function (ul, width) {
         //     ' border="1"' +
         //     '">');
         // thumbnail.css('border-color', '#cccccc');
-        result.append(matobj.getInfoCard());
+        result.append(matobj.getInfoCard(result));
         ul.append(result);
     }
 }
