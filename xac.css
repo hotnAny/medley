@@ -1,13 +1,28 @@
-
-.tbwidgets{
-	table-layout: fixed;
-	/*width: 100%;*/
-	padding: 5px;
-	border-spacing: 5px;
-    /*text-align: left;*/
-    /*border: 1px solid black;*/
+h2 {
+	margin-left: 8px;
+	margin-top: 5px;
+	margin-bottom: 0px;
 }
 
-th, td{
-    padding: 3px;
+.tbwidgets {
+	table-layout: fixed;
+	padding: 2px;
+	border-spacing: 5px;
+}
+
+th,
+td {
+	padding: 3px;
+	vertical-align: top;
+}
+
+ul {
+	list-style: none;
+	overflow-y: scroll;
+	overflow-x: hidden;
+	/*min-height: 100.2%;
+	margin-bottom: 1px;*/
+	max-height: 480;
+	/*padding-left:0;*/
+	/*columns: 2;*/
 }
