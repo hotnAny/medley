@@ -155,6 +155,7 @@ MEDLEY.MatObj.prototype.getDialog = function () {
     selWorkability.append('<option value=3> 3 - bars, blocks, lumps, etc. </option>');
     selWorkability.change(function (e) {
         this._dim = e.target.selectedIndex - 1;
+        this._updateMeshPathInfo();
         this._showSliders();
     }.bind(this));
 
@@ -185,7 +186,7 @@ MEDLEY.MatObj.prototype.getDialog = function () {
             var reader = new FileReader();
             if (file.name.endsWith('.stl')) {
                 this._meshPath = MEDLEY.ASSETDIR + '/' + file.name;
-                this._udpateMeshPathInfo();
+                this._updateMeshPathInfo();
             } else if (__isImage(file.name)) {
                 this._imgSrc = MEDLEY.ASSETDIR + '/' + file.name;
                 $('#imgDialogThumbnail').attr('src', this._imgSrc);
@@ -224,7 +225,7 @@ MEDLEY.MatObj.prototype.getDialog = function () {
             this._showSliders();
         }
 
-        this._udpateMeshPathInfo();
+        this._updateMeshPathInfo();
 
 
         $('#divDropzone').append(divDropZone);
@@ -489,7 +490,7 @@ MEDLEY.MatObj.prototype.package = function () {
 //
 //
 //
-MEDLEY.MatObj.prototype._udpateMeshPathInfo = function () {
+MEDLEY.MatObj.prototype._updateMeshPathInfo = function () {
     var msgStl;
     if (this._dim != 0) msgStl = '3D model file not required';
     else {
