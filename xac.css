@@ -4,25 +4,33 @@ h2 {
 	margin-bottom: 0px;
 }
 
-.tbwidgets {
+.tbpanel {
 	table-layout: fixed;
-	padding: 2px;
 	border-spacing: 5px;
+	/*vertical-align: top;*/
+}
+
+.tblsliders {
+	border-spacing: 0px;
 }
 
 th,
 td {
-	padding: 3px;
+	padding: 5px;
 	vertical-align: top;
+	font-size: small;
 }
 
 ul {
 	list-style: none;
 	overflow-y: scroll;
 	overflow-x: hidden;
-	/*min-height: 100.2%;
-	margin-bottom: 1px;*/
-	max-height: 480;
-	/*padding-left:0;*/
-	/*columns: 2;*/
+	min-height: 480px;
+	max-height: 640px;
+}
+
+img {
+	border-radius: 10px;
+	display: block;
+	width: 100%;
 }
