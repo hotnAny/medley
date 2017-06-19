@@ -33,7 +33,6 @@ $(document).ready(function () {
         tbSearchQuery.width(MEDLEY.WIDTHSEARCHBOX);
 
         MEDLEY._listSearchOutput = $('#listSearchOutput');
-        // MEDLEY._listSearchOutput.width(tbSearchQuery.width());
         MEDLEY._listSearchOutput.css('background-color', 'rgba(255, 255, 255, 0.5)');
         MEDLEY._listSearchOutput.css('padding', MEDLEY.PADDINGSEARCHRESULTS);
         MEDLEY.showSearchResults();

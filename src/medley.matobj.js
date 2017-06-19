@@ -128,6 +128,7 @@ MEDLEY.MatObj.prototype.getDialog = function () {
     selWorkability.append('<option value=3> 3 - bars, blocks, lumps, etc. </option>');
     selWorkability.change(function (e) {
         this._dim = e.target.selectedIndex - 1;
+        this._showSliders();
     }.bind(this));
 
     // dropzone for 3d model files and thumbnails
@@ -190,8 +191,10 @@ MEDLEY.MatObj.prototype.getDialog = function () {
         this._makeNameLabel($('#divName'), this._name);
 
         $('#divWorkability').append(selWorkability);
-        if (this._dim != undefined)
+        if (this._dim != undefined) {
             $('option[value=' + this._dim + ']').attr('selected', true);
+            this._showSliders();
+        }
 
         $('#divDropzone').append(divDropZone);
 
@@ -215,6 +218,9 @@ MEDLEY.MatObj.prototype.getDialog = function () {
     return dialog;
 }
 
+//
+//
+//
 MEDLEY.MatObj.prototype._updateCard = function () {
     if (this._cardParent != undefined) {
         if (this._card != undefined) {
@@ -224,6 +230,9 @@ MEDLEY.MatObj.prototype._updateCard = function () {
     }
 }
 
+//
+//
+//
 MEDLEY.MatObj.prototype._makeNameLabel = function (div, name) {
     var inputName = $('#inputName');
     inputName.attr('disabled', 'disabled');
@@ -271,6 +280,9 @@ MEDLEY.MatObj.prototype._getInteractiveStars = function (property) {
     return divStars;
 }
 
+//
+//
+//
 MEDLEY.MatObj.prototype._addPropertyRow = function (property) {
     var trProperty = $('<tr id="tr' + property.replace(' ', '_') + '"></tr>');
 
@@ -326,6 +338,27 @@ MEDLEY.MatObj.prototype.openDialog = function () {
     });
 }
 
-MEDLEY.MatObj.prototype.saveToLibrary = function () {
-
+//
+//
+//
+MEDLEY.MatObj.prototype._showSliders = function () {
+   $('#tblMatObjSliders').html('');
+    switch (this._dim) {
+        case 0:
+            //none
+            break;
+        case 1:
+            // radius, bend radius
+            this._sldrRadius = XAC.makeSlider('sldrRadius', 'Radius', 0, 100, 0, $('#tblMatObjSliders'));
+            this._sldrBendRadius = XAC.makeSlider('sldrBendRadius', 'Bend Radius', 50, 100, 0, $('#tblMatObjSliders'));
+            break;
+        case 2:
+            // thickness, bend radius
+            this._sldrThickness = XAC.makeSlider('sldrThickness', 'Thickness', 0, 100, 25, $('#tblMatObjSliders'));
+            this._sldrBendRadius = XAC.makeSlider('sldrBendRadius', 'Radius', 50, 100, 0, $('#tblMatObjSliders'));
+            break;
+        case 3:
+            // none
+            break;
+    }
 }
