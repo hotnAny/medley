@@ -306,6 +306,9 @@ MEDLEY.MatObj.prototype._addPropertyRow = function(property) {
     $('#tblProperties').append(trProperty);
 }
 
+//
+//
+//
 MEDLEY.MatObj.prototype.openDialog = function() {
     var dialog = this.getDialog();
     dialog.dialog({
@@ -317,11 +320,12 @@ MEDLEY.MatObj.prototype.openDialog = function() {
         //     of: window
         // },
         open: function(e) {
-            //
+            MEDLEY._isDialogOpen = true;
         }.bind(this),
         close: function(e) {
             this._updateCard();
             this._dialogBody.remove();
+            MEDLEY._isDialogOpen = false;
         }.bind(this)
     });
 }
