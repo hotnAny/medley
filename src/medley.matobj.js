@@ -176,9 +176,9 @@ MEDLEY.MatObj.prototype.getDialog = function() {
         if (idx >= 0) {
             var property = MEDLEY.MATERIALPROPERTIES[idx];
             if (property.replace(' ', '_') in this._properties) return;
-            this._properties[property.replace(' ', '_')] = 0;
+            // this._properties[property.replace(' ', '_')] = 0;
             this._addPropertyRow(property);
-            this._updateCard();
+            // this._updateCard();
         }
     }.bind(this));
 
@@ -248,8 +248,10 @@ MEDLEY.MatObj.prototype._makeNameLabel = function(div, name) {
     });
 }
 
+//
+//
+//
 MEDLEY.MatObj.prototype._getInteractiveStars = function(property) {
-    // this._lbStars[property] = this._lbStars[property] || [];
     var __lbStars = [];
     var divStars = $('<div></div>');
     var value = this._properties[property]
