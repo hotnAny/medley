@@ -21,9 +21,11 @@ $(document).ready(function () {
     panel.css('overflow', 'hidden');
 
     panel.load(MEDLEY.TABLEPANEL, function (e) {
-        var btnAdd = $('#btnAdd');
-        // btnAdd.button();
-        btnAdd.click(function (e) {
+        // var btnAdd = $('#btnAdd');
+        $('#btnAdd').button();
+        $('#btnAdd').find('span.ui-button-text').css('padding', '.0em .6em');
+        
+        $('#btnAdd').click(function (e) {
             e.preventDefault();
             var matobj = new MEDLEY.MatObj(MEDLEY._matobjs);
             matobj.openDialog();
@@ -107,6 +109,7 @@ $(document).ready(function () {
         //  buttons
         //
         $('#btnDownload').button();
+        $('#btnDownload').find('span.ui-button-text').css('padding', '.0em .6em');
         $('#btnDownload').click(function (e) {
             var jsonObj = {};
             var matobjs = [];
