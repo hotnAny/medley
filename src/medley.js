@@ -12,6 +12,16 @@ $(document).ready(function () {
     MEDLEY.embeddables = [];
     MEDLEY.everything = new THREE.Object3D();
     XAC.scene.add(MEDLEY.everything);
+
+    //
+    //  embeddable library
+    //
+    MEDLEY._matobjs = [];
+    $.getJSON(MEDLEY.DIRLIBRARY, function(data) {
+        // TODO
+    }).fail(function(){
+        log('no library exists; creating a new one ...');
+    });
 });
 
 MEDLEY.onStlLoaded = function (object) {
