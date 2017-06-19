@@ -18,11 +18,13 @@ MEDLEY.MatObj = function (matobjs) {
     this._name = 'Banana';
     this._imgSrc = MEDLEY.ASSETDIR + '/359-banana.png';
     this._dim = 1;
+    this._meshPath = undefined;
     this._properties = {};
-    this._lbStars = {};
+    
     this._radius = MEDLEY.MINRADIUS1D;
     this._bendRadius = MEDLEY.MINBENDRADIUS;
     this._thickness = MEDLEY.MINTHICKNESS;
+    this._lbStars = {};
 };
 
 MEDLEY.MatObj.prototype = {
@@ -36,6 +38,7 @@ MEDLEY.MatObj.prototype.loadValues = function (json) {
     this._name = json._name;
     this._imgSrc = json._imgSrc;
     this._dim = json._dim;
+    this._meshPath = json._meshPath;
     this._properties = json._properties;
     this._radius = json._radius;
     this._bendRadius = json._bendRadius;
@@ -83,7 +86,6 @@ MEDLEY.MatObj.prototype.getInfoCard = function (parent) {
 
 
     var btnMore = $('<a href="">Edit</a>')
-    // btnMore.css('font-size', 'x-small');
     btnMore.css('float', 'right');
     btnMore.click(function (e) {
         e.preventDefault();
@@ -163,6 +165,7 @@ MEDLEY.MatObj.prototype.getDialog = function () {
             var reader = new FileReader();
             if (file.name.endsWith('.stl')) {
                 this._meshPath = MEDLEY.ASSETDIR + '/' + file.name;
+                this._udpateMeshPathInfo();
             } else if (__isImage(file.name)) {
                 this._imgSrc = MEDLEY.ASSETDIR + '/' + file.name;
                 $('#imgDialogThumbnail').attr('src', this._imgSrc);
@@ -200,6 +203,9 @@ MEDLEY.MatObj.prototype.getDialog = function () {
             $('option[value=' + this._dim + ']').attr('selected', true);
             this._showSliders();
         }
+
+        this._udpateMeshPathInfo();
+
 
         $('#divDropzone').append(divDropZone);
 
@@ -436,6 +442,7 @@ MEDLEY.MatObj.prototype.package = function () {
         _name: this._name,
         _imgSrc: this._imgSrc,
         _dim: this._dim,
+        _meshPath: this._meshPath,
         _properties: this._properties
     };
 
@@ -457,4 +464,17 @@ MEDLEY.MatObj.prototype.package = function () {
     }
 
     return jsonObj;
+}
+
+//
+//
+//
+MEDLEY.MatObj.prototype._udpateMeshPathInfo = function () {
+    var msgStl;
+    if (this._dim != 0) msgStl = '3D model file not required';
+    else {
+        if (this._meshPath == undefined) msgStl = '3D model file missing!';
+        else msgStl = '3D model file: ' + this._meshPath;
+    }
+    $('#divInfoMeshPath').html(msgStl);
 }
