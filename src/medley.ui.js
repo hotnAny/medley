@@ -105,7 +105,23 @@ $(document).ready(function () {
         //  buttons
         //
         $('#btnDownload').button();
-        $('#btnDownload').click(function(e){});
+        $('#btnDownload').click(function (e) {
+            var jsonObj = {};
+            var matobjs = [];
+            for (matobj of MEDLEY._matobjs) {
+                matobjs.push({
+                    _name: matobj._name,
+                    _imgSrc: matobj._imgSrc,
+                    _dim: matobj._dim,
+                    _properties: matobj._properties
+                });
+            }
+            jsonObj['library'] = matobjs;
+            var blob = new Blob([JSON.stringify(jsonObj)], {
+                type: 'text/plain'
+            });
+            saveAs(blob, 'library.json');
+        });
         $('#btnMakePrintable').button();
         $('#btnExport').button();
 

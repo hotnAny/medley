@@ -11,20 +11,14 @@ var MEDLEY = MEDLEY || {};
 //
 //
 //
-MEDLEY.MatObj = function(matobjs) {
+MEDLEY.MatObj = function (matobjs) {
     this._matobjs = matobjs;
 
     // [debug]
     this._name = 'Banana';
     this._imgSrc = MEDLEY.ASSETDIR + '/359-banana.png';
-
     this._dim = 1;
-
     this._properties = {};
-    // this._properties[MEDLEY.HEATCONDUCTIVITY] = 5;
-    // this._properties[MEDLEY.TENSILESTRENGTH] = 4;
-    // this._properties[MEDLEY.SOFTNESS] = 0;
-
     this._lbStars = {};
 };
 
@@ -35,7 +29,18 @@ MEDLEY.MatObj.prototype = {
 //
 //
 //
-MEDLEY.MatObj.prototype.getInfoCard = function(parent) {
+MEDLEY.MatObj.prototype.loadValues = function (json) {
+    this._name = json._name;
+    this._imgSrc = json._imgSrc;
+    this._dim = json._dim;
+    this._properties = json._properties;
+}
+
+
+//
+//
+//
+MEDLEY.MatObj.prototype.getInfoCard = function (parent) {
     this._cardParent = parent;
 
     var card = $('<div class="w3-panel w3-card"></div>');
@@ -73,9 +78,9 @@ MEDLEY.MatObj.prototype.getInfoCard = function(parent) {
     tdInfo.append(divProperties);
 
     var btnMore = $('<a href="">Edit</a>')
-        // btnMore.css('font-size', 'x-small');
+    // btnMore.css('font-size', 'x-small');
     btnMore.css('float', 'right');
-    btnMore.click(function(e) {
+    btnMore.click(function (e) {
         e.preventDefault();
         this.openDialog();
         e.stopPropagation();
@@ -87,7 +92,7 @@ MEDLEY.MatObj.prototype.getInfoCard = function(parent) {
     tblCard.append(trCard);
     card.append(tblCard);
 
-    card.click(function(e) {
+    card.click(function (e) {
         var selected = card.hasClass('ui-state-highlight');
         $('.w3-panel.w3-card').removeClass('ui-state-highlight');
         if (!selected) card.addClass('ui-state-highlight');
@@ -100,21 +105,17 @@ MEDLEY.MatObj.prototype.getInfoCard = function(parent) {
 //
 //
 //
-MEDLEY.MatObj.prototype._selectProperties = function(query) {
+MEDLEY.MatObj.prototype._selectProperties = function (query) {
     return this._properties;
 }
 
-MEDLEY.MatObj.prototype.getDialog = function() {
+MEDLEY.MatObj.prototype.getDialog = function () {
     var dialog = $('<div name="title" title="' + this._name + ' material properties">');
 
     var dialogBody = $('<div class="ui-widget"></div>');
-    dialogBody.click(function(e) {
-        if (MEDLEY.MatObj.__editableText != undefined) {
-            this._name = MEDLEY.MatObj.__editableText.val();
-            this._makeNameLabel($('#divName'), this._name);
-            MEDLEY.MatObj.__editableText.remove();
-            MEDLEY.MatObj.__editableText = undefined;
-        }
+    dialogBody.click(function (e) {
+        $('#inputName').css('disabled', 'disabled');
+        $('#inputName').css('border', '1px solid #ffffff');
     }.bind(this));
 
     // workability
@@ -125,12 +126,12 @@ MEDLEY.MatObj.prototype.getDialog = function() {
     selWorkability.append('<option value=1> 1 - wires, threads, strings, etc. </option>');
     selWorkability.append('<option value=2> 2 - sheets, panes, plates, etc. </option>');
     selWorkability.append('<option value=3> 3 - bars, blocks, lumps, etc. </option>');
-    selWorkability.change(function(e) {
+    selWorkability.change(function (e) {
         this._dim = e.target.selectedIndex - 1;
     }.bind(this));
 
     // dropzone for 3d model files and thumbnails
-    var __isImage = function(str) {
+    var __isImage = function (str) {
         if (str.endsWith('png') || str.endsWith('jpg'))
             return true;
     }
@@ -141,13 +142,13 @@ MEDLEY.MatObj.prototype.getDialog = function() {
     divDropZone.css('border-width', '1px');
     divDropZone.css('line-height', '64px');
     divDropZone.css('color', '#888888');
-    divDropZone.on('dragover', function(e) {
+    divDropZone.on('dragover', function (e) {
         e.stopPropagation();
         e.preventDefault();
         e.dataTransfer = e.originalEvent.dataTransfer;
         e.dataTransfer.dropEffect = 'copy';
     });
-    divDropZone.on('drop', function(e) {
+    divDropZone.on('drop', function (e) {
         e.stopPropagation();
         e.preventDefault();
         e.dataTransfer = e.originalEvent.dataTransfer;
@@ -171,7 +172,7 @@ MEDLEY.MatObj.prototype.getDialog = function() {
         var property = MEDLEY.MATERIALPROPERTIES[i];
         selMaterialProperty.append('<option value=' + i + '>' + property + '</option>');
     }
-    selMaterialProperty.change(function(e) {
+    selMaterialProperty.change(function (e) {
         var idx = e.target.selectedIndex;
         if (idx >= 0) {
             var property = MEDLEY.MATERIALPROPERTIES[idx];
@@ -182,7 +183,7 @@ MEDLEY.MatObj.prototype.getDialog = function() {
         }
     }.bind(this));
 
-    dialogBody.load(MEDLEY.TABLEINFODIALOG, function(e) {
+    dialogBody.load(MEDLEY.TABLEINFODIALOG, function (e) {
         $('#imgDialogThumbnail').attr('src', this._imgSrc);
         $('#imgDialogThumbnail').width(MEDLEY.WIDTHDIALOGTHUMBNAIL);
 
@@ -199,8 +200,8 @@ MEDLEY.MatObj.prototype.getDialog = function() {
         for (property in this._properties) this._addPropertyRow(property);
 
         $('#btnSave').button();
-        $('#btnSave').click(function(e) {
-            if (this._matobjs.indexOf(this) < 0) {
+        $('#btnSave').click(function (e) {
+            if (this._matobjs != undefined && this._matobjs.indexOf(this) < 0) {
                 this._matobjs.push(this);
                 MEDLEY.showSearchResults(this);
             }
@@ -214,7 +215,7 @@ MEDLEY.MatObj.prototype.getDialog = function() {
     return dialog;
 }
 
-MEDLEY.MatObj.prototype._updateCard = function() {
+MEDLEY.MatObj.prototype._updateCard = function () {
     if (this._cardParent != undefined) {
         if (this._card != undefined) {
             this._card.remove();
@@ -223,35 +224,22 @@ MEDLEY.MatObj.prototype._updateCard = function() {
     }
 }
 
-MEDLEY.MatObj.prototype._makeNameLabel = function(div, name) {
-    var lbName = $('<label>' + name + '</label>');
-    lbName.css('font-weight', 'bold');
-    div.append(lbName);
+MEDLEY.MatObj.prototype._makeNameLabel = function (div, name) {
+    var inputName = $('#inputName');
+    inputName.attr('disabled', 'disabled');
+    inputName.val(name);
     MEDLEY.MatObj.__instance = this;
-    lbName.click(function(e) {
-        var lbHtml = $(this).html(); // notice "this" instead of a specific #myDiv
-        MEDLEY.MatObj.__editableText = $('<input class="ui-widget" type="text" />');
-        MEDLEY.MatObj.__editableText.css('font-weight', 'bold');
-        MEDLEY.MatObj.__editableText.val(lbHtml);
-        MEDLEY.MatObj.__editableText.keyup(function(e) {
-            $('div[name="title"]').dialog('option', 'title', $(this).val() + ' material properties');
-            MEDLEY.MatObj.__instance._name = $(this).val();
-            MEDLEY.MatObj.__instance._updateCard();
-        });
-        MEDLEY.MatObj.__editableText.click(function(e) {
-            e.stopPropagation();
-        });
-        $(this).replaceWith(MEDLEY.MatObj.__editableText);
-        MEDLEY.MatObj.__editableText.focus();
-        e.stopPropagation();
-        this.remove();
+    div.click(function (e) {
+        $('#inputName').removeAttr('disabled');
+        $('#inputName').css('border', '1px solid #cccccc');
+        if ($(e.target).attr('id') == 'inputName') e.stopPropagation();
     });
 }
 
 //
 //
 //
-MEDLEY.MatObj.prototype._getInteractiveStars = function(property) {
+MEDLEY.MatObj.prototype._getInteractiveStars = function (property) {
     var __lbStars = [];
     var divStars = $('<div></div>');
     var value = this._properties[property]
@@ -260,7 +248,7 @@ MEDLEY.MatObj.prototype._getInteractiveStars = function(property) {
         var lbStar = $('<label>' + star + '</label>');
         lbStar.attr('star', i + 1);
         lbStar.attr('matprop', property);
-        lbStar.click(function(e) {
+        lbStar.click(function (e) {
             var value = $(e.target).attr('star');
             var __lbStars = this._lbStars[$(e.target).attr('matprop')];
             for (var j = 0; j < value; j++) __lbStars[j].html(MEDLEY.CODEBLACKSTAR);
@@ -272,12 +260,12 @@ MEDLEY.MatObj.prototype._getInteractiveStars = function(property) {
         __lbStars.push(lbStar);
     }
 
-    this._lbStars[property] =  __lbStars;
+    this._lbStars[property] = __lbStars;
 
     return divStars;
 }
 
-MEDLEY.MatObj.prototype._addPropertyRow = function(property) {
+MEDLEY.MatObj.prototype._addPropertyRow = function (property) {
     var trProperty = $('<tr id="tr' + property.replace(' ', '_') + '"></tr>');
 
     var tdName = $('<td width="60%"><div>' + property + '</div></td>');
@@ -293,9 +281,9 @@ MEDLEY.MatObj.prototype._addPropertyRow = function(property) {
     tdRemove.css('padding-bottom', '0px');
     tdRemove.css('vertical-align', 'middle');
     var btnRemove = $('<a style="text-decoration:none" href="">' + MEDLEY.CODECROSS + '</a>')
-        // btnRemove.button();
+    // btnRemove.button();
     btnRemove.attr('matprop', property.replace(' ', '_'));
-    btnRemove.click(function(e) {
+    btnRemove.click(function (e) {
         e.preventDefault();
         var _property = $(e.target).attr('matprop');
         $('#tr' + _property).remove();
@@ -311,7 +299,7 @@ MEDLEY.MatObj.prototype._addPropertyRow = function(property) {
 //
 //
 //
-MEDLEY.MatObj.prototype.openDialog = function() {
+MEDLEY.MatObj.prototype.openDialog = function () {
     var dialog = this.getDialog();
     dialog.dialog({
         width: MEDLEY.WIDTHDIALOG,
@@ -321,10 +309,10 @@ MEDLEY.MatObj.prototype.openDialog = function() {
         //     at: "center",
         //     of: window
         // },
-        open: function(e) {
+        open: function (e) {
             MEDLEY._isDialogOpen = true;
         }.bind(this),
-        close: function(e) {
+        close: function (e) {
             this._updateCard();
             this._dialogBody.remove();
             MEDLEY._isDialogOpen = false;
@@ -332,6 +320,6 @@ MEDLEY.MatObj.prototype.openDialog = function() {
     });
 }
 
-MEDLEY.MatObj.prototype.saveToLibrary = function() {
+MEDLEY.MatObj.prototype.saveToLibrary = function () {
 
 }

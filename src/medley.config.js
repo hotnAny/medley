@@ -9,7 +9,7 @@ var MEDLEY = MEDLEY || {};
 //
 MEDLEY.ASSETDIR = 'assets';
 MEDLEY.TEMPLATEDIR = 'assets';
-MEDLEY.DIRLIBRARY = 'matobjs.json';
+MEDLEY.DIRLIBRARY = 'library.json';
 
 //
 //  material related

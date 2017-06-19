@@ -18,7 +18,12 @@ $(document).ready(function () {
     //
     MEDLEY._matobjs = [];
     $.getJSON(MEDLEY.DIRLIBRARY, function(data) {
-        // TODO
+        var library = data['library'];
+        for(item of library) {
+            matobj = new MEDLEY.MatObj();
+            matobj.loadValues(item);
+            MEDLEY._matobjs.push(matobj);
+        }
     }).fail(function(){
         log('no library exists; creating a new one ...');
     });
