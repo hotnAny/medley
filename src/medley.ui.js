@@ -111,12 +111,7 @@ $(document).ready(function () {
             var jsonObj = {};
             var matobjs = [];
             for (matobj of MEDLEY._matobjs) {
-                matobjs.push({
-                    _name: matobj._name,
-                    _imgSrc: matobj._imgSrc,
-                    _dim: matobj._dim,
-                    _properties: matobj._properties
-                });
+                matobjs.push(matobj.package());
             }
             jsonObj['library'] = matobjs;
             var blob = new Blob([JSON.stringify(jsonObj)], {

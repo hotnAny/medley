@@ -37,8 +37,10 @@ MEDLEY.MatObj.prototype.loadValues = function (json) {
     this._imgSrc = json._imgSrc;
     this._dim = json._dim;
     this._properties = json._properties;
+    this._radius = json._radius;
+    this._bendRadius = json._bendRadius;
+    this._thickness = json._thickness;
 }
-
 
 //
 //
@@ -424,4 +426,35 @@ MEDLEY.MatObj.prototype._showSliders = function () {
         this._sldrThickness.slider('value', sldrValueThickness);
         // XAC.updateSlider(this._sldrThickness, this._thickness, MEDLEY.sldrMapFunc);
     }
+}
+
+//
+//
+//
+MEDLEY.MatObj.prototype.package = function () {
+    var jsonObj = {
+        _name: this._name,
+        _imgSrc: this._imgSrc,
+        _dim: this._dim,
+        _properties: this._properties
+    };
+
+    switch (this._dim) {
+        case 0:
+            //none
+            break;
+        case 1:
+            jsonObj._radius = this._radius;
+            jsonObj._bendRadius = this._bendRadius;
+            break;
+        case 2:
+            jsonObj._thickness = this._thickness;
+            jsonObj._bendRadius = this._bendRadius;
+            break;
+        case 3:
+            // none
+            break;
+    }
+
+    return jsonObj;
 }
