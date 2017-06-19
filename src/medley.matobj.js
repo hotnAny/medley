@@ -234,6 +234,12 @@ MEDLEY.MatObj.prototype._makeNameLabel = function (div, name) {
         $('#inputName').css('border', '1px solid #cccccc');
         if ($(e.target).attr('id') == 'inputName') e.stopPropagation();
     });
+
+    $('#inputName').keyup(function (e) {
+        $('div[name="title"]').dialog('option', 'title', $(this).val() + ' material properties');
+        MEDLEY.MatObj.__instance._name = $(this).val();
+        MEDLEY.MatObj.__instance._updateCard();
+    });
 }
 
 //
