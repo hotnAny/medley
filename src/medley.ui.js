@@ -11,29 +11,30 @@ $(document).ready(function () {
     panel.css('width', MEDLEY.WIDTHPANEL + 'px');
     panel.css('height', '100%');
     panel.css('color', '#000000');
-    panel.css('background-color', 'rgba(192, 192, 192, 0.5)');
+    panel.css('background-color', 'rgba(192, 192, 192, 0.33)');
     panel.css('top', '0px');
     panel.css('position', 'absolute');
     panel.css('font-family', 'Helvetica');
     // panel.css('font-size', '12px');
     panel.css('overflow', 'auto');
     panel.css('padding', MEDLEY.PADDINGPANEL + 'px');
+    panel.css('overflow', 'hidden');
 
     panel.load(MEDLEY.TABLEPANEL, function (e) {
+        var btnAdd = $('#btnAdd');
+        // btnAdd.button();
+        btnAdd.click(function (e) {
+            e.preventDefault();
+            var matobj = new MEDLEY.MatObj(MEDLEY._matobjs);
+            matobj.openDialog();
+        });
+
         var tbSearchQuery = $('#tbSearchQuery');
         tbSearchQuery.width(MEDLEY.WIDTHSEARCHBOX);
 
-        var btnAdd = $('#btnAdd');
-        btnAdd.button();
-        btnAdd.click(function (e) {
-            var matobj = new MEDLEY.MatObj(MEDLEY._matobjs);
-            matobj.openDialog();
-
-        });
-
         MEDLEY._listSearchOutput = $('#listSearchOutput');
+        // MEDLEY._listSearchOutput.width(tbSearchQuery.width());
         MEDLEY._listSearchOutput.css('background-color', 'rgba(255, 255, 255, 0.5)');
-        // listSearchOutput.css('columns', MEDLEY.NUMSEARCHRESULTSCOLS.toString());
         MEDLEY._listSearchOutput.css('padding', MEDLEY.PADDINGSEARCHRESULTS);
         MEDLEY.showSearchResults();
 
@@ -99,6 +100,14 @@ $(document).ready(function () {
             // return sldr.slider('option', 'value') * 1.0 / max;
             return value * max;
         }
+
+        //
+        //  buttons
+        //
+        $('#btnDownload').button();
+        $('#btnDownload').click(function(e){});
+        $('#btnMakePrintable').button();
+        $('#btnExport').button();
 
     });
 

@@ -1,23 +1,33 @@
-<table class="ui-widget tbpanel">
+<table border="0" class="ui-widget tbpanel">
 	<tr>
 		<td><b>MEDLEY</b></td>
-	</tr>
-	<tr>
-		<td>
-			<input id="tbSearchQuery" type="text">
-		</td>
-		<td>
-			<div id="btnAdd">&#10133;</div>
+		<td style="float:right;">
+			<a id="btnAdd" href="" style="text-decoration: none">&#10133;</a>
+			&nbsp;
+			<a id="btnSetting" href="" style="text-decoration: none">&#9881;</a>
 		</td>
 	</tr>
 	<tr>
-		<td colspan="2">
+		<td colspan="3">
+			<input id="tbSearchQuery" type="text"><br/>
+		</td>
+	</tr>
+	<tr>
+		<td colspan="3">
+
 			<ul id="listSearchOutput"></ul>
 		</td>
 	</tr>
 	<tr>
-		<td colspan="2">
+		<td colspan="3">
 			<table id="tblSliders" border="0" width="90%" class="tblsliders"></table>
+		</td>
+	</tr>
+	<tr>
+		<td colspan="3">
+			<div id="btnDownload">Download Library</div>
+			<div id="btnMakePrintable">Make Printable</div>
+			<div id="btnExport">Export</div>
 		</td>
 	</tr>
 </table>

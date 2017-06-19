@@ -112,7 +112,7 @@ $(document).ready(function () {
     //     });
     // }
 
-    
+    // MEDLEY._matobjs = [];
     // MEDLEY._matobjs.push(new MEDLEY.MatObj());
     // MEDLEY._matobjs.push(new MEDLEY.MatObj());
     // MEDLEY._matobjs.push(new MEDLEY.MatObj());
