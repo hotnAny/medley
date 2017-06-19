@@ -13,6 +13,8 @@ var MEDLEY = MEDLEY || {};
 //  select part of an object to create embeddables based on the painting technique (xac.input.painting.js)
 //
 MEDLEY.selectToCreateEmbeddables = function (info) {
+    if(MEDLEY._matobjSelected == undefined) return;
+    
     info.object.updateMatrixWorld();
     info.matrixWorld = info.object.matrixWorld.clone();
 
@@ -939,12 +941,12 @@ MEDLEY._findAvailableWidthRange = function (object, point, direction) {
 //
 MEDLEY._specifyObjectPlacement = function (embeddable, info) {
     info.paxis = XAC.findPrincipalAxis(info.points);
-    var angle = embeddable._matobj.paxis.angleTo(info.paxis);
-    var axis = embeddable._matobj.paxis.clone().cross(info.paxis).normalize();
+    var angle = embeddable._matobj._paxis.angleTo(info.paxis);
+    var axis = embeddable._matobj._paxis.clone().cross(info.paxis).normalize();
     var mr = new THREE.Matrix4();
     mr.makeRotationAxis(axis, angle);
     embeddable._mesh.geometry.applyMatrix(mr);
-    embeddable._paxis = embeddable._matobj.paxis.clone().applyAxisAngle(axis, angle);
+    embeddable._paxis = embeddable._matobj._paxis.clone().applyAxisAngle(axis, angle);
     embeddable._meshes.position.copy(info.center);
     XAC.scene.add(embeddable._meshes);
 

@@ -20,7 +20,7 @@ MEDLEY.MatObj = function (matobjs) {
     this._dim = 1;
     this._meshPath = undefined;
     this._properties = {};
-    
+
     this._radius = MEDLEY.MINRADIUS1D;
     this._bendRadius = MEDLEY.MINBENDRADIUS;
     this._thickness = MEDLEY.MINTHICKNESS;
@@ -102,8 +102,28 @@ MEDLEY.MatObj.prototype.getInfoCard = function (parent) {
     card.click(function (e) {
         var selected = card.hasClass('ui-state-highlight');
         $('.w3-panel.w3-card').removeClass('ui-state-highlight');
-        if (!selected) card.addClass('ui-state-highlight');
-    })
+        if (!selected) {
+            card.addClass('ui-state-highlight');
+            if (this._mesh == undefined) {
+                time();
+                XAC.readFile(this._meshPath, function (data) {
+                    var stlLoader = new THREE.STLLoader();
+                    var geometry = stlLoader.parse(data);
+                    var object = new THREE.Mesh(geometry, XAC.MATERIALCONTRAST);
+                    if (object.geometry.isBufferGeometry)
+                        object.geometry = new THREE.Geometry().fromBufferGeometry(object.geometry);
+
+                    this._mesh = object;
+                    this._paxis = XAC.findPrincipalAxis(this._mesh.geometry.vertices);
+                    this._mesh.geometry.center();
+                    time('loaded embeddable mesh for ' + this._name);
+                }.bind(this));
+            }
+            MEDLEY._matobjSelected = this;
+        } else {
+            MEDLEY._matobjSelected = undefined;
+        }
+    }.bind(this));
 
     this._card = card;
     return card;

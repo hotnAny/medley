@@ -61,23 +61,23 @@ $(document).ready(function () {
     // 	side: THREE.DoubleSide
     // });
 
-    if (MEDLEY._matobjSelected.meshPath != undefined) {
-        time();
-        XAC.readFile(MEDLEY._matobjSelected.meshPath, function (data) {
-            var stlLoader = new THREE.STLLoader();
-            var geometry = stlLoader.parse(data);
-            var object = new THREE.Mesh(geometry, XAC.MATERIALCONTRAST);
-            if (object.geometry.isBufferGeometry)
-                object.geometry = new THREE.Geometry().fromBufferGeometry(object.geometry);
+    // if (MEDLEY._matobjSelected.meshPath != undefined) {
+    //     time();
+    //     XAC.readFile(MEDLEY._matobjSelected.meshPath, function (data) {
+    //         var stlLoader = new THREE.STLLoader();
+    //         var geometry = stlLoader.parse(data);
+    //         var object = new THREE.Mesh(geometry, XAC.MATERIALCONTRAST);
+    //         if (object.geometry.isBufferGeometry)
+    //             object.geometry = new THREE.Geometry().fromBufferGeometry(object.geometry);
 
-            MEDLEY._matobjSelected.mesh = object;
-            MEDLEY._matobjSelected.paxis = XAC.findPrincipalAxis(
-                MEDLEY._matobjSelected.mesh.geometry.vertices);
-            MEDLEY._matobjSelected.mesh.geometry.center();
-            // XAC.scene.add(MEDLEY._matobjSelected.mesh);
-            time('loaded embeddable mesh');
-        });
-    }
+    //         MEDLEY._matobjSelected.mesh = object;
+    //         MEDLEY._matobjSelected.paxis = XAC.findPrincipalAxis(
+    //             MEDLEY._matobjSelected.mesh.geometry.vertices);
+    //         MEDLEY._matobjSelected.mesh.geometry.center();
+    //         // XAC.scene.add(MEDLEY._matobjSelected.mesh);
+    //         time('loaded embeddable mesh');
+    //     });
+    // }
 
     // var sortable = new XAC.Sortable(XAC.Sortable.INSERTION);
     // log(sortable.insert(44.4958342));

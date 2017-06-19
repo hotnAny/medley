@@ -31,14 +31,14 @@ MEDLEY.Embeddable = function (object, matobj) {
     this._object = object;
 
     this._matobj = matobj;
-    this._dim = matobj.dim;
-    this.bendRadius = matobj.bendRadius;
+    this._dim = matobj._dim;
+    this.bendRadius = matobj._bendRadius;
 
     // design parameters of an embeddable
     this.DEPTHEPS = 0.02; // small depth pertubation to avoid z fighting
     this._depthRatio = 0;
     this._thicknessRatio = 0; // starting thickness ratio for 3d embeddable
-    this._baseThickness = matobj.thickness; // starting width for xsec embeddable
+    this._baseThickness = matobj._thickness; // starting width for xsec embeddable
     this._baseWidth = 5; // starting width for a cross sectional selection
     this._widthRatio = 0;
 
@@ -60,7 +60,7 @@ MEDLEY.Embeddable = function (object, matobj) {
 
     if (this._dim == 0) {
         this._meshes = new THREE.Object3D();
-        this._mesh = new THREE.Mesh(this._matobj.mesh.geometry.clone(), this._material);
+        this._mesh = new THREE.Mesh(this._matobj._mesh.geometry.clone(), this._material);
         this._meshes.add(this._mesh);
         this._makeInteractive();
     }
@@ -177,7 +177,7 @@ MEDLEY.Embeddable.prototype._generate1dGeometry = function (params) {
 
     if (this._meshes == undefined) {
         this._meshes = new THREE.Object3D();
-        var shape = XAC.circularShape(this._matobj.radius, 32);
+        var shape = XAC.circularShape(this._matobj._radius, 32);
         this._extrudedSegments = new XAC.Polyline(shape, this.points, this._material.clone());
         this._meshes.add(this._extrudedSegments.m);
         this._makeInteractive();
