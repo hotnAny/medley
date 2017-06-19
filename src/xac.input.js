@@ -231,12 +231,28 @@ XAC.enableDragDrop = function (filesHandler) {
 //
 //
 //
-XAC.makeSlider = function (id, label, min, max, value, parent) {
-    var sldrRow = $('<tr></tr>');
-    var sldrCell = $('<td><label class="ui-widget">' + label + '</label></td><td width="200px"></td>');
+XAC.makeSlider = function (id, label, min, max, value, parent, toShowValue) {
+    var trSldr = $('<tr></tr>');
+    // var sldrCell = $('<td width="200px"></td>');
+    var tdLabel = $('<td><label class="ui-widget">' + label + '</label></td>');
+    // tdLabel.css('white-space', 'nowrap');
+    trSldr.append(tdLabel);
+    var tdSldr = $('<td></td>');
     var sldr = $('<div id="' + id + '"></div>');
-    sldrCell.append(sldr);
-    sldrRow.append(sldrCell);
+    tdSldr.append(sldr);
+
+    if (toShowValue) {
+        var lbValue = $('<label id="lb' + id + '"></label>');
+        tdValue = $('<td></td>');
+        tdValue.append(lbValue);
+        trSldr.append(tdValue);
+        sldr.attr('idValueLabel', lbValue.attr('id'));
+        tdSldr.attr('width', '50%');
+    } else {
+        tdSldr.attr('width', '70%');
+    }
+
+    trSldr.append(tdSldr);
 
     sldr.slider({
         max: max,
@@ -246,8 +262,8 @@ XAC.makeSlider = function (id, label, min, max, value, parent) {
 
     sldr.slider('value', value);
 
-    parent.append(sldrRow);
-    sldr.row = sldrRow;
+    parent.append(trSldr);
+    sldr.row = trSldr;
     return sldr;
 
 }

@@ -44,8 +44,9 @@ $(document).ready(function () {
         MEDLEY._sldrDepth.slider({
             slide: function (event, ui) {
                 // log('[embeddable] setDepth')
-                var max = $(event.target).slider("option", "max");
-                var value = ui.value * 1.0 / max;
+                var max = $(event.target).slider('option', 'max');
+                var min = $(event.target).slider('option', 'min');
+                var value = (ui.value * 1.0 - min) / (max - min);
 
                 var selected = XAC._selecteds.clone();
                 for (object of selected) {
@@ -59,8 +60,9 @@ $(document).ready(function () {
         MEDLEY._sldrThickness.slider({
             slide: function (event, ui) {
                 // log('[embeddable] setThickness')
-                var max = $(event.target).slider("option", "max");
-                var value = ui.value * 1.0 / max;
+                var max = $(event.target).slider('option', 'max');
+                var min = $(event.target).slider('option', 'min');
+                var value = (ui.value * 1.0 - min) / (max - min);
 
                 var selected = XAC._selecteds.clone();
                 for (object of selected) {
@@ -74,8 +76,9 @@ $(document).ready(function () {
         MEDLEY._sldrWidth.slider({
             slide: function (event, ui) {
                 // log('[embeddable] setWidth')
-                var max = $(event.target).slider("option", "max");
-                var value = ui.value * 1.0 / max;
+                var max = $(event.target).slider('option', 'max');
+                var min = $(event.target).slider('option', 'min');
+                var value = (ui.value * 1.0 - min) / (max - min);
 
                 var selected = XAC._selecteds.clone();
                 for (object of selected) {
@@ -84,7 +87,7 @@ $(document).ready(function () {
             },
 
             change: function (event, ui) {
-                var max = $(event.target).slider("option", "max");
+                var max = $(event.target).slider('option', 'max');
                 var value = ui.value * 1.0 / max;
 
                 var selected = XAC._selecteds.clone();
@@ -95,9 +98,9 @@ $(document).ready(function () {
         });
 
         MEDLEY.sldrMapFunc = function (value, sldr) {
-            var max = sldr.slider("option", "max");
-            // return sldr.slider('option', 'value') * 1.0 / max;
-            return value * max;
+            var min = sldr.slider('option', 'min');
+            var max = sldr.slider('option', 'max');
+            return (value - min) * 1.0 / (max - min);
         }
 
         //

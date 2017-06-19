@@ -20,6 +20,9 @@ MEDLEY.MatObj = function (matobjs) {
     this._dim = 1;
     this._properties = {};
     this._lbStars = {};
+    this._radius = MEDLEY.MINRADIUS1D;
+    this._bendRadius = MEDLEY.MINBENDRADIUS;
+    this._thickness = MEDLEY.MINTHICKNESS;
 };
 
 MEDLEY.MatObj.prototype = {
@@ -342,23 +345,83 @@ MEDLEY.MatObj.prototype.openDialog = function () {
 //
 //
 MEDLEY.MatObj.prototype._showSliders = function () {
-   $('#tblMatObjSliders').html('');
+    $('#tblMatObjSliders').html('');
+
+    var sldrValueRadius = 100 * (this._radius - MEDLEY.MINRADIUS1D) /
+        (MEDLEY.MAXRADIUS1D - MEDLEY.MINRADIUS1D);
+    var sldrValueBendRadius = 100 * (this._bendRadius - MEDLEY.MINBENDRADIUS) /
+        (MEDLEY.MAXBENDRADIUS - MEDLEY.MINBENDRADIUS);
+    var sldrValueThickness = 100 * (this._thickness - MEDLEY.MINTHICKNESS) /
+        (MEDLEY.MAXTHICKNESS - MEDLEY.MINTHICKNESS);
+
     switch (this._dim) {
         case 0:
             //none
             break;
         case 1:
             // radius, bend radius
-            this._sldrRadius = XAC.makeSlider('sldrRadius', 'Radius', 0, 100, 0, $('#tblMatObjSliders'));
-            this._sldrBendRadius = XAC.makeSlider('sldrBendRadius', 'Bend Radius', 50, 100, 0, $('#tblMatObjSliders'));
+            this._sldrRadius = XAC.makeSlider('sldrRadius', 'Radius', 0, 100, sldrValueRadius,
+                $('#tblMatObjSliders'), true);
+            this._sldrBendRadius = XAC.makeSlider('sldrBendRadius', 'Bend radius', 0, 100, sldrValueBendRadius,
+                $('#tblMatObjSliders'), true);
             break;
         case 2:
             // thickness, bend radius
-            this._sldrThickness = XAC.makeSlider('sldrThickness', 'Thickness', 0, 100, 25, $('#tblMatObjSliders'));
-            this._sldrBendRadius = XAC.makeSlider('sldrBendRadius', 'Radius', 50, 100, 0, $('#tblMatObjSliders'));
+            this._sldrThickness = XAC.makeSlider('sldrThickness', 'Thickness', 0, 100, sldrValueThickness,
+                $('#tblMatObjSliders'), true);
+            this._sldrBendRadius = XAC.makeSlider('sldrBendRadius', 'Bend radius', 0, 100, sldrValueBendRadius,
+                $('#tblMatObjSliders'), true);
             break;
         case 3:
             // none
             break;
+    }
+
+    if (this._sldrRadius != undefined) {
+        var updateFunction = function (e, ui) {
+            var max = $(e.target).slider('option', 'max');
+            var min = $(e.target).slider('option', 'min');
+            var value = (ui.value * 1.0 - min) / (max - min);
+            this._radius = MEDLEY.MINRADIUS1D * (1 - value) + MEDLEY.MAXRADIUS1D * value;
+            $('#' + $(e.target).attr('idValueLabel')).html(XAC.trim(this._radius, 1) + ' mm');
+        }.bind(this);
+        this._sldrRadius.slider({
+            slide: updateFunction,
+            change: updateFunction
+        });
+        this._sldrRadius.slider('value', sldrValueRadius);
+        // XAC.updateSlider(this._sldrRadius, this._radius, MEDLEY.sldrMapFunc);
+    }
+
+    if (this._sldrBendRadius != undefined) {
+        var updateFunction = function (e, ui) {
+            var max = $(e.target).slider('option', 'max');
+            var min = $(e.target).slider('option', 'min');
+            var value = (ui.value * 1.0 - min) / (max - min);
+            this._bendRadius = MEDLEY.MINBENDRADIUS * (1 - value) + MEDLEY.MAXBENDRADIUS * value;
+            $('#' + $(e.target).attr('idValueLabel')).html(XAC.trim(this._bendRadius, 0) + ' mm');
+        }.bind(this);
+        this._sldrBendRadius.slider({
+            slide: updateFunction,
+            change: updateFunction
+        });
+        this._sldrBendRadius.slider('value', sldrValueBendRadius);
+        // XAC.updateSlider(this._sldrBendRadius, this._bendRadius, MEDLEY.sldrMapFunc);
+    }
+
+    if (this._sldrThickness != undefined) {
+        var updateFunction = function (e, ui) {
+            var max = $(e.target).slider('option', 'max');
+            var min = $(e.target).slider('option', 'min');
+            var value = (ui.value * 1.0 - min) / (max - min);
+            this._thickness = MEDLEY.MINTHICKNESS * (1 - value) + MEDLEY.MAXTHICKNESS * value;
+            $('#' + $(e.target).attr('idValueLabel')).html(XAC.trim(this._thickness, 1) + ' mm');
+        }.bind(this);
+        this._sldrThickness.slider({
+            slide: updateFunction,
+            change: updateFunction
+        });
+        this._sldrThickness.slider('value', sldrValueThickness);
+        // XAC.updateSlider(this._sldrThickness, this._thickness, MEDLEY.sldrMapFunc);
     }
 }

@@ -450,10 +450,5 @@ MEDLEY.Embeddable.prototype.selfDestroy = function () {
 XAC.updateSlider = function (sldr, value, mapFunc) {
     var sldrValue = sldr.slider('option', 'value');
     value = mapFunc(value, sldr);
-    if (sldrValue != value) {
-        sldr.slider('value', value);
-        // log([sldrValue, value])
-    } else {
-
-    }
+    if (sldrValue != value) sldr.slider('value', value);
 }
