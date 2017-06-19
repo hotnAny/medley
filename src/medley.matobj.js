@@ -70,10 +70,7 @@ MEDLEY.MatObj.prototype.getInfoCard = function (parent) {
     var properties = this._selectProperties();
     var nproperties = 0;
     for (propName in properties) {
-        if (nproperties++ >= MEDLEY.MAXNUMPROPERTIESONCARD) {
-            divProperties.append('...');
-            break;
-        }
+        if (nproperties++ >= MEDLEY.MAXNUMPROPERTIESONCARD) break;
         var nstars = properties[propName];
         var strStars = '';
         for (var i = 0; i < nstars; i++) strStars += MEDLEY.CODEBLACKSTAR;
@@ -81,6 +78,9 @@ MEDLEY.MatObj.prototype.getInfoCard = function (parent) {
         divProperties.append(propName.replace('_', ' ') + ': ' + strStars + '<br/>');
     }
     tdInfo.append(divProperties);
+
+    divProperties.append(nproperties > MEDLEY.MAXNUMPROPERTIESONCARD ? '...' : '<br/>');
+
 
     var btnMore = $('<a href="">Edit</a>')
     // btnMore.css('font-size', 'x-small');
