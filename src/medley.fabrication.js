@@ -301,6 +301,8 @@ MEDLEY._searchInPrintBendingInsertion = function (embeddable) {
     var percPause = (info.q.y - bbox.min.y) / (bbox.max.y - bbox.min.y);
     var layerPause = (nlayers * percPause - 0.5) | 0;
     console.info('pause at layer #' + layerPause + ' of ' + (nlayers | 0));
+
+    return info;
 }
 
 //
@@ -404,7 +406,7 @@ MEDLEY._searchInPrintUnbendingInsertion = function (embeddable) {
             // to compute the overall volumes without redundantly adding overlapping volumes:
             //  1. compute the effective area of each layer (box), where a is individual area
             //      ea_i = U(a_0, ... , a_i) - U(a_0, ...,  a_i-1)
-            //  2. V = ∑ea_i * h_i
+            //  2. V = âˆ‘ea_i * h_i
             //
             var sumVols = 0;
             var bboxesPrev = [];
@@ -484,7 +486,7 @@ MEDLEY._searchInPrintUnbendingInsertion = function (embeddable) {
 //
 MEDLEY._searchPostPrintBendingInsertion = function (p, v, embeddable) {
     // find plane perp. to p and v
-    var r = embeddable._matobj.bendRadius;
+    var r = embeddable._matobj._bendRadius;
     var params = XAC.getPlaneFromPointNormal(p, v.clone().normalize());
 
     // find a set of potential centers
@@ -798,7 +800,7 @@ MEDLEY._digTunnel = function (info, embeddable) {
     }
 
     if (points.length > 2) {
-        var shape = XAC.circularShape(embeddable._matobj.radius, 32);
+        var shape = XAC.circularShape(embeddable._matobj._radius, 32);
         embeddable._extraSegments = new XAC.Polyline(shape, points, matTunnel);
         XAC.scene.add(embeddable._extraSegments.m);
         MEDLEY._tempElements.push(embeddable._extraSegments.m);
