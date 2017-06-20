@@ -358,14 +358,19 @@ MEDLEY._searchInPrintUnbendingInsertion = function (embeddable) {
     var minInsertionAngle = 45 * Math.PI / 180; // don't insert at lower than this angle
     var step = 15 * Math.PI / 180; // search step
     var phiStep = step / 3;
-    var thetaStep = step * 2;
+    // var thetaStep = step * 2;
     var minVols = Number.MAX_VALUE; // to keep track of min overall cut-off volumes
     var minVolsDirection = undefined; // the corresponding insertion direction
     var minBboxes = undefined; // the corresponding boxes that encapsualte the object
 
-
-    for (var theta = 0; theta < Math.PI * 2; theta += thetaStep) {
-        for (var phi = minInsertionAngle; phi <= Math.PI / 2; phi += phiStep) {
+    var sqrt2 = Math.sqrt(2);
+    var kk = sqrt2 * (Math.PI * 2 - step) / (sqrt2 - 1);
+    var bb = 2 * Math.PI - kk;
+    for (var phi = minInsertionAngle; phi <= Math.PI / 2; phi += phiStep) {
+        var x = Math.sin(phi);
+        var thetaStep = kk * x + bb;
+        log([x, thetaStep])
+        for (var theta = 0; theta < Math.PI * 2; theta += thetaStep) {
             time();
             var dirInsertion = new THREE.Vector3(Math.sin(theta) * Math.cos(phi),
                 Math.sin(phi), Math.cos(theta) * Math.cos(phi)).normalize();
@@ -689,7 +694,7 @@ MEDLEY._getBoundingBoxes = function (mesh, matrixRotation, dh) {
         // if the box hasn't been updated, use the closet ones to approximate
         var box = bboxes[j];
         if (!box.updated) {
-            console.warn('missed bbox at layer #' + j)
+            // console.warn('missed bbox at layer #' + j)
             var k = j - 1;
             while (k >= 0 && !bboxes[k].updated) k--;
             __updateBbox(bboxes, j, bboxes[k].min);
