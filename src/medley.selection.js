@@ -14,7 +14,7 @@ var MEDLEY = MEDLEY || {};
 //
 MEDLEY.selectToCreateEmbeddables = function (info) {
     if(MEDLEY._matobjSelected == undefined) return;
-    
+
     info.object.updateMatrixWorld();
     info.matrixWorld = info.object.matrixWorld.clone();
 
@@ -128,6 +128,30 @@ MEDLEY.selectToCreateEmbeddables = function (info) {
     // reorg the everything object3d
     if (embeddable._meshes != undefined) MEDLEY.updateEverything(embeddable._meshes);
 };
+
+//
+//  specify the placement of embeddable objects (dof=0)
+//
+MEDLEY._specifyObjectPlacement = function (embeddable, info) {
+    info.paxis = XAC.findPrincipalAxis(info.points);
+    var angle = embeddable._matobj._paxis.angleTo(info.paxis);
+    var axis = embeddable._matobj._paxis.clone().cross(info.paxis).normalize();
+    var mr = new THREE.Matrix4();
+    mr.makeRotationAxis(axis, angle);
+    embeddable._mesh.geometry.applyMatrix(mr);
+    embeddable._paxis = embeddable._matobj._paxis.clone().applyAxisAngle(axis, angle);
+    embeddable._meshes.position.copy(info.center);
+    XAC.scene.add(embeddable._meshes);
+
+    info.object.material.side = THREE.BackSide;
+    var rayCaster = new THREE.Raycaster();
+    embeddable.p0 = info.center;
+    rayCaster.ray.set(embeddable.p0, info.normal.clone().multiplyScalar(-1));
+    var hits = rayCaster.intersectObjects([info.object]);
+    if (hits.length > 0) embeddable.p1 = hits[0].point;
+
+    MEDLEY._enableRotationAroundAxis(embeddable, info);
+}
 
 //
 //  select poly-line segments to create embeddable
@@ -937,33 +961,9 @@ MEDLEY._findAvailableWidthRange = function (object, point, direction) {
 }
 
 //
-//  specify the placement of embeddable objects (dof=0)
-//
-MEDLEY._specifyObjectPlacement = function (embeddable, info) {
-    info.paxis = XAC.findPrincipalAxis(info.points);
-    var angle = embeddable._matobj._paxis.angleTo(info.paxis);
-    var axis = embeddable._matobj._paxis.clone().cross(info.paxis).normalize();
-    var mr = new THREE.Matrix4();
-    mr.makeRotationAxis(axis, angle);
-    embeddable._mesh.geometry.applyMatrix(mr);
-    embeddable._paxis = embeddable._matobj._paxis.clone().applyAxisAngle(axis, angle);
-    embeddable._meshes.position.copy(info.center);
-    XAC.scene.add(embeddable._meshes);
-
-    info.object.material.side = THREE.BackSide;
-    var rayCaster = new THREE.Raycaster();
-    embeddable.p0 = info.center;
-    rayCaster.ray.set(embeddable.p0, info.normal.clone().multiplyScalar(-1));
-    var hits = rayCaster.intersectObjects([info.object]);
-    if (hits.length > 0) embeddable.p1 = hits[0].point;
-
-    MEDLEY.enableRotationAroundPrimaryAxis(embeddable, info);
-}
-
-//
 //  enable mouse move to rotate an embeddable object around its principal axis
 //
-MEDLEY.enableRotationAroundPrimaryAxis = function (embeddable, info) {
+MEDLEY._enableRotationAroundAxis = function (embeddable, info) {
     //  add an invisible sphere
     var radius = 512; //XAC.getBoundingSphereRadius(embeddable._mesh) * 2;
     var cdGain = 5;
@@ -997,7 +997,7 @@ MEDLEY.enableRotationAroundPrimaryAxis = function (embeddable, info) {
                 var angle = MEDLEY._projPrev.angleTo(proj) * cdGain;
                 var axis = MEDLEY._projPrev.cross(proj).normalize();
                 var mr = new THREE.Matrix4();
-                mr.makeRotationAxis(axis, -angle);
+                mr.makeRotationAxis(axis, angle);
                 MEDLEY._objectToRotate.geometry.applyMatrix(mr);
 
             }

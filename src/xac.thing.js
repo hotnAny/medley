@@ -358,8 +358,8 @@ function addAnArrow(v1, dir, len, clr, r) {
 
 	var mat = clr == undefined ? MATERIALFOCUS : new THREE.MeshBasicMaterial({
 		color: clr,
-		transparent: true,
-		opacity: 1.0
+		// transparent: true,
+		// opacity: 1.0
 	});
 
 	var bodyArrow = new XAC.Cylinder(rArrow, lArrow, mat).m;

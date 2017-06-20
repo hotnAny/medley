@@ -11,7 +11,7 @@ $(document).ready(function () {
     panel.css('width', MEDLEY.WIDTHPANEL + 'px');
     panel.css('height', '100%');
     panel.css('color', '#000000');
-    panel.css('background-color', 'rgba(192, 192, 192, 0.33)');
+    panel.css('background-color', 'rgba(192, 192, 192, 0.50)');
     panel.css('top', '0px');
     panel.css('position', 'absolute');
     panel.css('font-family', 'Helvetica');
@@ -129,9 +129,21 @@ $(document).ready(function () {
         //  make embeddable button
         //
         $('#btnMakeEmbeddable').button();
-        // XAC.makeRadioButtons('embeddingOptions', ['in-print', 'post-print'], [0, 1], $('#divEmbeddingOption'), 0, false);
-        $('#rbInprint').attr('checked', 'true');
+        $('#btnMakeEmbeddable').click(function (e) {
+            var selected = XAC._selecteds.clone();
+            for (object of selected) {
+                if (object.embeddable != undefined) {
+                    // log($('#rbInprint').attr('checked'))
+                    // log($('#rbPostprint').attr('checked'))
+                    if ($('#rbInprint')[0].checked)
+                        MEDLEY.findInPrintInsertion(object.embeddable);
+                    else
+                        MEDLEY.findPostPrintInsertion(object.embeddable);
+                }
+            }
+        });
 
+        $('#rbInprint').attr('checked', 'true');
         $('#btnExport').button();
 
     });

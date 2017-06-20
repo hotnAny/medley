@@ -2,6 +2,8 @@ var MEDLEY = MEDLEY || {};
 
 var _fitInfo;
 
+MEDLEY._tempElements = [];
+
 // XXX
 MEDLEY._matobjSelected = {
     radius: 0.75, // mm
@@ -33,12 +35,8 @@ $(document).ready(function () {
     XAC.on(XAC.KEYUP, function () {
         MEDLEY.shiftPressed = false;
     });
-    XAC.on(XAC.ENTER, function () {
-        var embeddable = MEDLEY.embeddables.last();
-
-        MEDLEY.findPostPrintInsertion(embeddable);
-
-        // MEDLEY.find0dInternalInsertion(embeddable);
+    XAC.on(XAC.ESC, function () {
+        for (elm of MEDLEY._tempElements) XAC.scene.remove(elm);
     });
 
     XAC.on('S', function () {

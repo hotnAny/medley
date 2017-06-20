@@ -97,12 +97,19 @@ XAC.union = function (meshes, material) {
 			var merged2 = __mergeUnion(meshes.slice(meshes.length / 2));
 			return merged1.union(merged2);
 		} else if (meshes.length == 2)
-			return new ThreeBSP(meshes[0]).union(new ThreeBSP(meshes[1]));
+			try {
+				var unioned = new ThreeBSP(meshes[0]).union(new ThreeBSP(meshes[1]));
+				return unioned;
+			} catch (e) {
+				console.error('boolean oeration error!')
+				log(meshes[0]);
+				log(meshes[1]);
+			}
 		else if (meshes.length == 1)
 			return new ThreeBSP(meshes[0]);
 	};
 	var csgMesh = __mergeUnion(meshes);
-	if (csgMesh == undefined) log(meshes)
+	// if (csgMesh == undefined) log(meshes)
 	return csgMesh.toMesh(material == undefined ? XAC.MATERIALNORMAL : material);
 }
 
