@@ -2,7 +2,7 @@
 //
 // handling different object-oriented input techniques by dispatching input events to them
 //
-// by xiangchen@acm.org, v0.1, 2017/04
+// by xiangchen@acm.org, v0.2, 2017/06
 //
 // ........................................................................................................
 
@@ -265,5 +265,29 @@ XAC.makeSlider = function (id, label, min, max, value, parent, toShowValue) {
     parent.append(trSldr);
     sldr.row = trSldr;
     return sldr;
+}
 
+//
+//  make radio buttons
+//
+XAC.makeRadioButtons = function (name, labels, values, parent, idxChecked, hasIcon) {
+    var checkedInput;
+    var id = (Math.random() * 1000 | 0).toString();
+    for (var i = 0; i < labels.length; i++) {
+        // 
+        var label = $('<label for="input' + id + i + '" name="lb' + name + '">' + labels[i] + '</label>');
+        var input = $('<input type="radio" name="' + name + '" value="' + values[i] +
+            '" id="input' + id + i + '">');
+        if (i == idxChecked) {
+            input.attr('checked', true);
+            checkedInput = input;
+        }
+        parent.append(label);
+        parent.append(input);
+    }
+    $('[name="' + name + '"]').checkboxradio({
+        icon: hasIcon
+    });
+
+    return $(checkedInput);
 }

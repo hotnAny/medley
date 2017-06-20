@@ -393,6 +393,7 @@ MEDLEY.MatObj.prototype._showSliders = function () {
                 $('#tblMatObjSliders'), true);
             this._sldrBendRadius = XAC.makeSlider('sldrBendRadius', 'Bend radius', 0, 100, sldrValueBendRadius,
                 $('#tblMatObjSliders'), true);
+            $('#tblMatObjSliders').append($('<br/>'))
             break;
         case 2:
             // thickness, bend radius
@@ -400,6 +401,7 @@ MEDLEY.MatObj.prototype._showSliders = function () {
                 $('#tblMatObjSliders'), true);
             this._sldrBendRadius = XAC.makeSlider('sldrBendRadius', 'Bend radius', 0, 100, sldrValueBendRadius,
                 $('#tblMatObjSliders'), true);
+            $('#tblMatObjSliders').append($('<br/>'))
             break;
         case 3:
             // none

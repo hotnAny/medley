@@ -21,14 +21,34 @@ $(document).ready(function () {
     panel.css('overflow', 'hidden');
 
     panel.load(MEDLEY.TABLEPANEL, function (e) {
-        // var btnAdd = $('#btnAdd');
+        //
+        //  add button
+        //
         $('#btnAdd').button();
-        $('#btnAdd').find('span.ui-button-text').css('padding', '.0em .6em');
-        
+        $('#btnAdd').css('padding', '.0em .6em');
+
         $('#btnAdd').click(function (e) {
             e.preventDefault();
             var matobj = new MEDLEY.MatObj(MEDLEY._matobjs);
             matobj.openDialog();
+        });
+
+        //
+        //  download button
+        //
+        $('#btnDownload').button();
+        $('#btnDownload').css('padding', '.0em .6em');
+        $('#btnDownload').click(function (e) {
+            var jsonObj = {};
+            var matobjs = [];
+            for (matobj of MEDLEY._matobjs) {
+                matobjs.push(matobj.package());
+            }
+            jsonObj['library'] = matobjs;
+            var blob = new Blob([JSON.stringify(jsonObj)], {
+                type: 'text/plain'
+            });
+            saveAs(blob, 'library.json');
         });
 
         var tbSearchQuery = $('#tbSearchQuery');
@@ -106,23 +126,12 @@ $(document).ready(function () {
         }
 
         //
-        //  buttons
+        //  make embeddable button
         //
-        $('#btnDownload').button();
-        $('#btnDownload').find('span.ui-button-text').css('padding', '.0em .6em');
-        $('#btnDownload').click(function (e) {
-            var jsonObj = {};
-            var matobjs = [];
-            for (matobj of MEDLEY._matobjs) {
-                matobjs.push(matobj.package());
-            }
-            jsonObj['library'] = matobjs;
-            var blob = new Blob([JSON.stringify(jsonObj)], {
-                type: 'text/plain'
-            });
-            saveAs(blob, 'library.json');
-        });
-        $('#btnMakePrintable').button();
+        $('#btnMakeEmbeddable').button();
+        // XAC.makeRadioButtons('embeddingOptions', ['in-print', 'post-print'], [0, 1], $('#divEmbeddingOption'), 0, false);
+        $('#rbInprint').attr('checked', 'true');
+
         $('#btnExport').button();
 
     });
