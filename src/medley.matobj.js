@@ -238,7 +238,7 @@ MEDLEY.MatObj.prototype.getDialog = function () {
         $('#btnSave').click(function (e) {
             if (this._matobjs != undefined && this._matobjs.indexOf(this) < 0) {
                 this._matobjs.push(this);
-                MEDLEY.showSearchResults(this);
+                MEDLEY.showSearchResults([''], this);
             }
         }.bind(this));
 

@@ -53,11 +53,15 @@ $(document).ready(function () {
 
         var tbSearchQuery = $('#tbSearchQuery');
         tbSearchQuery.width(MEDLEY.WIDTHSEARCHBOX);
+        tbSearchQuery.keyup(function (e) {
+            var queries = $(this).val().split(',');
+            MEDLEY.showSearchResults(queries, undefined)
+        });
 
         MEDLEY._listSearchOutput = $('#listSearchOutput');
         MEDLEY._listSearchOutput.css('background-color', 'rgba(255, 255, 255, 0.5)');
         MEDLEY._listSearchOutput.css('padding', MEDLEY.PADDINGSEARCHRESULTS);
-        MEDLEY.showSearchResults();
+        MEDLEY.showSearchResults([''], undefined);
 
         //
         //  sliders to manipulate embeddables
@@ -133,8 +137,6 @@ $(document).ready(function () {
             var selected = XAC._selecteds.clone();
             for (object of selected) {
                 if (object.embeddable != undefined) {
-                    // log($('#rbInprint').attr('checked'))
-                    // log($('#rbPostprint').attr('checked'))
                     if ($('#rbInprint')[0].checked)
                         MEDLEY.findInPrintInsertion(object.embeddable);
                     else
@@ -149,10 +151,6 @@ $(document).ready(function () {
     });
 
     $(document.body).append(panel);
-
-    // var title = $('<h2 class="ui-widget"><b>MEDLEY</b></h2>');
-    // panel.append(title);
-
 
     XAC.enableDragDrop(function (files) {
         if (MEDLEY._isDialogOpen) return;
@@ -181,13 +179,24 @@ $(document).ready(function () {
 
 });
 
-MEDLEY.showSearchResults = function (matobj) {
+MEDLEY.showSearchResults = function (queries, matobj) {
     var ul = MEDLEY._listSearchOutput;
-    var matobjs = matobj == undefined ? MEDLEY._matobjs : [matobj];
-    for (_matobj of matobjs) {
-        var result = $('<li></li>');
-        result.css('padding', MEDLEY.PADDINGSEARCHRESULTITEM);
-        result.append(_matobj.getInfoCard(result));
-        ul.prepend(result);
+    ul.html('');
+    var matobjs = matobj == undefined ? MEDLEY._matobjs.clone() : [matobj];
+    var shown = [];
+    for (q of queries) {
+        for (_matobj of matobjs) {
+            if (shown.indexOf(_matobj) >= 0) continue;
+            for (property in _matobj._properties) {
+                if (property.startsWith(q)) {
+                    var result = $('<li></li>');
+                    result.css('padding', MEDLEY.PADDINGSEARCHRESULTITEM);
+                    result.append(_matobj.getInfoCard(result));
+                    ul.prepend(result);
+                    shown.push(_matobj);
+                    break;
+                }
+            }
+        }
     }
 }
