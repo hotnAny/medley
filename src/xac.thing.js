@@ -209,7 +209,7 @@ XAC.Cylinder.prototype.update = function (r, h, mat, openEnded) {
 	}
 
 	// TODO: make sure the radius segment is enough for visualization
-	this._g = new THREE.CylinderBufferGeometry(this._r1, this._r2, this._h, 8, 1,
+	this._g = new THREE.CylinderBufferGeometry(this._r1, this._r2, this._h, 32, 1,
 		openEnded);
 	if (this._m == undefined) {
 		this._m = new THREE.Mesh(this._g, mat == undefined ? XAC.MATERIALNORMAL.clone() :

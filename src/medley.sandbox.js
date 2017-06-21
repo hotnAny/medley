@@ -2,7 +2,7 @@ var MEDLEY = MEDLEY || {};
 
 var _fitInfo;
 
-MEDLEY._tempElements = [];
+XAC._tempElements = [];
 
 // XXX
 MEDLEY._matobjSelected = {
@@ -36,7 +36,7 @@ $(document).ready(function () {
         MEDLEY.shiftPressed = false;
     });
     XAC.on(XAC.ESC, function () {
-        for (elm of MEDLEY._tempElements) XAC.scene.remove(elm);
+        for (elm of XAC._tempElements) XAC.scene.remove(elm);
     });
 
     XAC.on('S', function () {
@@ -206,3 +206,9 @@ MEDLEY.getFabReady = function (embeddable) {
 //         }, 100);
 //     }
 // }
+
+XAC.tmpadd = function(mesh) {
+    XAC._tempElements = XAC._tempElements || [];
+    XAC._tempElements.push(mesh);
+    XAC.scene.add(mesh);
+}

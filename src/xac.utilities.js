@@ -121,3 +121,9 @@ XAC.subtract = function (mesh0, mesh1, material) {
 	var csgMesh1 = new ThreeBSP(mesh1);
 	return csgMesh0.subtract(csgMesh1).toMesh(material == undefined ? XAC.MATERIALNORMAL : material);
 }
+
+XAC.intersect = function(mesh0, mesh1, material) {
+	var csgMesh0 = new ThreeBSP(mesh0);
+	var csgMesh1 = new ThreeBSP(mesh1);
+	return csgMesh0.intersect(csgMesh1).toMesh(material == undefined ? XAC.MATERIALNORMAL : material);
+}

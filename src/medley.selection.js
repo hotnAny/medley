@@ -999,12 +999,10 @@ MEDLEY._enableRotationAroundAxis = function (embeddable, info) {
                 var mr = new THREE.Matrix4();
                 mr.makeRotationAxis(axis, angle);
                 MEDLEY._objectToRotate.geometry.applyMatrix(mr);
+                // MEDLEY._objectToRotate._convexHull.geometry.applyMatrix(mr);
 
             }
             MEDLEY._projPrev = proj;
-
-            // XAC.scene.remove(MEDLEY._arrow);
-            // MEDLEY._arrow = addAnArrow(MEDLEY._trackball.m.position, proj, 15, 0x00ff00);
         }
     });
 }

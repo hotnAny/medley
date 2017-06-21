@@ -20,6 +20,22 @@ function rayCast(x, y, objs) {
 }
 
 //
+//
+//
+function getCenter(pts) {
+	var ctr = new THREE.Vector3(0, 0, 0);
+	for (var i = pts.length - 1; i >= 0; i--) {
+		ctr.x += pts[i].x;
+		ctr.y += pts[i].y;
+		ctr.z += pts[i].z;
+	}
+
+	if (pts.length > 0) ctr.multiplyScalar(1.0 / pts.length);
+
+	return ctr;
+}
+
+//
 //	scale an object around its center by factor
 //
 function scaleAroundCenter(obj, factor) {

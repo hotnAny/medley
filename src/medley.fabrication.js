@@ -318,6 +318,13 @@ MEDLEY._searchInPrintUnbendingInsertion = function (embeddable) {
             else mesh.geometry.merge(gettg(m));
         MEDLEY.fixFaces(mesh);
     }
+    var convexGeometry = new THREE.ConvexGeometry(mesh.geometry.vertices);
+    var convexHull = new THREE.Mesh(convexGeometry, XAC.MATERIALCONTRAST.clone());
+    embeddable._meshes.updateMatrixWorld();
+    convexHull.applyMatrix(embeddable._meshes.matrixWorld);
+    XAC.tmpadd(convexHull);
+
+    mesh = convexHull;
     var vertices = mesh.geometry.vertices.clone();
 
     //
@@ -452,24 +459,45 @@ MEDLEY._searchInPrintUnbendingInsertion = function (embeddable) {
     log('min vols: ' + minVols);
 
     var center = embeddable._meshes.position;
-    MEDLEY._tempElements.push(addAnArrow(center, minVolsDirection, 10, 0xff0000));
+    XAC._tempElements.push(addAnArrow(center, minVolsDirection, 10, 0xff0000));
     var cutoff = MEDLEY._generateCutoff(minBboxes, minVolsDirection, center);
 
     //
     // generate cut-off part and align it with the object
     //
     var pausePoint = highestPoint.clone().add(center);
-    var bboxCutoff = XAC.getBoundingBoxEverything(embeddable._object);
+    var bboxObject = XAC.getBoundingBoxEverything(embeddable._object);
     var cutoffTop = XAC.getBoundingBoxMesh(embeddable._object, XAC.MATERIALWIRED);
     cutoffTop.position.copy(pausePoint);
-    cutoffTop.position.y += bboxCutoff.leny / 2;
+    cutoffTop.position.y += bboxObject.leny / 2;
     cutoff = XAC.subtract(cutoff, cutoffTop, XAC.MATERIALWIRED);
-    // XAC.scene.add(cutoffTop);
-    MEDLEY._tempElements.push(cutoffTop);
-    XAC.scene.add(cutoff);
-    MEDLEY._tempElements.push(cutoff);
+    XAC.tmpadd(cutoff);
 
     embeddable._cutoff = cutoff;
+
+    var capMaterial = XAC.MATERIALFOCUS.clone();
+    capMaterial.opacity = 1.0;
+    capMaterial.transparent = false;
+    var capRatio = 0.75;
+    var bboxCutoff = XAC.getBoundingBoxEverything(mesh);
+    cutoffTop.position.y -= bboxCutoff.leny * capRatio;
+    // var convexGeometry = new THREE.ConvexGeometry(mesh.geometry.vertices);
+    // var convexHull = new THREE.Mesh(convexGeometry, XAC.MATERIALCONTRAST.clone());
+    // embeddable._meshes.updateMatrixWorld();
+    // convexHull.applyMatrix(embeddable._meshes.matrixWorld);
+    // XAC.tmpadd(convexHull);
+
+    // var meshBbox = XAC.getBoundingBoxMesh(mesh);
+    XAC.tmpadd(cutoffTop);
+
+    // var cutoffShrunk = cutoff.clone();
+    // scaleAroundCenter(cutoffShrunk, 0.9);
+    var cap = XAC.subtract(cutoff, mesh);
+    cap = XAC.intersect(cap, cutoffTop, capMaterial);
+    XAC.tmpadd(cap);
+    embeddable._cap = cap;
+
+    // XAC.scene.remove(embeddable._object);
 
     //
     //  output pause info
@@ -623,7 +651,7 @@ MEDLEY._searchPostPrintUnbendingInsertion = function (embeddable) {
     log(minAvgDist)
 
     var center = mesh.position.clone().applyMatrix4(embeddable._meshes.matrixWorld);
-    MEDLEY._tempElements.push(addAnArrow(center, minDirection, 15, 0xff0000));
+    XAC._tempElements.push(addAnArrow(center, minDirection, 15, 0xff0000));
 
     embeddable._object.material.side = THREE.FrontSide;
 
@@ -636,8 +664,7 @@ MEDLEY._searchPostPrintUnbendingInsertion = function (embeddable) {
     var bboxes = MEDLEY._getBoundingBoxes(mesh, matrixRotation, MEDLEY.LAYERHEIGHT);
 
     var cutoff = MEDLEY._generateCutoff(bboxes, minDirection, center, minMaxDist);
-    MEDLEY._tempElements.push(cutoff);
-    XAC.scene.add(cutoff);
+    XAC.tmpadd(cutoff);
 
     embeddable._cufoff = cutoff;
 }
@@ -766,10 +793,15 @@ MEDLEY._generateCutoff = function (bboxes, dir, center, maxDist) {
         var t = bbox.max.y - bbox.min.y;
         var l = bbox.max.z - bbox.min.z;
 
+        var r = Math.sqrt(w * w + l * l) / 2;
+
         if (w <= 0 || l <= 0) {
             leftOverBox = bbox;
         } else {
             var box = new XAC.Box(w, t, l, XAC.MATERIALWIRED).m;
+            // var box = new XAC.Cylinder(r, t, XAC.MATERIALWIRED, false).m;
+            if (box.geometry.isBufferGeometry)
+                box.geometry = new THREE.Geometry().fromBufferGeometry(box.geometry);
             box.position.copy(new THREE.Vector3().addVectors(bbox.max, bbox.min).multiplyScalar(0.5));
             layerBoxes.push(box);
             leftOverBox = undefined;
@@ -802,8 +834,7 @@ MEDLEY._digTunnel = function (info, embeddable) {
     if (points.length > 2) {
         var shape = XAC.circularShape(embeddable._matobj._radius, 32);
         embeddable._extraSegments = new XAC.Polyline(shape, points, matTunnel);
-        XAC.scene.add(embeddable._extraSegments.m);
-        MEDLEY._tempElements.push(embeddable._extraSegments.m);
+        XAC.tmpadd(embeddable._extraSegments.m);
     } else {
         log('no extra tunnel required')
     }
