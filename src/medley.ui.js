@@ -181,7 +181,7 @@ $(document).ready(function () {
 
 MEDLEY.showSearchResults = function (queries, matobj) {
     var ul = MEDLEY._listSearchOutput;
-    ul.html('');
+    if (matobj == undefined) ul.html('');
     var matobjs = matobj == undefined ? MEDLEY._matobjs.clone() : [matobj];
     var shown = [];
     for (q of queries) {
