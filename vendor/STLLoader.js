@@ -276,7 +276,7 @@ THREE.EventDispatcher.prototype.apply( THREE.STLLoader.prototype );
 if ( typeof DataView === 'undefined'){
 
 	DataView = function(buffer, byteOffset, byteLength){
-
+g
 		this.buffer = buffer;
 		this.byteOffset = byteOffset || 0;
 		this.byteLength = byteLength || buffer.byteLength || buffer.length;

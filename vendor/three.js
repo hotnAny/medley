@@ -12653,6 +12653,97 @@
 
 	}
 
+	//
+
+	function Int8BufferAttribute( array, itemSize ) {
+
+		BufferAttribute.call( this, new Int8Array( array ), itemSize );
+
+	}
+
+	Int8BufferAttribute.prototype = Object.create( BufferAttribute.prototype );
+	Int8BufferAttribute.prototype.constructor = Int8BufferAttribute;
+
+
+	function Uint8BufferAttribute( array, itemSize ) {
+
+		BufferAttribute.call( this, new Uint8Array( array ), itemSize );
+
+	}
+
+	Uint8BufferAttribute.prototype = Object.create( BufferAttribute.prototype );
+	Uint8BufferAttribute.prototype.constructor = Uint8BufferAttribute;
+
+
+	function Uint8ClampedBufferAttribute( array, itemSize ) {
+
+		BufferAttribute.call( this, new Uint8ClampedArray( array ), itemSize );
+
+	}
+
+	Uint8ClampedBufferAttribute.prototype = Object.create( BufferAttribute.prototype );
+	Uint8ClampedBufferAttribute.prototype.constructor = Uint8ClampedBufferAttribute;
+
+
+	function Int16BufferAttribute( array, itemSize ) {
+
+		BufferAttribute.call( this, new Int16Array( array ), itemSize );
+
+	}
+
+	Int16BufferAttribute.prototype = Object.create( BufferAttribute.prototype );
+	Int16BufferAttribute.prototype.constructor = Int16BufferAttribute;
+
+
+	function Uint16BufferAttribute( array, itemSize ) {
+
+		BufferAttribute.call( this, new Uint16Array( array ), itemSize );
+
+	}
+
+	Uint16BufferAttribute.prototype = Object.create( BufferAttribute.prototype );
+	Uint16BufferAttribute.prototype.constructor = Uint16BufferAttribute;
+
+
+	function Int32BufferAttribute( array, itemSize ) {
+
+		BufferAttribute.call( this, new Int32Array( array ), itemSize );
+
+	}
+
+	Int32BufferAttribute.prototype = Object.create( BufferAttribute.prototype );
+	Int32BufferAttribute.prototype.constructor = Int32BufferAttribute;
+
+
+	function Uint32BufferAttribute( array, itemSize ) {
+
+		BufferAttribute.call( this, new Uint32Array( array ), itemSize );
+
+	}
+
+	Uint32BufferAttribute.prototype = Object.create( BufferAttribute.prototype );
+	Uint32BufferAttribute.prototype.constructor = Uint32BufferAttribute;
+
+
+	function Float32BufferAttribute( array, itemSize ) {
+
+		BufferAttribute.call( this, new Float32Array( array ), itemSize );
+
+	}
+
+	Float32BufferAttribute.prototype = Object.create( BufferAttribute.prototype );
+	Float32BufferAttribute.prototype.constructor = Float32BufferAttribute;
+
+
+	function Float64BufferAttribute( array, itemSize ) {
+
+		BufferAttribute.call( this, new Float64Array( array ), itemSize );
+
+	}
+
+	Float64BufferAttribute.prototype = Object.create( BufferAttribute.prototype );
+	Float64BufferAttribute.prototype.constructor = Float64BufferAttribute;
+
 	/**
 	 * @author mrdoob / http://mrdoob.com/
 	 * @author alteredq / http://alteredqualia.com/
@@ -41429,6 +41520,7 @@
 	exports.LineBasicMaterial = LineBasicMaterial;
 	exports.MaterialIdCount = MaterialIdCount;
 	exports.Material = Material;
+	exports.Float32BufferAttribute = Float32BufferAttribute;
 	exports.CompressedTextureLoader = CompressedTextureLoader;
 	exports.BinaryTextureLoader = BinaryTextureLoader;
 	exports.DataTextureLoader = DataTextureLoader;

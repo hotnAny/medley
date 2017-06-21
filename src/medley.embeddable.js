@@ -60,6 +60,8 @@ MEDLEY.Embeddable = function (object, matobj) {
 
     if (this._dim == 0) {
         this._meshes = new THREE.Object3D();
+        var convexGeometry = new THREE.ConvexGeometry(this._matobj._mesh.geometry.vertices);
+        XAC.scene.add(new THREE.Mesh(convexGeometry, XAC.MATERIALWIRED));
         this._mesh = new THREE.Mesh(this._matobj._mesh.geometry.clone(), this._material);
         this._meshes.add(this._mesh);
         this._makeInteractive();
