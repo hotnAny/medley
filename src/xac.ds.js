@@ -36,7 +36,7 @@ XAC.Sortable.prototype = {
 //
 //
 XAC.Sortable.prototype.insert = function (value) {
-    value = parseFloat((value * 100 | 0).toString()) / 100.0;
+    // value = parseFloat((value * 100 | 0).toString()) / 100.0;
     switch (this._algorithm) {
         case XAC.Sortable.BST:
             var node = this._traverse(value, this._root);
