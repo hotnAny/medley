@@ -431,7 +431,13 @@ MEDLEY.Embeddable.prototype._makeInteractive = function () {
 //
 MEDLEY.Embeddable.prototype.selfDestroy = function () {
     MEDLEY.embeddables.remove(this);
-
+    for (object of XAC._selecteds) {
+        if (object.embeddable == this) {
+            XAC._selecteds.remove(object);
+            break;
+        }
+    }
+    
     var __removeFrom = function (object, parent) {
         for (c of parent.children) {
             if (c == object) {
