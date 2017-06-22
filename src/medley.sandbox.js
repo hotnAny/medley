@@ -173,41 +173,7 @@ MEDLEY.getFabReady = function (embeddable) {
     return meshReady;
 }
 
-//
-//
-//
-// MEDLEY.rotateEverything = function (anglex, anglez, confirmed) {
-//     MEDLEY.everything.rotateX(anglex);
-//     MEDLEY.everything.rotateZ(anglez);
-
-//     if (confirmed) {
-//         setTimeout(function () {
-//             for (emb of MEDLEY.embeddables) {
-//                 if (emb._info == undefined) continue;
-//                 emb._info.object.updateMatrixWorld();
-//                 var matrixWorldOld = emb._info.matrixWorld.clone();
-//                 emb._info.matrixWorld = emb._info.object.matrixWorld.clone();
-//                 var mt = new THREE.Matrix4().getInverse(matrixWorldOld).multiply(emb._info.matrixWorld);
-//                 for (p of emb._info.points) {
-//                     p.applyMatrix4(mt);
-//                 }
-//                 var pointsExtended = [];
-//                 var diagnal = emb._info.maxPoint.distanceTo(emb._info.minPoint);
-//                 for (var i = 0; i < emb._info.points.length; i++) {
-//                     var nml = emb._info.normals[i].clone().applyMatrix4(mt);
-//                     var p = emb._info.points[i].clone().add(nml.multiplyScalar(diagnal));
-//                     pointsExtended.push(p);
-//                     // _balls.remove(addABall(p, 0x00ff00, 0.15));
-//                 }
-//                 emb._info.paramsNormal = XAC.findPlaneToFitPoints(emb._info.points.concat(
-//                     pointsExtended));
-
-//             }
-//         }, 100);
-//     }
-// }
-
-XAC.tmpadd = function(mesh) {
+XAC.tmpadd = function (mesh) {
     XAC._tempElements = XAC._tempElements || [];
     XAC._tempElements.push(mesh);
     XAC.scene.add(mesh);

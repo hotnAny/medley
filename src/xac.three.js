@@ -247,3 +247,29 @@ THREE.Vector3.prototype.applyAxisAngleOnPoint = function(axis, point, angle) {
     this.add(point);
     return this;
 }
+
+
+/
+//
+//
+THREE.Geometry.prototype.computeVolume = function (toUseConvexHull) {
+    if (toUseConvexHull) {
+        // compute convex hull first
+    }
+
+    var sumVolume = 0;
+    for (f of this.faces) {
+        if (f.vertices == undefined) this.assignVerticesToFaces();
+
+        var v1 = f.vertices[0],
+            v2 = f.vertices[1],
+            v3 = f.vertices[2];
+
+        var volume = v1.x * v2.y * v3.z - v2.x * v1.y * v3.z + v3.x * v1.y * v2.z -
+            v1.x * v3.y * v2.z + v2.x * v3.y * v1.z - v3.x * v2.y * v1.z;
+
+        sumVolume += volume;
+    }
+
+    return sumVolume / 6.0;
+}
