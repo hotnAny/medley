@@ -309,85 +309,49 @@ MEDLEY._searchInPrintBendingInsertion = function (embeddable) {
 //  find optimal insertaion direction for embeddable objects (dof=0)
 //
 MEDLEY._searchInPrintUnbendingInsertion = function (embeddable) {
-    var mesh;
-    if (embeddable._dim == 0) {
-        mesh = embeddable._mesh;
-    } else if (embeddable._dim >= 2) {
-        for (m of embeddable._meshes.children)
-            if (mesh == undefined) mesh = new THREE.Mesh(gettg(m), m.material);
-            else mesh.geometry.merge(gettg(m));
-        MEDLEY.fixFaces(mesh);
-    }
-    var convexGeometry = new THREE.ConvexGeometry(mesh.geometry.vertices);
-    var convexHull = new THREE.Mesh(convexGeometry, XAC.MATERIALCONTRAST.clone());
-    embeddable._meshes.updateMatrixWorld();
-    convexHull.applyMatrix(embeddable._meshes.matrixWorld);
-    XAC.tmpadd(convexHull);
+    var mesh = MEDLEY._getConvexIntersection(embeddable);
 
-    mesh = convexHull;
     var vertices = mesh.geometry.vertices.clone();
 
-    //
-    // [internal helper] find the unioned area of polygons (boxes),
-    //  between start and end on the x axis, 
-    //  where xlist is sorted list of polygons' end points
-    //
-    var __findUnionArea = function (start, end, xlist, boxes) {
-        if (boxes.length == 0) return 0;
-        var area = 0;
-        // for each consecutive x pair, find the max/min z coordinates to make a slab
-        for (var i = start; i < end; i++) {
-            var xmin = xlist[i],
-                xmax = xlist[i + 1];
-            var zmin = Number.MAX_VALUE,
-                zmax = -Number.MAX_VALUE;
-            for (box of boxes) {
-                if (box.min.x <= xmin && box.max.x >= xmax) {
-                    zmin = Math.min(zmin, box.min.z);
-                    zmax = Math.max(zmax, box.max.z);
-                }
-            }
-
-            if (zmin == Number.MAX_VALUE || zmax == Number.MIN_VALUE) area += 0;
-            else area += (xmax - xmin) * (zmax - zmin);
-        }
-        return area;
-    }
-
-    // higest point and normal, which is where the print will pause for insertation
-    var yUp = new THREE.Vector3(0, 1, 0);
     var highestPoint = new THREE.Vector3(0, -Number.MAX_VALUE, 0);
     for (v of vertices) highestPoint = highestPoint.y < v.y ? v.clone() : highestPoint;
-    var highestNormal = yUp.clone();
-    // _balls.remove(addABall(highestPoint, 0xff0000, 2.5))
+    var highestNormal = MEDLEY.YUP.clone();
 
     //
     //  a step-wise search for minimum extra cut-off space in order to insert the embeddable
     //
     var minInsertionAngle = 45 * Math.PI / 180; // don't insert at lower than this angle
+    var dh = MEDLEY.LAYERHEIGHT * 10;
     var step = 15 * Math.PI / 180; // search step
     var phiStep = step / 3;
-    // var thetaStep = step * 2;
+    var thetaStep = step;
     var minVols = Number.MAX_VALUE; // to keep track of min overall cut-off volumes
     var minVolsDirection = undefined; // the corresponding insertion direction
-    var minBboxes = undefined; // the corresponding boxes that encapsualte the object
+    // var minBboxes = undefined; // the corresponding boxes that encapsualte the object
+    var visitedDirections = [];
 
-    var sqrt2 = Math.sqrt(2);
-    var kk = sqrt2 * (Math.PI * 2 - step) / (sqrt2 - 1);
-    var bb = 2 * Math.PI - kk;
+    time();
     for (var phi = minInsertionAngle; phi <= Math.PI / 2; phi += phiStep) {
-        var x = Math.sin(phi);
-        var thetaStep = kk * x + bb;
-        log([x, thetaStep])
         for (var theta = 0; theta < Math.PI * 2; theta += thetaStep) {
-            time();
+
             var dirInsertion = new THREE.Vector3(Math.sin(theta) * Math.cos(phi),
                 Math.sin(phi), Math.cos(theta) * Math.cos(phi)).normalize();
 
+            var tooClose = false;
+            for (dir of visitedDirections) {
+                if (dir.angleTo(dirInsertion) < step / 2) {
+                    tooClose = true;
+                    break;
+                }
+            }
+            if (tooClose) continue;
+
+            visitedDirections.push(dirInsertion);
+
             // matrix to rotate things towards the insertion direction
             var matrixRotation = new THREE.Matrix4();
-            var angleToRotate = -yUp.angleTo(dirInsertion);
-            var axisToRotate = new THREE.Vector3().crossVectors(yUp, dirInsertion).normalize();
+            var angleToRotate = -MEDLEY.YUP.angleTo(dirInsertion);
+            var axisToRotate = new THREE.Vector3().crossVectors(MEDLEY.YUP, dirInsertion).normalize();
             matrixRotation.makeRotationAxis(axisToRotate, angleToRotate);
 
             // the transformed highest point and normal
@@ -400,36 +364,13 @@ MEDLEY._searchInPrintUnbendingInsertion = function (embeddable) {
                 _c = ceilingPlane.C,
                 _d = ceilingPlane.D;
 
-            // layer height
-            var dh = MEDLEY.LAYERHEIGHT; // / Math.cos(angleToRotate * Math.PI / 180);
+            var bboxes = MEDLEY._getBoundingBoxes(mesh, dirInsertion, dh);
 
-            var bboxes = MEDLEY._getBoundingBoxes(mesh, matrixRotation, dh);
-
-            //
-            // compute the volume of cut-off
-            // the area of each layer (box) is a union of itself and all the previous layers'
-            // the volume of each layer is its area times h, 
-            //      where h is the distance from the layer's center to the ceiling plane (see above)
-            // to compute the overall volumes without redundantly adding overlapping volumes:
-            //  1. compute the effective area of each layer (box), where a is individual area
-            //      ea_i = U(a_0, ... , a_i) - U(a_0, ...,  a_i-1)
-            //  2. V = âˆ‘ea_i * h_i
-            //
             var sumVols = 0;
             var bboxesPrev = [];
             var schedule = new XAC.Sortable(XAC.Sortable.INSERTION);
             for (var i = 0; i < bboxes.length; i++) {
                 var bbox = bboxes[i];
-                var start = schedule.insert(bbox.min.x);
-                var end = schedule.insert(bbox.max.x);
-                var xlist = schedule.getSortedList();
-
-                var area = __findUnionArea(start, end, xlist, bboxesPrev);
-                bboxesPrev.push(bbox);
-                var areaNew = __findUnionArea(start, end, xlist, bboxesPrev);
-
-                areaNew -= area;
-
                 var center = new THREE.Vector3().addVectors(bbox.min, bbox.max).divideScalar(2);
                 var ymax = bbox.max.y;
                 if (_b != 0) {
@@ -440,64 +381,56 @@ MEDLEY._searchInPrintUnbendingInsertion = function (embeddable) {
                     bbox.max.y = Math.max(bbox.min.y + dh, Math.max(y1, y2));
                 }
 
-                var vol = areaNew * (ymax - bbox.min.y);
-                sumVols += vol;
             }
+
+            var cutoff = MEDLEY._generateCutoff(bboxes, dirInsertion, embeddable._meshes.position);
+            sumVols = cutoff == undefined ? 0 : cutoff.geometry.computeVolume();
 
             if (sumVols < minVols) {
                 minVols = sumVols;
                 minVolsDirection = dirInsertion;
-                minBboxes = bboxes;
+                // minBboxes = bboxes;
 
-                time('theta: ' + ((theta / Math.PI * 180) | 0) +
-                    ', phi: ' + ((phi / Math.PI * 180) | 0) +
-                    ', vol: ' + XAC.trim(sumVols, 0));
+                log(minVolsDirection.toArray().trim(3).concat(XAC.trim(sumVols, 3)));
             }
         }
     }
 
-    log('min vols: ' + minVols);
+    time('searched for optimal insertion direction')
 
-    var center = embeddable._meshes.position;
-    XAC._tempElements.push(addAnArrow(center, minVolsDirection, 10, 0xff0000));
-    var cutoff = MEDLEY._generateCutoff(minBboxes, minVolsDirection, center);
-
-    //
+     //
     // generate cut-off part and align it with the object
     //
+    log('generating finer-grained cut-off geometry ...')
+    var center = embeddable._meshes.position;
+    var minBboxes = MEDLEY._getBoundingBoxes(mesh, minVolsDirection, MEDLEY.LAYERHEIGHT);
+    var cutoff = MEDLEY._generateCutoff(minBboxes, minVolsDirection, center);
+   
     var pausePoint = highestPoint.clone().add(center);
     var bboxObject = XAC.getBoundingBoxEverything(embeddable._object);
     var cutoffTop = XAC.getBoundingBoxMesh(embeddable._object, XAC.MATERIALWIRED);
     cutoffTop.position.copy(pausePoint);
     cutoffTop.position.y += bboxObject.leny / 2;
     cutoff = XAC.subtract(cutoff, cutoffTop, XAC.MATERIALWIRED);
+    XAC._tempElements.push(addAnArrow(cutoff.position, minVolsDirection, 10, 0xff0000));
     XAC.tmpadd(cutoff);
-
+    time('done!')
+    
     embeddable._cutoff = cutoff;
 
+    log('generating cap ...')
     var capMaterial = XAC.MATERIALFOCUS.clone();
     capMaterial.opacity = 1.0;
     capMaterial.transparent = false;
     var capRatio = 0.75;
     var bboxCutoff = XAC.getBoundingBoxEverything(mesh);
     cutoffTop.position.y -= bboxCutoff.leny * capRatio;
-    // var convexGeometry = new THREE.ConvexGeometry(mesh.geometry.vertices);
-    // var convexHull = new THREE.Mesh(convexGeometry, XAC.MATERIALCONTRAST.clone());
-    // embeddable._meshes.updateMatrixWorld();
-    // convexHull.applyMatrix(embeddable._meshes.matrixWorld);
-    // XAC.tmpadd(convexHull);
 
-    // var meshBbox = XAC.getBoundingBoxMesh(mesh);
-    XAC.tmpadd(cutoffTop);
-
-    // var cutoffShrunk = cutoff.clone();
-    // scaleAroundCenter(cutoffShrunk, 0.9);
     var cap = XAC.subtract(cutoff, mesh);
     cap = XAC.intersect(cap, cutoffTop, capMaterial);
-    XAC.tmpadd(cap);
+    // XAC.tmpadd(cap);
+    time('done!')
     embeddable._cap = cap;
-
-    // XAC.scene.remove(embeddable._object);
 
     //
     //  output pause info
@@ -520,9 +453,8 @@ MEDLEY._searchPostPrintBendingInsertion = function (p, v, embeddable) {
     // find a set of potential centers
     var centers = [];
     var nsteps = 36;
-    var yUp = new THREE.Vector3(0, 1, 0);
-    var angle = yUp.angleTo(v);
-    var axis = yUp.clone().cross(v);
+    var angle = MEDLEY.YUP.angleTo(v);
+    var axis = MEDLEY.YUP.clone().cross(v);
     var tunnelStep = 5 * Math.PI / 180;
     var rayCaster = new THREE.Raycaster();
     var eps = 10e-3;
@@ -565,9 +497,7 @@ MEDLEY._searchPostPrintBendingInsertion = function (p, v, embeddable) {
                 }
             }
             p0 = p1;
-
         }
-        // break;
     }
 
     return info;
@@ -577,103 +507,110 @@ MEDLEY._searchPostPrintBendingInsertion = function (p, v, embeddable) {
 //
 //
 MEDLEY._searchPostPrintUnbendingInsertion = function (embeddable) {
-    var mesh;
-    if (embeddable._dim == 0) {
-        mesh = embeddable._mesh;
-    } else if (embeddable._dim >= 2) {
-        for (m of embeddable._meshes.children)
-            if (mesh == undefined) mesh = new THREE.Mesh(gettg(m), m.material.clone());
-            else mesh.geometry.merge(gettg(m));
-        MEDLEY.fixFaces(mesh);
-    }
-
-    var tg = mesh.geometry.clone();
-    tg.computeFaceNormals();
-    tg.computeCentroids();
-
-    // var vertices = mesh.geometry.vertices.clone();
-    var faces = tg.faces.clone();
-    embeddable._meshes.updateMatrixWorld();
-    var center = new THREE.Vector3();
-    for (f of faces) {
-        f.centroid.applyMatrix4(embeddable._meshes.matrixWorld);
-        center.add(f.centroid);
-    }
-    center.divideScalar(faces.length);
+    var mesh = MEDLEY._getConvexIntersection(embeddable);
 
     var step = 15 * Math.PI / 180; // search step
+    var phiStep = step;
     var rayCaster = new THREE.Raycaster();
-    var minAvgDist = Number.MAX_VALUE;
-    var minDirection;
     var minMaxDist = 0;
     var eps = 1e-4;
-    var lambda = 0.1;
+    var dh = MEDLEY.LAYERHEIGHT * 10; // layer height
+    var minVols = Number.MAX_VALUE; // to keep track of min overall cut-off volumes
+    var minVolsDirection = undefined; // the corresponding insertion direction
+    // var minBboxes = undefined; // the corresponding boxes that encapsualte the object
+    var minCutoff = undefined;
+    // var kk = Math.PI * 2 - step;
+    // var bb = step;
+    var angleToRotate = MEDLEY.YUP.angleTo(embeddable._info.normal);
+    var axisToRotate = new THREE.Vector3().crossVectors(MEDLEY.YUP, embeddable._info.normal).normalize();
+    var visitedDirections = [];
 
     time();
-    var alpha = 0; // Math.PI * Math.random();
-    var beta = 0; // Math.PI * Math.random();
-    for (var theta = alpha; theta < Math.PI * 2 + alpha; theta += step) {
-        for (var phi = beta; phi < 2 * Math.PI + beta; phi += step) {
+    for (var phi = Math.PI / 2; phi >= -Math.PI / 2; phi -= phiStep) {
+        var x = Math.abs(Math.sin(phi));
+        var thetaStep = phiStep;
+        for (var theta = 0; theta < Math.PI * 2; theta += thetaStep) {
             var dirInsertion = new THREE.Vector3(Math.sin(theta) * Math.cos(phi),
-                Math.sin(phi), Math.cos(theta) * Math.cos(phi)).normalize();
+                Math.sin(phi), Math.cos(theta) * Math.cos(phi));
 
-            var avgDistToInsertionPoint = 0;
-            var ncounted = 0;
+            dirInsertion.applyAxisAngle(axisToRotate, angleToRotate).normalize();
+
+            // if (minVolsDirection != undefined && dirInsertion.angleTo(minVolsDirection) < step / 2) continue
+            var tooClose = false;
+            for (dir of visitedDirections) {
+                if (dir.angleTo(dirInsertion) < step / 2) {
+                    tooClose = true;
+                    break;
+                }
+            }
+            if (tooClose) continue;
+
+            visitedDirections.push(dirInsertion);
+
+            var angleToRotate = -MEDLEY.YUP.angleTo(dirInsertion);
+            var axisToRotate = new THREE.Vector3().crossVectors(MEDLEY.YUP, dirInsertion).normalize();
+
+            var bboxes = MEDLEY._getBoundingBoxes(mesh, dirInsertion, dh);
+
+            var sumVols = 0;
             var maxDist = 0;
-            for (f of faces) {
-                var v = f.centroid;
-                // _balls.remove(addABall(v, 0x00ff00, 0.2));
-                rayCaster.ray.set(v, dirInsertion);
+            var sumVolsInfo = [];
+            for (var i = 0; i < bboxes.length; i++) {
+                var bbox = bboxes[i];
+                var center = new THREE.Vector3().addVectors(bbox.min, bbox.max).divideScalar(2);
+                center.y = bbox.min.y;
+                var centerOriginal = center.clone().applyAxisAngle(axisToRotate, -angleToRotate)
+                    .add(mesh.position);
+                rayCaster.ray.set(centerOriginal, dirInsertion);
                 embeddable._object.material.side = THREE.DoubleSide;
                 var hitsDouble = rayCaster.intersectObjects([embeddable._object]);
                 embeddable._object.material.side = THREE.BackSide;
                 var hitsBack = rayCaster.intersectObjects([embeddable._object]);
                 if (hitsDouble.length > 0 && hitsBack.length > 0 &&
                     Math.abs(hitsDouble[0].distance - hitsBack[0].distance) < eps) {
-                    avgDistToInsertionPoint += hitsBack[0].distance;
                     maxDist = Math.max(maxDist, hitsBack[0].distance);
+
+                    bbox.max.y = bbox.min.y + Math.max(bbox.max.y - bbox.min.y, hitsBack[0].distance);
                 }
-                ncounted++;
-
-                if (avgDistToInsertionPoint * 2 / faces.length > minAvgDist) break;
             }
-            avgDistToInsertionPoint /= ncounted;
 
-            if (avgDistToInsertionPoint > 0 && avgDistToInsertionPoint + eps < minAvgDist) {
-                minAvgDist = avgDistToInsertionPoint;
-                minDirection = dirInsertion.clone();
+            var cutoff = MEDLEY._generateCutoff(bboxes, dirInsertion, embeddable._meshes.position);
+            sumVols = cutoff == undefined ? 0 : cutoff.geometry.computeVolume();
+
+            if (sumVols < minVols) {
+                minVols = sumVols;
+                minVolsDirection = dirInsertion;
                 minMaxDist = maxDist;
-                log(minDirection.toArray().trim(3).concat(XAC.trim(avgDistToInsertionPoint, 3)));
+
+                log(minVolsDirection.toArray().trim(3).concat(XAC.trim(sumVols, 3)));
             }
+            // break;
         }
+        // break;
     }
     time('searched for closest insertion point')
-    log(minAvgDist)
 
-    var center = mesh.position.clone().applyMatrix4(embeddable._meshes.matrixWorld);
-    XAC._tempElements.push(addAnArrow(center, minDirection, 15, 0xff0000));
+    log('generating finer-grained cut-off geometry ...')
+    // var center = mesh.position.clone().applyMatrix4(embeddable._meshes.matrixWorld);
+    var center = embeddable._meshes.position;
+    XAC._tempElements.push(addAnArrow(embeddable._info.center, minVolsDirection, 15, 0xff0000));
 
     embeddable._object.material.side = THREE.FrontSide;
 
-    // generate and cut off space for insertion
-    var yUp = new THREE.Vector3(0, 1, 0);
-    var matrixRotation = new THREE.Matrix4();
-    var angleToRotate = -yUp.angleTo(minDirection);
-    var axisToRotate = new THREE.Vector3().crossVectors(yUp, minDirection).normalize();
-    matrixRotation.makeRotationAxis(axisToRotate, angleToRotate);
-    var bboxes = MEDLEY._getBoundingBoxes(mesh, matrixRotation, MEDLEY.LAYERHEIGHT);
+    var minBboxes = MEDLEY._getBoundingBoxes(mesh, minVolsDirection, MEDLEY.LAYERHEIGHT);
+    var minCutoff = MEDLEY._generateCutoff(minBboxes, minVolsDirection, center); //, minMaxDist);
+    time('done!')
 
-    var cutoff = MEDLEY._generateCutoff(bboxes, minDirection, center, minMaxDist);
-    XAC.tmpadd(cutoff);
+    XAC.tmpadd(minCutoff);
 
-    embeddable._cufoff = cutoff;
+    embeddable._cufoff = minCutoff;
 }
 
 //
 //  get many boxes to bound each layer (height: dh) of the mesh 
 //  once its rotated with the matrix
 //
-MEDLEY._getBoundingBoxes = function (mesh, matrixRotation, dh) {
+MEDLEY._getBoundingBoxes = function (mesh, dir, dh) {
     //
     //  [internal helper] update a bounding box with a new point
     //
@@ -683,7 +620,13 @@ MEDLEY._getBoundingBoxes = function (mesh, matrixRotation, dh) {
         bboxes[idx].max.x = Math.max(bboxes[idx].max.x, v.x);
         bboxes[idx].max.z = Math.max(bboxes[idx].max.z, v.z);
         bboxes[idx].updated = true;
+        bboxes[idx].vertices.push(v);
     }
+
+    var matrixRotation = new THREE.Matrix4();
+    var angleToRotate = -MEDLEY.YUP.angleTo(dir);
+    var axisToRotate = new THREE.Vector3().crossVectors(MEDLEY.YUP, dir).normalize();
+    matrixRotation.makeRotationAxis(axisToRotate, angleToRotate);
 
     var rayCaster = new THREE.Raycaster();
     var inflation = 1; // making the boxes slightly larger
@@ -694,7 +637,8 @@ MEDLEY._getBoundingBoxes = function (mesh, matrixRotation, dh) {
     tg.computeBoundingBox();
     var minHeight = tg.boundingBox.min.y;
     var maxHeight = tg.boundingBox.max.y;
-    var nlevels = ((maxHeight - minHeight) / dh + 1) | 0;
+    var nlevels = Math.max(MEDLEY.MINNUMBEROFBOUNDINGLAYERS, ((maxHeight - minHeight) / dh + 1) | 0);
+    dh = (maxHeight - minHeight) / nlevels;
 
     // scan the object's vertices, put them into different layers
     var bboxes = [];
@@ -703,7 +647,8 @@ MEDLEY._getBoundingBoxes = function (mesh, matrixRotation, dh) {
             min: new THREE.Vector3(Number.MAX_VALUE, minHeight + i * dh, Number.MAX_VALUE),
             max: new THREE.Vector3(-Number.MAX_VALUE, minHeight + (i + 1) * dh, -Number.MAX_VALUE),
             _ymax: minHeight + (i + 1) * dh,
-            updated: false
+            updated: false,
+            vertices: []
         });
     }
 
@@ -726,12 +671,14 @@ MEDLEY._getBoundingBoxes = function (mesh, matrixRotation, dh) {
             // console.warn('missed bbox at layer #' + j)
             var k = j - 1;
             while (k >= 0 && !bboxes[k].updated) k--;
-            __updateBbox(bboxes, j, bboxes[k].min);
-            __updateBbox(bboxes, j, bboxes[k].max);
+            for (u of bboxes[k].vertices) __updateBbox(bboxes, j, u);
+            // __updateBbox(bboxes, j, bboxes[k].min);
+            // __updateBbox(bboxes, j, bboxes[k].max);
             k = j + 1;
             while (k < bboxes.length && !bboxes[k].updated) k++;
-            __updateBbox(bboxes, j, bboxes[k].min);
-            __updateBbox(bboxes, j, bboxes[k].max);
+            for (u of bboxes[k].vertices) __updateBbox(bboxes, j, u);
+            // __updateBbox(bboxes, j, bboxes[k].min);
+            // __updateBbox(bboxes, j, bboxes[k].max);
         }
 
         var bboxCenter = new THREE.Vector3().addVectors(box.min, box.max).divideScalar(2);
@@ -773,42 +720,38 @@ MEDLEY._generateCutoff = function (bboxes, dir, center, maxDist) {
     // assembling the boxes
     //
     var matrixRotation = new THREE.Matrix4();
-    var yUp = new THREE.Vector3(0, 1, 0);
-    var angleToRotate = yUp.angleTo(dir);
-    var axisToRotate = new THREE.Vector3().crossVectors(yUp, dir).normalize();
+    var angleToRotate = MEDLEY.YUP.angleTo(dir);
+    var axisToRotate = new THREE.Vector3().crossVectors(MEDLEY.YUP, dir).normalize();
     matrixRotation.makeRotationAxis(axisToRotate, angleToRotate);
     var layerBoxes = [];
     var __material = XAC.MATERIALFOCUS.clone();
 
     var leftOverBox;
+    var verticesAccumulated = [];
     for (bbox of bboxes) {
         if (maxDist != undefined) bbox.max.y += maxDist;
 
-        if (leftOverBox != undefined) {
-            bbox.max.y = Math.max(bbox.max.y, leftOverBox.max.y);
-            bbox.min.y = Math.min(bbox.min.y, leftOverBox.min.y);
+        verticesAccumulated = verticesAccumulated.concat(bbox.vertices);
+
+        var verticesVolume = [];
+        for (v of verticesAccumulated) {
+            var vbottom = v.clone();
+            vbottom.y = bbox.min.y;
+            verticesVolume.push(vbottom);
+
+            var vtop = v.clone();
+            vtop.y = bbox.max.y;
+            verticesVolume.push(vtop);
         }
 
-        var w = bbox.max.x - bbox.min.x;
-        var t = bbox.max.y - bbox.min.y;
-        var l = bbox.max.z - bbox.min.z;
-
-        var r = Math.sqrt(w * w + l * l) / 2;
-
-        if (w <= 0 || l <= 0) {
-            leftOverBox = bbox;
-        } else {
-            var box = new XAC.Box(w, t, l, XAC.MATERIALWIRED).m;
-            // var box = new XAC.Cylinder(r, t, XAC.MATERIALWIRED, false).m;
-            if (box.geometry.isBufferGeometry)
-                box.geometry = new THREE.Geometry().fromBufferGeometry(box.geometry);
-            box.position.copy(new THREE.Vector3().addVectors(bbox.max, bbox.min).multiplyScalar(0.5));
-            layerBoxes.push(box);
-            leftOverBox = undefined;
-        }
+        var convexGeometry = new THREE.ConvexGeometry(verticesVolume);
+        var convexHull = new THREE.Mesh(convexGeometry, XAC.MATERIALWIRED.clone());
+        layerBoxes.push(convexHull);
 
         if (maxDist != undefined) bbox.max.y -= maxDist;
     }
+
+    if (layerBoxes.length <= 0) return;
 
     var cutoff = __unionAndTransform(layerBoxes, center, axisToRotate, angleToRotate, XAC.MATERIALWIRED);
 
@@ -870,4 +813,51 @@ MEDLEY._getBoundingBox = function (object3d) {
     }
 
     return bbox;
+}
+
+//
+// [internal helper] find the unioned area of polygons (boxes),
+//  between start and end on the x axis, 
+//  where xlist is sorted list of polygons' end points
+//
+var __findUnionArea = function (start, end, xlist, boxes) {
+    if (boxes.length == 0) return 0;
+    var area = 0;
+    // for each consecutive x pair, find the max/min z coordinates to make a slab
+    for (var i = start; i < end; i++) {
+        var xmin = xlist[i],
+            xmax = xlist[i + 1];
+        var zmin = Number.MAX_VALUE,
+            zmax = -Number.MAX_VALUE;
+        for (box of boxes) {
+            if (box.min.x <= xmin && box.max.x >= xmax) {
+                zmin = Math.min(zmin, box.min.z);
+                zmax = Math.max(zmax, box.max.z);
+            }
+        }
+
+        if (zmin == Number.MAX_VALUE || zmax == Number.MIN_VALUE) area += 0;
+        else area += (xmax - xmin) * (zmax - zmin);
+    }
+    return area;
+}
+
+MEDLEY._getConvexIntersection = function (embeddable) {
+    var mesh;
+    if (embeddable._dim == 0) {
+        mesh = embeddable._mesh;
+    } else if (embeddable._dim >= 2) {
+        for (m of embeddable._meshes.children)
+            if (mesh == undefined) mesh = new THREE.Mesh(gettg(m), m.material.clone());
+            else mesh.geometry.merge(gettg(m));
+        // MEDLEY.fixFaces(mesh);
+    }
+
+    var convexGeometry = new THREE.ConvexGeometry(mesh.geometry.vertices);
+    embeddable._meshes.updateMatrixWorld();
+    var convexHull = new THREE.Mesh(convexGeometry, XAC.MATERIALFOCUS.clone());
+    convexHull.applyMatrix(embeddable._meshes.matrixWorld);
+    mesh = XAC.intersect(convexHull, embeddable._object);
+
+    return mesh;
 }
