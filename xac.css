@@ -48,5 +48,5 @@ img {
 	max-height: 128px;
 	overflow-y: scroll;
 	overflow-x: hidden;
-	font-size: x-small;
+	/*font-size: x-small;*/
 }

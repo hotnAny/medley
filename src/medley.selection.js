@@ -897,10 +897,10 @@ MEDLEY._select3dStrip = function (embeddable, info, width, isLite) {
         'control faces don\'t match!');
 
     // fit control points to material's bend radius
-    if (embeddable._dim == 2) {
-        MEDLEY.fit2dBendRadius(embeddable._faces0, embeddable.bendRadius, false);
-        MEDLEY.fit2dBendRadius(embeddable._faces1, embeddable.bendRadius, false);
-    }
+    // if (embeddable._dim == 2) {
+    //     MEDLEY.fit2dBendRadius(embeddable._faces0, embeddable.bendRadius, false);
+    //     MEDLEY.fit2dBendRadius(embeddable._faces1, embeddable.bendRadius, false);
+    // }
 
     // generate geometry
     embeddable._generate3dGeometry();
