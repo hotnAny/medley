@@ -60,6 +60,8 @@ MEDLEY.MAXTHICKNESS = 10;
 //  fab related
 //
 MEDLEY.LAYERHEIGHT = 0.2; // mm
+MEDLEY.MINNUMBEROFBOUNDINGLAYERS = 8;
+const MEDLEY.YUP = new THREE.Vector3(0, 1, 0);
 
 //
 //  ui related
