@@ -52,13 +52,14 @@ MEDLEY.MatObj.prototype.getInfoCard = function (parent) {
     this._cardParent = parent;
 
     var card = $('<div class="w3-panel w3-card"></div>');
+    card.css('min-height', MEDLEY.MINHEIGHTINFOCARD);
     var tblCard = $('<table border="0"></table>');
     tblCard.css('width', '100%');
     var trCard = $('<tr></tr>');
 
     var tdThumbnail = $('<td></td>');
     var thumbnail = $('<img src="' + this._imgSrc + '"></img>');
-    thumbnail.width(MEDLEY.WIDTHSEARCHRESULTITEM);
+    thumbnail.width(MEDLEY.WIDTHSEARCHTHUMBNAIL);
     tdThumbnail.append(thumbnail);
 
     trCard.append(tdThumbnail);

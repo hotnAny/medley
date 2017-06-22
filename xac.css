@@ -11,7 +11,7 @@ h2 {
 
 .tbpanel {
 	table-layout: fixed;
-	border-spacing: 5px;
+	border-spacing: 2px;
 }
 
 .tblsliders {
@@ -29,12 +29,24 @@ ul {
 	list-style: none;
 	overflow-y: scroll;
 	overflow-x: hidden;
-	min-height: 480px;
-	max-height: 480px;
+	min-height: 400;
+	max-height: 400;
 }
 
 img {
 	border-radius: 10px;
 	display: block;
 	width: 100%;
+	opacity: 0.85;
+}
+
+#taInfo {
+	background-color: rgba(192, 192, 192, 0.5);
+	width: 100%;
+	border: 0px;
+	min-height: 128px;
+	max-height: 128px;
+	overflow-y: scroll;
+	overflow-x: hidden;
+	font-size: x-small;
 }

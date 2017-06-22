@@ -37,20 +37,19 @@ MEDLEY.onStlLoaded = function (object) {
     // geometry processing
     //
     if (object.geometry.isBufferGeometry) {
-        time();
         object.geometry = new THREE.Geometry().fromBufferGeometry(object.geometry);
-        time('[loading object] buffergeometry converted');
+        MEDLEY.showInfo('[loading object] buffergeometry converted');
     }
 
     object.geometry.center();
 
     object.geometry.computeFaceNormals();
     object.geometry.computeVertexNormals();
-    time('[loading object] computed normals');
+    MEDLEY.showInfo('[loading object] computed normals');
     object.geometry.computeCentroids();
-    time('[loading object] computed centroid');
+    MEDLEY.showInfo('[loading object] computed centroid');
     object.geometry.assignVerticesToFaces();
-    time('[loading object] assigned vertices to faces');
+    MEDLEY.showInfo('[loading object] assigned vertices to faces');
 
     //
     //  octree
@@ -65,12 +64,12 @@ MEDLEY.onStlLoaded = function (object) {
         useFaces: true
     });
     XAC.octree.update();
-    time('[loading object] added object to octree');
+    MEDLEY.showInfo('[loading object] added object to octree');
     XAC.octree.setVisibility(false);
 
 
     object.geometry.createNeighborList(XAC.octree);
-    time('[loading object] created neighbor list for each face');
+    MEDLEY.showInfo('[loading object] created neighbor list for each face');
 
 
     //

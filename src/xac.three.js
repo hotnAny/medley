@@ -249,7 +249,7 @@ THREE.Vector3.prototype.applyAxisAngleOnPoint = function(axis, point, angle) {
 }
 
 
-/
+//
 //
 //
 THREE.Geometry.prototype.computeVolume = function (toUseConvexHull) {

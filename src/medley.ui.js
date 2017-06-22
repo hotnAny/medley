@@ -146,7 +146,13 @@ $(document).ready(function () {
         });
 
         $('#rbInprint').attr('checked', 'true');
-        $('#btnExport').button();
+
+        //
+        //  info area
+        //
+        $('#taInfo').attr('disabled', 'disabled');
+        MEDLEY.showInfo('Welcome to Medley!')
+        // $('#btnExport').button();
 
     });
 
@@ -179,6 +185,9 @@ $(document).ready(function () {
 
 });
 
+//
+//
+//
 MEDLEY.showSearchResults = function (queries, matobj) {
     var ul = MEDLEY._listSearchOutput;
     if (matobj == undefined) ul.html('');
@@ -199,4 +208,14 @@ MEDLEY.showSearchResults = function (queries, matobj) {
             }
         }
     }
+}
+
+//
+//
+//
+MEDLEY.showInfo = function (msg) {
+    var timeNow = new Date().toJSON().substring(0,19).replace('T',' ');
+    $('#taInfo').append(timeNow + ' ' + msg + '\n');
+    $('#taInfo').scrollTop($('#taInfo')[0].scrollHeight);
+    // log($('#taInfo')[0].scrollHeight)
 }
