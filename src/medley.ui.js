@@ -181,6 +181,19 @@ $(document).ready(function () {
         }
     });
 
+    // hide embeddable
+    XAC.on('H', function () {
+        var selected = XAC._selecteds.clone();
+        for (object of selected) {
+            if (object.embeddable != undefined && !object.embeddable._removed) {
+                if (XAC.scene.children.indexOf(object.embeddable._meshes) >= 0)
+                    XAC.scene.remove(object.embeddable._meshes);
+                else XAC.scene.add(object.embeddable._meshes);
+            }
+
+        }
+    });
+
     return;
 
 });

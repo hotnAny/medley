@@ -38,7 +38,6 @@ $(document).ready(function () {
     XAC.on(XAC.ESC, function () {
         for (elm of XAC._tempElements) XAC.scene.remove(elm);
     });
-
     XAC.on('S', function () {
         var embeddable = MEDLEY.embeddables.last();
         time();
