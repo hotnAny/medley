@@ -183,12 +183,14 @@ $(document).ready(function () {
 
     // hide embeddable
     XAC.on('H', function () {
-        var selected = XAC._selecteds.clone();
-        for (object of selected) {
-            if (object.embeddable != undefined && !object.embeddable._removed) {
-                if (XAC.scene.children.indexOf(object.embeddable._meshes) >= 0)
-                    XAC.scene.remove(object.embeddable._meshes);
-                else XAC.scene.add(object.embeddable._meshes);
+        for (embeddable of MEDLEY.embeddables) {
+            // var selected = XAC._selecteds.clone();
+            // for (object of selected) {
+            if (embeddable != undefined && !embeddable._removed) {
+                // if (XAC.scene.children.indexOf(embeddable._meshes) >= 0)
+                //     XAC.scene.remove(embeddable._meshes);
+                // else XAC.scene.add(embeddable._meshes);
+                embeddable._meshes.visible = !embeddable._meshes.visible;
             }
 
         }
@@ -227,7 +229,8 @@ MEDLEY.showSearchResults = function (queries, matobj) {
 //
 //
 MEDLEY.showInfo = function (msg) {
-    var timeNow = new Date().toJSON().substring(0,19).replace('T',' ');
+    log(msg);
+    var timeNow = new Date().toLocaleTimeString(); //toJSON().substring(0,19).replace('T',' ');
     $('#taInfo').append(timeNow + ' ' + msg + '\n');
     $('#taInfo').scrollTop($('#taInfo')[0].scrollHeight);
 }

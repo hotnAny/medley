@@ -61,7 +61,7 @@ MEDLEY.fit1dBendRadius = function (info, points, r) {
         }
     }
 
-    console.info('fit after ' + nitr + ' iterations');
+    MEDLEY.showInfo('fit after ' + nitr + ' iterations');
 }
 
 //
@@ -107,7 +107,7 @@ MEDLEY.fixFaces = function (mesh) {
 
     for (face of toRemove) geometry.faces.remove(face);
 
-    log(toRemove.length + ' faces removed');
+    MEDLEY.showInfo(toRemove.length + ' faces removed');
 
     // mesh.geometry.computeFaceNormals();
     geometry.normalsNeedUpdate = true;
@@ -291,7 +291,7 @@ MEDLEY._searchInPrintBendingInsertion = function (embeddable) {
     // if (embeddable.extra.children.length > 0) {
     //     XAC.scene.add(embeddable.extra);
     // } else {
-    //     log('no extra tunnel required')
+    //     MEDLEY.showInfo('no extra tunnel required')
     // }
 
     //
@@ -300,7 +300,7 @@ MEDLEY._searchInPrintBendingInsertion = function (embeddable) {
     var nlayers = (bbox.max.y - bbox.min.y) / MEDLEY.LAYERHEIGHT;
     var percPause = (info.q.y - bbox.min.y) / (bbox.max.y - bbox.min.y);
     var layerPause = (nlayers * percPause - 0.5) | 0;
-    console.info('pause at layer #' + layerPause + ' of ' + (nlayers | 0));
+    MEDLEY.showInfo('pause at layer #' + layerPause + ' of ' + (nlayers | 0));
 
     return info;
 }
@@ -321,8 +321,8 @@ MEDLEY._searchInPrintUnbendingInsertion = function (embeddable) {
     //  a step-wise search for minimum extra cut-off space in order to insert the embeddable
     //
     var minInsertionAngle = 45 * Math.PI / 180; // don't insert at lower than this angle
-    var dh = MEDLEY.LAYERHEIGHT * 10;
-    var step = 15 * Math.PI / 180; // search step
+    var dh = MEDLEY.ROUGHLAYERHEIGHT;
+    var step = MEDLEY.STEPUNBENDSEARCH;
     var phiStep = step / 3;
     var thetaStep = step;
     var minVols = Number.MAX_VALUE; // to keep track of min overall cut-off volumes
@@ -330,7 +330,7 @@ MEDLEY._searchInPrintUnbendingInsertion = function (embeddable) {
     // var minBboxes = undefined; // the corresponding boxes that encapsualte the object
     var visitedDirections = [];
 
-    time();
+    MEDLEY.showInfo();
     for (var phi = minInsertionAngle; phi <= Math.PI / 2; phi += phiStep) {
         for (var theta = 0; theta < Math.PI * 2; theta += thetaStep) {
 
@@ -386,22 +386,22 @@ MEDLEY._searchInPrintUnbendingInsertion = function (embeddable) {
             var cutoff = MEDLEY._generateCutoff(bboxes, dirInsertion, embeddable._meshes.position);
             sumVols = cutoff == undefined ? 0 : cutoff.geometry.computeVolume();
 
-            if (sumVols < minVols) {
+            if (0 <= sumVols && sumVols < minVols) {
                 minVols = sumVols;
                 minVolsDirection = dirInsertion;
                 // minBboxes = bboxes;
 
-                log(minVolsDirection.toArray().trim(3).concat(XAC.trim(sumVols, 3)));
+                MEDLEY.showInfo(minVolsDirection.toArray().trim(3).concat(XAC.trim(sumVols, 3)));
             }
         }
     }
 
-    time('searched for optimal insertion direction')
+    MEDLEY.showInfo('searched for optimal insertion direction')
 
     //
     // generate cut-off part and align it with the object
     //
-    log('generating finer-grained cut-off geometry ...')
+    MEDLEY.showInfo('generating finer-grained cut-off geometry ...')
     var center = embeddable._meshes.position;
     var minBboxes = MEDLEY._getBoundingBoxes(mesh, minVolsDirection, MEDLEY.LAYERHEIGHT);
     var cutoff = MEDLEY._generateCutoff(minBboxes, minVolsDirection, center);
@@ -414,11 +414,11 @@ MEDLEY._searchInPrintUnbendingInsertion = function (embeddable) {
     cutoff = XAC.subtract(cutoff, cutoffTop, XAC.MATERIALWIRED);
     XAC._tempElements.push(addAnArrow(cutoff.position, minVolsDirection, 10, 0xff0000));
     XAC.tmpadd(cutoff);
-    time('done!')
+    MEDLEY.showInfo('done!')
 
     embeddable._cutoff = cutoff;
 
-    log('generating cap ...')
+    MEDLEY.showInfo('generating cap ...')
     var capMaterial = XAC.MATERIALFOCUS.clone();
     capMaterial.opacity = 1.0;
     capMaterial.transparent = false;
@@ -429,7 +429,7 @@ MEDLEY._searchInPrintUnbendingInsertion = function (embeddable) {
     var cap = XAC.subtract(cutoff, mesh);
     cap = XAC.intersect(cap, cutoffTop, capMaterial);
     // XAC.tmpadd(cap);
-    time('done!')
+    MEDLEY.showInfo('done!')
     embeddable._cap = cap;
 
     //
@@ -439,7 +439,7 @@ MEDLEY._searchInPrintUnbendingInsertion = function (embeddable) {
     var nlayers = (bbox.max.y - bbox.min.y) / MEDLEY.LAYERHEIGHT;
     var percPause = (pausePoint.y - bbox.min.y) / (bbox.max.y - bbox.min.y);
     var layerPause = (nlayers * percPause - 0.5) | 0;
-    console.info('pause at layer #' + layerPause + ' of ' + (nlayers | 0));
+    MEDLEY.showInfo('pause at layer #' + layerPause + ' of ' + (nlayers | 0));
 }
 
 //
@@ -509,12 +509,12 @@ MEDLEY._searchPostPrintBendingInsertion = function (p, v, embeddable) {
 MEDLEY._searchPostPrintUnbendingInsertion = function (embeddable) {
     var mesh = MEDLEY._getConvexIntersection(embeddable);
 
-    var step = 15 * Math.PI / 180; // search step
+    var step = MEDLEY.STEPUNBENDSEARCH;
     var phiStep = step;
     var rayCaster = new THREE.Raycaster();
     var minMaxDist = 0;
     var eps = 1e-4;
-    var dh = MEDLEY.LAYERHEIGHT * 10; // layer height
+    var dh = MEDLEY.ROUGHLAYERHEIGHT; // layer height
     var minVols = Number.MAX_VALUE; // to keep track of min overall cut-off volumes
     var minVolsDirection = undefined; // the corresponding insertion direction
     // var minBboxes = undefined; // the corresponding boxes that encapsualte the object
@@ -523,7 +523,7 @@ MEDLEY._searchPostPrintUnbendingInsertion = function (embeddable) {
     var axisToRotateToNormal = new THREE.Vector3().crossVectors(MEDLEY.YUP, embeddable._info.normal).normalize();
     var visitedDirections = [];
 
-    time();
+    MEDLEY.showInfo();
     for (var phi = Math.PI / 2; phi >= -Math.PI / 2; phi -= phiStep) {
         var x = Math.abs(Math.sin(phi));
         var thetaStep = phiStep;
@@ -575,29 +575,29 @@ MEDLEY._searchPostPrintUnbendingInsertion = function (embeddable) {
             var cutoff = MEDLEY._generateCutoff(bboxes, dirInsertion, embeddable._meshes.position);
             sumVols = cutoff == undefined ? 0 : cutoff.geometry.computeVolume();
 
-            if (sumVols < minVols) {
+            if (0 <= sumVols && sumVols < minVols) {
                 minVols = sumVols;
                 minVolsDirection = dirInsertion;
                 minMaxDist = maxDist;
                 minCutoff = cutoff
 
-                log(minVolsDirection.toArray().trim(3).concat(XAC.trim(sumVols, 3)));
+                MEDLEY.showInfo(minVolsDirection.toArray().trim(3).concat(XAC.trim(sumVols, 3)));
             }
             // break;
         }
         // break;
     }
-    time('searched for closest insertion point')
+    MEDLEY.showInfo('searched for closest insertion point')
     embeddable._object.material.side = THREE.FrontSide;
 
-    log('generating finer-grained cut-off geometry ...')
+    MEDLEY.showInfo('generating finer-grained cut-off geometry ...')
     // var center = mesh.position.clone().applyMatrix4(embeddable._meshes.matrixWorld);
     var center = embeddable._meshes.position;
     XAC._tempElements.push(addAnArrow(embeddable._info.center, minVolsDirection, 15, 0xff0000));
 
     var minBboxes = MEDLEY._getBoundingBoxes(mesh, minVolsDirection, MEDLEY.LAYERHEIGHT);
     var minCutoff = MEDLEY._generateCutoff(minBboxes, minVolsDirection, center); //, minMaxDist);
-    time('done!')
+    MEDLEY.showInfo('done!')
 
     XAC.tmpadd(minCutoff);
 
@@ -777,7 +777,7 @@ MEDLEY._digTunnel = function (info, embeddable) {
         embeddable._extraSegments = new XAC.Polyline(shape, points, matTunnel);
         XAC.tmpadd(embeddable._extraSegments.m);
     } else {
-        log('no extra tunnel required')
+        MEDLEY.showInfo('no extra tunnel required')
     }
 }
 
