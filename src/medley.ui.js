@@ -197,7 +197,6 @@ $(document).ready(function () {
     });
 
     return;
-
 });
 
 //
@@ -230,7 +229,7 @@ MEDLEY.showSearchResults = function (queries, matobj) {
 //
 MEDLEY.showInfo = function (msg) {
     log(msg);
-    var timeNow = new Date().toLocaleTimeString(); //toJSON().substring(0,19).replace('T',' ');
+    var timeNow = new Date().toLocaleTimeString();
     $('#taInfo').append(timeNow + ' ' + msg + '\n');
     $('#taInfo').scrollTop($('#taInfo')[0].scrollHeight);
 }

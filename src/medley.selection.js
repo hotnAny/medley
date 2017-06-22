@@ -13,7 +13,7 @@ var MEDLEY = MEDLEY || {};
 //  select part of an object to create embeddables based on the painting technique (xac.input.painting.js)
 //
 MEDLEY.selectToCreateEmbeddables = function (info) {
-    if(MEDLEY._matobjSelected == undefined) return;
+    if (MEDLEY._matobjSelected == undefined) return;
 
     info.object.updateMatrixWorld();
     info.matrixWorld = info.object.matrixWorld.clone();
@@ -115,7 +115,8 @@ MEDLEY.selectToCreateEmbeddables = function (info) {
             case 3:
                 var isLoop = MEDLEY._isLoop(info);
                 if (isLoop) MEDLEY._select3dPatch(embeddable, info);
-                else MEDLEY._select3dStrip(embeddable, info, embeddable._baseWidth, false);
+                else MEDLEY._select2dPatch(embeddable, info);
+                // else MEDLEY._select3dStrip(embeddable, info, embeddable._baseWidth, false);
                 break;
         }
 
