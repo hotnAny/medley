@@ -136,7 +136,7 @@ $(document).ready(function () {
         $('#btnMakeEmbeddable').click(function (e) {
             var selected = XAC._selecteds.clone();
             for (object of selected) {
-                if (object.embeddable != undefined) {
+                if (object.embeddable != undefined && !object.embeddable._removed) {
                     if ($('#rbInprint')[0].checked)
                         MEDLEY.findInPrintInsertion(object.embeddable);
                     else

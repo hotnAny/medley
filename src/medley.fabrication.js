@@ -398,14 +398,14 @@ MEDLEY._searchInPrintUnbendingInsertion = function (embeddable) {
 
     time('searched for optimal insertion direction')
 
-     //
+    //
     // generate cut-off part and align it with the object
     //
     log('generating finer-grained cut-off geometry ...')
     var center = embeddable._meshes.position;
     var minBboxes = MEDLEY._getBoundingBoxes(mesh, minVolsDirection, MEDLEY.LAYERHEIGHT);
     var cutoff = MEDLEY._generateCutoff(minBboxes, minVolsDirection, center);
-   
+
     var pausePoint = highestPoint.clone().add(center);
     var bboxObject = XAC.getBoundingBoxEverything(embeddable._object);
     var cutoffTop = XAC.getBoundingBoxMesh(embeddable._object, XAC.MATERIALWIRED);
@@ -415,7 +415,7 @@ MEDLEY._searchInPrintUnbendingInsertion = function (embeddable) {
     XAC._tempElements.push(addAnArrow(cutoff.position, minVolsDirection, 10, 0xff0000));
     XAC.tmpadd(cutoff);
     time('done!')
-    
+
     embeddable._cutoff = cutoff;
 
     log('generating cap ...')
@@ -519,10 +519,8 @@ MEDLEY._searchPostPrintUnbendingInsertion = function (embeddable) {
     var minVolsDirection = undefined; // the corresponding insertion direction
     // var minBboxes = undefined; // the corresponding boxes that encapsualte the object
     var minCutoff = undefined;
-    // var kk = Math.PI * 2 - step;
-    // var bb = step;
-    var angleToRotate = MEDLEY.YUP.angleTo(embeddable._info.normal);
-    var axisToRotate = new THREE.Vector3().crossVectors(MEDLEY.YUP, embeddable._info.normal).normalize();
+    var angleToRotateToNormal = MEDLEY.YUP.angleTo(embeddable._info.normal);
+    var axisToRotateToNormal = new THREE.Vector3().crossVectors(MEDLEY.YUP, embeddable._info.normal).normalize();
     var visitedDirections = [];
 
     time();
@@ -533,7 +531,7 @@ MEDLEY._searchPostPrintUnbendingInsertion = function (embeddable) {
             var dirInsertion = new THREE.Vector3(Math.sin(theta) * Math.cos(phi),
                 Math.sin(phi), Math.cos(theta) * Math.cos(phi));
 
-            dirInsertion.applyAxisAngle(axisToRotate, angleToRotate).normalize();
+            dirInsertion.applyAxisAngle(axisToRotateToNormal, angleToRotateToNormal).normalize();
 
             // if (minVolsDirection != undefined && dirInsertion.angleTo(minVolsDirection) < step / 2) continue
             var tooClose = false;
@@ -581,6 +579,7 @@ MEDLEY._searchPostPrintUnbendingInsertion = function (embeddable) {
                 minVols = sumVols;
                 minVolsDirection = dirInsertion;
                 minMaxDist = maxDist;
+                minCutoff = cutoff
 
                 log(minVolsDirection.toArray().trim(3).concat(XAC.trim(sumVols, 3)));
             }
@@ -589,13 +588,12 @@ MEDLEY._searchPostPrintUnbendingInsertion = function (embeddable) {
         // break;
     }
     time('searched for closest insertion point')
+    embeddable._object.material.side = THREE.FrontSide;
 
     log('generating finer-grained cut-off geometry ...')
     // var center = mesh.position.clone().applyMatrix4(embeddable._meshes.matrixWorld);
     var center = embeddable._meshes.position;
     XAC._tempElements.push(addAnArrow(embeddable._info.center, minVolsDirection, 15, 0xff0000));
-
-    embeddable._object.material.side = THREE.FrontSide;
 
     var minBboxes = MEDLEY._getBoundingBoxes(mesh, minVolsDirection, MEDLEY.LAYERHEIGHT);
     var minCutoff = MEDLEY._generateCutoff(minBboxes, minVolsDirection, center); //, minMaxDist);
@@ -637,7 +635,7 @@ MEDLEY._getBoundingBoxes = function (mesh, dir, dh) {
     tg.computeBoundingBox();
     var minHeight = tg.boundingBox.min.y;
     var maxHeight = tg.boundingBox.max.y;
-    var nlevels = Math.max(MEDLEY.MINNUMBEROFBOUNDINGLAYERS, ((maxHeight - minHeight) / dh + 1) | 0);
+    var nlevels = Math.max(MEDLEY.MINNUMBOUNDINGLAYERS, ((maxHeight - minHeight) / dh + 1) | 0);
     dh = (maxHeight - minHeight) / nlevels;
 
     // scan the object's vertices, put them into different layers
@@ -857,7 +855,7 @@ MEDLEY._getConvexIntersection = function (embeddable) {
     embeddable._meshes.updateMatrixWorld();
     var convexHull = new THREE.Mesh(convexGeometry, XAC.MATERIALFOCUS.clone());
     convexHull.applyMatrix(embeddable._meshes.matrixWorld);
-    mesh = XAC.intersect(convexHull, embeddable._object);
+    mesh = XAC.intersect(convexHull, embeddable._object, XAC.MATERIALFOCUS.clone());
 
     return mesh;
 }
