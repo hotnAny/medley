@@ -3,20 +3,11 @@
     box-shadow: none;
 }
 
-h2 {
+/*h2 {
 	margin-left: 8px;
 	margin-top: 5px;
 	margin-bottom: 0px;
-}
-
-.tbpanel {
-	table-layout: fixed;
-	border-spacing: 2px;
-}
-
-.tblsliders {
-	border-spacing: 0px;
-}
+}*/
 
 th,
 td {
@@ -25,19 +16,28 @@ td {
 	font-size: small;
 }
 
-ul {
-	list-style: none;
-	overflow-y: scroll;
-	overflow-x: hidden;
-	min-height: 400;
-	max-height: 400;
-}
-
 img {
 	border-radius: 10px;
 	display: block;
 	width: 100%;
 	opacity: 0.85;
+}
+
+#tblPanel {
+	table-layout: fixed;
+	border-spacing: 2px;
+}
+
+#tblSliders {
+	border-spacing: 0px;
+}
+
+#listSearchOutput {
+	list-style: none;
+	overflow-y: scroll;
+	overflow-x: hidden;
+	min-height: 400;
+	max-height: 400;
 }
 
 #taInfo {

@@ -217,5 +217,4 @@ MEDLEY.showInfo = function (msg) {
     var timeNow = new Date().toJSON().substring(0,19).replace('T',' ');
     $('#taInfo').append(timeNow + ' ' + msg + '\n');
     $('#taInfo').scrollTop($('#taInfo')[0].scrollHeight);
-    // log($('#taInfo')[0].scrollHeight)
 }
