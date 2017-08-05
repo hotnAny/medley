@@ -11,7 +11,7 @@
 //
 //  XXX: wired is a variable for debugging
 //
-THREE.Geometry.prototype.highlightFace = function(face, color, scene, wired) {
+THREE.Geometry.prototype.highlightFace = function (face, color, scene, wired) {
     var v1 = this.vertices[face.a];
     var v2 = this.vertices[face.b];
     var v3 = this.vertices[face.c];
@@ -41,7 +41,7 @@ THREE.Geometry.prototype.highlightFace = function(face, color, scene, wired) {
 //
 //  compute faces' centroids
 //
-THREE.Geometry.prototype.computeCentroids = function() {
+THREE.Geometry.prototype.computeCentroids = function () {
     for (var i = 0; i < this.faces.length; i++) {
         var face = this.faces[i];
 
@@ -57,7 +57,7 @@ THREE.Geometry.prototype.computeCentroids = function() {
     }
 }
 
-THREE.Geometry.prototype.assignVerticesToFaces = function() {
+THREE.Geometry.prototype.assignVerticesToFaces = function () {
     for (var i = 0; i < this.faces.length; i++) {
         var face = this.faces[i];
 
@@ -80,7 +80,7 @@ THREE.Geometry.prototype.assignVerticesToFaces = function() {
 //	- each triangle should have exactly 3 neighbors. however, some have 4 due to triangle redundance; some //    have only 2 due to unmanifold structure
 //  - assuming triangles
 //
-THREE.Geometry.prototype.createNeighborList = function(octree) {
+THREE.Geometry.prototype.createNeighborList = function (octree) {
     var eps = 1e-6;
     for (var i = 0; i < this.faces.length; i++) {
         var face = this.faces[i];
@@ -146,7 +146,7 @@ THREE.Geometry.prototype.createNeighborList = function(octree) {
 //
 //  on key or mouse events for this object
 //
-THREE.Mesh.prototype.on = function(cue, handler) {
+THREE.Mesh.prototype.on = function (cue, handler) {
     if (XAC._dispatchInputEvents == undefined) {
         console.error('requiring xac.input.js');
         return;
@@ -165,7 +165,7 @@ THREE.Mesh.prototype.on = function(cue, handler) {
             break;
         default:
             this.keydowns = this.keydowns || {};
-            if (typeof(cue) == 'string') {
+            if (typeof (cue) == 'string') {
                 var key = cue.charCodeAt(0);
                 this.keydowns[key] = handler;
             } else {
@@ -180,7 +180,7 @@ THREE.Mesh.prototype.on = function(cue, handler) {
 //  make this object selectable (or not),
 //  optionally providing callback upon selection and de-selection
 //
-THREE.Mesh.prototype.selectable = function(flag, onSelected, onDeselected) {
+THREE.Mesh.prototype.selectable = function (flag, onSelected, onDeselected) {
     this._selectable = flag;
     this._onSelected = onSelected;
     this._onDeselected = onDeselected;
@@ -188,7 +188,7 @@ THREE.Mesh.prototype.selectable = function(flag, onSelected, onDeselected) {
     this._selectionLocked = false;
 }
 
-THREE.Object3D.prototype.selectable = function(flag, onSelected, onDeselected) {
+THREE.Object3D.prototype.selectable = function (flag, onSelected, onDeselected) {
     this._selectable = flag;
     this._onSelected = onSelected;
     this._onDeselected = onDeselected;
@@ -203,9 +203,9 @@ THREE.Object3D.prototype.selectable = function(flag, onSelected, onDeselected) {
 //
 //
 //
-THREE.Geometry.prototype.removeRedundantFaces = function() {
+THREE.Geometry.prototype.removeRedundantFaces = function () {
     var eps = 10e-3;
-    var __areRedundant = function(_vs, _us) {
+    var __areRedundant = function (_vs, _us) {
         var vs = _vs.clone();
         var us = _us.clone();
         for (v of vs) {
@@ -241,7 +241,7 @@ THREE.Geometry.prototype.removeRedundantFaces = function() {
 //
 //
 //
-THREE.Vector3.prototype.applyAxisAngleOnPoint = function(axis, point, angle) {
+THREE.Vector3.prototype.applyAxisAngleOnPoint = function (axis, point, angle) {
     this.sub(point);
     this.applyAxisAngle(axis, angle);
     this.add(point);
@@ -272,4 +272,11 @@ THREE.Geometry.prototype.computeVolume = function (toUseConvexHull) {
     }
 
     return sumVolume / 6.0;
+}
+
+THREE.Geometry.prototype.computeCenterOfVertices = function () {
+    var center = new THREE.Vector3();
+    for (v of this.vertices) center.add(v);
+    if (this.vertices.length > 0) center.divideScalar(this.vertices.length);
+    return center;
 }
