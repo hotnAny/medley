@@ -327,7 +327,7 @@ MEDLEY._searchInPrintUnbendingInsertion = function (embeddable) {
     var thetaStep = step;
     var minVols = Number.MAX_VALUE; // to keep track of min overall cut-off volumes
     var minVolsDirection = undefined; // the corresponding insertion direction
-    // var minBboxes = undefined; // the corresponding boxes that encapsualte the object
+    var minBboxes = undefined; // the corresponding boxes that encapsualte the object
     var visitedDirections = [];
 
     MEDLEY.showInfo();
@@ -389,7 +389,7 @@ MEDLEY._searchInPrintUnbendingInsertion = function (embeddable) {
             if (0 <= sumVols && sumVols < minVols) {
                 minVols = sumVols;
                 minVolsDirection = dirInsertion;
-                // minBboxes = bboxes;
+                minBboxes = bboxes;
 
                 MEDLEY.showInfo(minVolsDirection.toArray().trim(3).concat(XAC.trim(sumVols, 3)));
             }
@@ -403,7 +403,7 @@ MEDLEY._searchInPrintUnbendingInsertion = function (embeddable) {
     //
     MEDLEY.showInfo('generating finer-grained cut-off geometry ...')
     var center = embeddable._meshes.position;
-    var minBboxes = MEDLEY._getBoundingBoxes(mesh, minVolsDirection, MEDLEY.LAYERHEIGHT);
+    // var minBboxes = MEDLEY._getBoundingBoxes(mesh, minVolsDirection, MEDLEY.LAYERHEIGHT);
     var cutoff = MEDLEY._generateCutoff(minBboxes, minVolsDirection, center);
 
     var pausePoint = highestPoint.clone().add(center);
@@ -504,21 +504,26 @@ MEDLEY._searchPostPrintBendingInsertion = function (p, v, embeddable) {
 };
 
 //
-//
+//  search for post-print unbending insertion (anything but 1d)
 //
 MEDLEY._searchPostPrintUnbendingInsertion = function (embeddable) {
     var mesh = MEDLEY._getConvexIntersection(embeddable);
+    var vol = mesh.geometry.computeVolume();
 
+    // search step
     var step = MEDLEY.STEPUNBENDSEARCH;
     var phiStep = step;
+    var thetaStep = phiStep;
+
     var rayCaster = new THREE.Raycaster();
-    var minMaxDist = 0;
+
     var eps = 1e-4;
-    var dh = MEDLEY.ROUGHLAYERHEIGHT; // layer height
+    var dh = MEDLEY.ROUGHLAYERHEIGHT; // rough layer height, only used for search
     var minVols = Number.MAX_VALUE; // to keep track of min overall cut-off volumes
     var minVolsDirection = undefined; // the corresponding insertion direction
-    // var minBboxes = undefined; // the corresponding boxes that encapsualte the object
+
     var minCutoff = undefined;
+    var minMaxDist = 0; // min insert dir's max dist to the surface of the object
     var angleToRotateToNormal = MEDLEY.YUP.angleTo(embeddable._info.normal);
     var axisToRotateToNormal = new THREE.Vector3().crossVectors(MEDLEY.YUP, embeddable._info.normal).normalize();
     var visitedDirections = [];
@@ -526,14 +531,13 @@ MEDLEY._searchPostPrintUnbendingInsertion = function (embeddable) {
     MEDLEY.showInfo();
     for (var phi = Math.PI / 2; phi >= -Math.PI / 2; phi -= phiStep) {
         var x = Math.abs(Math.sin(phi));
-        var thetaStep = phiStep;
         for (var theta = 0; theta < Math.PI * 2; theta += thetaStep) {
+            // set up direction for insertion
             var dirInsertion = new THREE.Vector3(Math.sin(theta) * Math.cos(phi),
                 Math.sin(phi), Math.cos(theta) * Math.cos(phi));
-
             dirInsertion.applyAxisAngle(axisToRotateToNormal, angleToRotateToNormal).normalize();
 
-            // if (minVolsDirection != undefined && dirInsertion.angleTo(minVolsDirection) < step / 2) continue
+            //  avoid hitting directions too close to the ones are already visited
             var tooClose = false;
             for (dir of visitedDirections) {
                 if (dir.angleTo(dirInsertion) < step / 2) {
@@ -542,12 +546,11 @@ MEDLEY._searchPostPrintUnbendingInsertion = function (embeddable) {
                 }
             }
             if (tooClose) continue;
-
             visitedDirections.push(dirInsertion);
 
+            // compute the stack of bounding boxes along the insertion direction
             var angleToRotate = -MEDLEY.YUP.angleTo(dirInsertion);
             var axisToRotate = new THREE.Vector3().crossVectors(MEDLEY.YUP, dirInsertion).normalize();
-
             var bboxes = MEDLEY._getBoundingBoxes(mesh, dirInsertion, dh);
 
             var sumVols = 0;
@@ -555,26 +558,54 @@ MEDLEY._searchPostPrintUnbendingInsertion = function (embeddable) {
             var sumVolsInfo = [];
             for (var i = 0; i < bboxes.length; i++) {
                 var bbox = bboxes[i];
+
+                // set up the points covering the min surface of this layer: center + 4 corners
                 var center = new THREE.Vector3().addVectors(bbox.min, bbox.max).divideScalar(2);
                 center.y = bbox.min.y;
-                var centerOriginal = center.clone().applyAxisAngle(axisToRotate, -angleToRotate)
-                    .add(mesh.position);
-                rayCaster.ray.set(centerOriginal, dirInsertion);
-                embeddable._object.material.side = THREE.DoubleSide;
-                var hitsDouble = rayCaster.intersectObjects([embeddable._object]);
-                embeddable._object.material.side = THREE.BackSide;
-                var hitsBack = rayCaster.intersectObjects([embeddable._object]);
-                if (hitsDouble.length > 0 && hitsBack.length > 0 &&
-                    Math.abs(hitsDouble[0].distance - hitsBack[0].distance) < eps) {
-                    maxDist = Math.max(maxDist, hitsBack[0].distance);
+                var corner0 = bbox.min.clone();
+                var corner1 = corner0.clone();
+                corner1.x = bbox.max.x;
+                var corner2 = corner0.clone();
+                corner2.z = bbox.max.z;
+                var corner3 = bbox.max.clone();
+                corner3.y = bbox.min.y;
+                var minPoints = [center, corner0, corner1, corner2, corner3];
 
-                    bbox.max.y = bbox.min.y + Math.max(bbox.max.y - bbox.min.y, hitsBack[0].distance);
+                // find this layer's max dist to the object's surface
+                var maxDistLayer = 0;
+                for (p of minPoints) {
+                    var centerOriginal = p.clone().applyAxisAngle(axisToRotate, -angleToRotate)
+                        .add(mesh.position);
+                    rayCaster.ray.set(centerOriginal, dirInsertion);
+                    embeddable._object.material.side = THREE.DoubleSide;
+                    var hitsDouble = rayCaster.intersectObjects([embeddable._object]);
+                    embeddable._object.material.side = THREE.BackSide;
+                    var hitsBack = rayCaster.intersectObjects([embeddable._object]);
+
+                    // to make sure the first hit is from the inside
+                    if (hitsDouble.length > 0 && hitsBack.length > 0 &&
+                        Math.abs(hitsDouble[0].distance - hitsBack[0].distance) < eps) {
+                        maxDistLayer = Math.max(maxDistLayer, hitsBack[0].distance);
+                    }
                 }
+
+                // make sure the current box can reach the surface
+                bbox.max.y = bbox.min.y + Math.max(bbox.max.y - bbox.min.y, maxDistLayer);
+                maxDist = Math.max(maxDist, maxDistLayer);
             }
 
-            var cutoff = MEDLEY._generateCutoff(bboxes, dirInsertion, embeddable._meshes.position);
+            // the cutoff volume for this layer
+            var cutoff = MEDLEY._generateCutoff(bboxes, dirInsertion, embeddable._meshes.position); //,
+            cutoff = XAC.intersect(cutoff, embeddable._object, cutoff.material);
             sumVols = cutoff == undefined ? 0 : cutoff.geometry.computeVolume();
 
+            // penalty factor that favors direction parallel to the normal along the embeddable is 
+            // positioned into the object
+            var alpha = 0.2;
+            var penalty = alpha * vol * Math.exp(1 - Math.abs(dirInsertion.dot(embeddable._info.normal)));
+            sumVols += penalty;
+
+            // update minimal volume
             if (0 <= sumVols && sumVols < minVols) {
                 minVols = sumVols;
                 minVolsDirection = dirInsertion;
@@ -587,6 +618,7 @@ MEDLEY._searchPostPrintUnbendingInsertion = function (embeddable) {
         }
         // break;
     }
+    
     MEDLEY.showInfo('searched for closest insertion point')
     embeddable._object.material.side = THREE.FrontSide;
 
@@ -595,8 +627,11 @@ MEDLEY._searchPostPrintUnbendingInsertion = function (embeddable) {
     var center = embeddable._meshes.position;
     XAC._tempElements.push(addAnArrow(embeddable._info.center, minVolsDirection, 15, 0xff0000));
 
+    // re-generate bounding boxes with higher resolution (smaller layer height)
     var minBboxes = MEDLEY._getBoundingBoxes(mesh, minVolsDirection, MEDLEY.LAYERHEIGHT);
-    var minCutoff = MEDLEY._generateCutoff(minBboxes, minVolsDirection, center); //, minMaxDist);
+    var minCutoff = MEDLEY._generateCutoff(minBboxes, minVolsDirection,
+        center, minMaxDist);
+    minCutoff = XAC.intersect(minCutoff, embeddable._object, minCutoff.material);
     MEDLEY.showInfo('done!')
 
     XAC.tmpadd(minCutoff);
@@ -726,6 +761,7 @@ MEDLEY._generateCutoff = function (bboxes, dir, center, maxDist) {
 
     var leftOverBox;
     var verticesAccumulated = [];
+
     for (bbox of bboxes) {
         if (maxDist != undefined) bbox.max.y += maxDist;
 
@@ -757,7 +793,7 @@ MEDLEY._generateCutoff = function (bboxes, dir, center, maxDist) {
 }
 
 //
-//  make a tunnel based on starting/ending points and center
+//  make a tunnel cornerd on starting/ending points and center
 //
 MEDLEY._digTunnel = function (info, embeddable) {
     var step = 5 * Math.PI / 180;
