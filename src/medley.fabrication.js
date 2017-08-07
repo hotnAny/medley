@@ -636,7 +636,7 @@ MEDLEY._searchPostPrintUnbendingInsertion = function (embeddable) {
 
     XAC.tmpadd(minCutoff);
 
-    embeddable._cufoff = minCutoff;
+    embeddable._cutoff = minCutoff;
 }
 
 //
