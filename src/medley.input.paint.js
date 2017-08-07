@@ -88,8 +88,10 @@ MEDLEY.PaintInput.prototype.mousemove = function(e) {
         var a3 = XAC.triangleArea(p, v1, v2);
 
         // get the transformed vertex normals
-        var idxFace = hit.object.geometry.faces.indexOf(hit.face);
-        var normals = this._geometry.faces[idxFace].vertexNormals;
+        // var idxFace = hit.object.geometry.faces.indexOf(hit.face);
+        // var normals = this._geometry.faces[idxFace].vertexNormals;
+
+        var normals = hit.face.vertexNormals;
         var n1 = normals[0].clone();
         var n2 = normals[1].clone();
         var n3 = normals[2].clone();
@@ -97,6 +99,7 @@ MEDLEY.PaintInput.prototype.mousemove = function(e) {
         // n = (a1*n1 + a2*n2 + a3*n3) / (a1+a2+a3)
         var n = n1.multiplyScalar(a1).add(n2.multiplyScalar(a2)).add(n3.multiplyScalar(a3))
             .divideScalar(a1 + a2 + a3);
+
 
         this._normals.push(n.normalize());
     }

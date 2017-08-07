@@ -18,32 +18,35 @@ MEDLEY.selectToCreateEmbeddables = function (info) {
     info.object.updateMatrixWorld();
     info.matrixWorld = info.object.matrixWorld.clone();
 
-    var epsFootprint = 5;
+    var epsFootprint = 2.5;
     if (info.footprint < epsFootprint) return;
 
     // temporarily setting double-sided for internal ray casting
     info.object.material.side = THREE.DoubleSide;
 
     // clean up points
-    var toRemove = [];
+    var toRemovePoints = [];
+    var toRemoveNormals = [];
     var eps = 2;
     var p0 = info.points[0];
     for (var i = 1; i < info.points.length; i++) {
         var p1 = info.points[i];
         if (p1.distanceTo(p0) < eps) {
-            toRemove.push(p1);
+            toRemovePoints.push(p1);
+            toRemoveNormals.push(info.normals[i]);
         } else {
             p0 = p1;
         }
     }
 
-    for (p of toRemove) info.points.remove(p);
+    for (p of toRemovePoints) info.points.remove(p);
+    for (n of toRemoveNormals) info.normals.remove(n);
 
     info.center = new THREE.Vector3();
     for (p of info.points) info.center.add(p);
     info.center.divideScalar(info.points.length);
 
-    log('# of points: ' + info.points.length);
+    // log('# of points: ' + info.points.length);
 
     // compute summary info about user input
     var diagnal = info.maxPoint.distanceTo(info.minPoint);
