@@ -238,11 +238,25 @@ MEDLEY.showSearchResults = function (queries, matobj) {
 }
 
 //
-//
+//  show info in the console on the ui
 //
 MEDLEY.showInfo = function (msg) {
     log(msg);
     var timeNow = new Date().toLocaleTimeString();
     $('#taInfo').append(timeNow + ' ' + msg + '\n');
     $('#taInfo').scrollTop($('#taInfo')[0].scrollHeight);
+}
+
+//
+//  add blob to a dropdown list for later download
+//
+MEDLEY.addToDownloadDropdown = function (itemName, blob, fileName) {
+    MEDLEY.downloadableInfo = MEDLEY.downloadableInfo || [];
+
+    var downloadItem = $('<option value=' + MEDLEY.downloadableInfo.length + '>' + itemName + '</option>');
+    MEDLEY.downloadableInfo.push({
+        blob: blob,
+        fileName: fileName
+    });
+    $('#ddlExports').append(downloadItem);
 }

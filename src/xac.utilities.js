@@ -127,3 +127,12 @@ XAC.intersect = function(mesh0, mesh1, material) {
 	var csgMesh1 = new ThreeBSP(mesh1);
 	return csgMesh0.intersect(csgMesh1).toMesh(material == undefined ? XAC.MATERIALNORMAL : material);
 }
+
+//
+//	temporarily add a mesh to the scene, and store it to an array that can be cleaned up later
+//
+XAC.tmpadd = function (mesh) {
+    XAC._tempElements = XAC._tempElements || [];
+    XAC._tempElements.push(mesh);
+    XAC.scene.add(mesh);
+}
