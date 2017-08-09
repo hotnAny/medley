@@ -144,24 +144,6 @@ MEDLEY.Embeddable.prototype.setWidth = function (w, isLite) {
                     widthRatio: w
                 });
             break;
-
-            // NOTE: _info will be assigned only in a cross sectional selection case
-            // if (this._info != undefined) {
-            //     var widthCrossSection = this._baseWidth + w * this._widthRange;
-            //     XAC.scene.remove(this._liteElements);
-            //     MEDLEY.everything.remove(this._meshes);
-            //     this._meshes = undefined;
-            //     this._facesInner = undefined;
-            //     this._facesOuter = undefined;
-
-            //     this._liteElements = MEDLEY._select3dStrip(this, this._info,
-            //         widthCrossSection, isLite);
-
-            //     if (this._meshes != undefined) MEDLEY.updateEverything(this._meshes);
-
-            //     this._widthRatio = w;
-            // }
-            break;
     }
 }
 

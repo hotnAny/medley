@@ -97,11 +97,7 @@ MEDLEY.fixFaces = function (mesh) {
         hits = rayCaster.intersectObjects([mesh]);
         if (hits.length > 0) {
             toRemove.push(face);
-            // addALine(face.centroid, q, 0x0000ff);
-            // _balls.remove(addABall(q, 0x0000ff, 0.25));
-            // addALine(face.centroid, hits[0].point, 0x00ff00);
-            // _balls.remove(addABall(hits[0].point, 0x00ff00, 0.25));
-            return;
+            // return;
         }
     }
 
@@ -606,7 +602,7 @@ MEDLEY._searchPostPrintUnbendingInsertion = function (embeddable) {
             sumVols += penalty;
 
             // update minimal volume
-            if (0 <= sumVols && sumVols < minVols) {
+            if (0 <= sumVols && sumVols < minVols - 1) {
                 minVols = sumVols;
                 minVolsDirection = dirInsertion;
                 minMaxDist = maxDist;

@@ -180,22 +180,7 @@ $(document).ready(function () {
             }
         }
     });
-
-    // hide embeddable
-    XAC.on('H', function () {
-        for (embeddable of MEDLEY.embeddables) {
-            // var selected = XAC._selecteds.clone();
-            // for (object of selected) {
-            if (embeddable != undefined && !embeddable._removed) {
-                // if (XAC.scene.children.indexOf(embeddable._meshes) >= 0)
-                //     XAC.scene.remove(embeddable._meshes);
-                // else XAC.scene.add(embeddable._meshes);
-                embeddable._meshes.visible = !embeddable._meshes.visible;
-            }
-
-        }
-    });
-
+    
     return;
 });
 
