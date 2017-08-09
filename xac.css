@@ -3,17 +3,11 @@
     box-shadow: none;
 }
 
-/*h2 {
-	margin-left: 8px;
-	margin-top: 5px;
-	margin-bottom: 0px;
-}*/
-
 th,
 td {
 	padding: 5px;
 	vertical-align: top;
-	font-size: small;
+	font-size: x-small;
 }
 
 img {

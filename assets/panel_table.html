@@ -24,14 +24,18 @@
 	</tr>
 	<tr>
 		<td colspan="2">
-			<div id="btnMakeEmbeddable">Embed</div> &nbsp;
+			<div id="btnMakeEmbeddable">Find insertion path</div> &nbsp;
 			<input type="radio" id="rbInprint" name="embeddingOption" value="0"> in-print &nbsp;
 			<input type="radio" id="rbPostprint" name="embeddingOption" value="1"> post-print
 		</td>
 	</tr>
 	<tr>
 		<td colspan="2">
-			<!--<div id="btnExport">Export</div>-->
+			<div id="btnExport">Generate models & templates</div>
+			<select class="ui-widget" id='ddlExports'>
+				<option> - </option>
+			</select>
+			<br/>
 			<br/>
 			<textarea class="ui-widget" id="taInfo"></textarea>
 		</td>

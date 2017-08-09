@@ -53,6 +53,7 @@ MEDLEY.MatObj.prototype.getInfoCard = function (parent) {
 
     var card = $('<div class="w3-panel w3-card"></div>');
     card.css('min-height', MEDLEY.MINHEIGHTINFOCARD);
+    card.css('padding', '3px');
     var tblCard = $('<table border="0"></table>');
     tblCard.css('width', '100%');
     var trCard = $('<tr></tr>');

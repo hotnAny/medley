@@ -15,7 +15,6 @@ $(document).ready(function () {
     panel.css('top', '0px');
     panel.css('position', 'absolute');
     panel.css('font-family', 'Helvetica');
-    // panel.css('font-size', '12px');
     panel.css('overflow', 'auto');
     panel.css('padding', MEDLEY.PADDINGPANEL + 'px');
     panel.css('overflow', 'hidden');
@@ -134,8 +133,8 @@ $(document).ready(function () {
         //
         $('#btnMakeEmbeddable').button();
         $('#btnMakeEmbeddable').click(function (e) {
-            var selected = XAC._selecteds.clone();
-            for (object of selected) {
+            var selecteds = XAC._selecteds.clone();
+            for (object of selecteds) {
                 if (object.embeddable != undefined && !object.embeddable._removed) {
                     if ($('#rbInprint')[0].checked)
                         MEDLEY.findInPrintInsertion(object.embeddable);
@@ -152,8 +151,37 @@ $(document).ready(function () {
         //
         $('#taInfo').attr('disabled', 'disabled');
         MEDLEY.showInfo('Welcome to Medley!')
-        // $('#btnExport').button();
 
+        //
+        //  exports
+        //
+        $('#btnExport').button();
+        $('#btnExport').click(function () {
+            time();
+            var meshReady; // = embeddable._object;
+            var counter = 0;
+            var selecteds = XAC._selecteds.clone();
+            for (selcted of selecteds) {
+                if (selcted.embeddable == undefined) continue;
+                meshReady = meshReady || selcted.embeddable._object;
+                meshReady = MEDLEY.getFabReady(meshReady, selcted.embeddable);
+                MEDLEY.getInstructions(selcted.embeddable, counter++);
+            }
+            time('merged all embeddable components');
+
+            XAC.scene.remove(MEDLEY.everything);
+
+            var stlStr = stlFromGeometry(meshReady.geometry);
+            var blob = new Blob([stlStr], {
+                type: 'text/plain'
+            });
+            MEDLEY.addToDownloadDropdown('object', blob, 'object.stl');
+        });
+        $('#ddlExports').change(function () {
+            var idx = $('#ddlExports :selected').val();
+            var info = MEDLEY.downloadableInfo[idx];
+            saveAs(info.blob, info.fileName);
+        })
     });
 
     $(document.body).append(panel);
@@ -180,7 +208,7 @@ $(document).ready(function () {
             }
         }
     });
-    
+
     return;
 });
 

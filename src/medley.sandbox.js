@@ -48,9 +48,9 @@ $(document).ready(function () {
     });
     XAC.on('S', function () {
         time();
-        var meshReady;// = embeddable._object;
+        var meshReady; // = embeddable._object;
         for (selcted of XAC._selecteds) {
-            if(selcted.embeddable == undefined) continue; 
+            if (selcted.embeddable == undefined) continue;
             meshReady = meshReady || selcted.embeddable._object;
             meshReady = MEDLEY.getFabReady(meshReady, selcted.embeddable);
         }
@@ -62,6 +62,8 @@ $(document).ready(function () {
         var blob = new Blob([stlStr], {
             type: 'text/plain'
         });
+
+        MEDLEY.addToDownloadDropdown('object', blob, 'object.stl');
         saveAs(blob, 'embeddable.stl');
     });
     // hide embeddable
@@ -80,8 +82,22 @@ $(document).ready(function () {
     });
 });
 
+MEDLEY.addToDownloadDropdown = function (itemName, blob, fileName) {
+    MEDLEY.downloadableInfo = MEDLEY.downloadableInfo || [];
 
-MEDLEY.getInstructions = function (embeddable) {
+    var downloadItem = $('<option value=' + MEDLEY.downloadableInfo.length + '>' + itemName + '</option>');
+    MEDLEY.downloadableInfo.push({
+        blob: blob,
+        fileName: fileName
+    });
+    $('#ddlExports').append(downloadItem);
+}
+
+//
+//  generate instrutions for cutting found material
+//  -   counter is for keeping track of generated file
+//
+MEDLEY.getInstructions = function (embeddable, counter) {
     var instructions;
     var __get1dInstructions = function (embeddable) {
         var _length = 0;
@@ -168,7 +184,9 @@ MEDLEY.getInstructions = function (embeddable) {
                 var blob = new Blob([stlStr], {
                     type: 'text/plain'
                 });
-                saveAs(blob, 'embeddable.stl');
+                // saveAs(blob, 'embeddable.stl');
+                MEDLEY.addToDownloadDropdown('template_' + (counter + 1), blob,
+                    'template_' + (counter + 1) + '.stl');
                 embeddable._thicknessRatio = thicknessRatio;
             }
             break;
