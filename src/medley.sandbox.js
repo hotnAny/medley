@@ -5,17 +5,17 @@ var _fitInfo;
 XAC._tempElements = [];
 
 // XXX
-MEDLEY._matobjSelected = {
-    radius: 0.75, // mm
-    dim: 0,
-    thickness: 1, // mm
-    bendRadius: 50, // mm
-    meshPath: 'embeddables/penny.stl'
-    // meshPath: 'embeddables/screw_phillips.stl'
-    // meshPath: 'embeddables/screw_fh1.5in.stl'
-    // meshPath: 'things/spoon.stl'
-    // meshPath: 'embeddables/rod1.stl'
-};
+// MEDLEY._matobjSelected = {
+//     radius: 0.75, // mm
+//     dim: 0,
+//     thickness: 1, // mm
+//     bendRadius: 50, // mm
+//     meshPath: 'embeddables/penny.stl'
+//     // meshPath: 'embeddables/screw_phillips.stl'
+//     // meshPath: 'embeddables/screw_fh1.5in.stl'
+//     // meshPath: 'things/spoon.stl'
+//     // meshPath: 'embeddables/rod1.stl'
+// };
 
 
 // for testing functions
