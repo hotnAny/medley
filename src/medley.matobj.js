@@ -244,10 +244,18 @@ MEDLEY.MatObj.prototype.getDialog = function () {
             }
         }.bind(this));
 
+        dialogBody.children().css('font-size', 'large');
+
+        // for (c of dialogBody.children()) {
+        //     $(c).css('font-size', 'large');
+        // }
+
     }.bind(this));
 
     this._dialogBody = dialogBody;
     dialog.append(dialogBody);
+
+
 
     return dialog;
 }
