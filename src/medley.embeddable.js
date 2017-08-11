@@ -334,6 +334,7 @@ MEDLEY.Embeddable.prototype._generate3dGeometry = function (params) {
             mesh.geometry.verticesNeedUpdate = true;
         }
     }
+
 }
 
 

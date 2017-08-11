@@ -503,7 +503,12 @@ MEDLEY._searchPostPrintBendingInsertion = function (p, v, embeddable) {
 //  search for post-print unbending insertion (anything but 1d)
 //
 MEDLEY._searchPostPrintUnbendingInsertion = function (embeddable) {
-    var mesh = MEDLEY._getConvexIntersection(embeddable);
+    // var mesh = MEDLEY._getConvexIntersection(embeddable);
+    
+    // hack
+    // var scaleFactor = 1.1;
+    // mesh.geometry.scale(scaleFactor, scaleFactor, scaleFactor);
+
     var vol = mesh.geometry.computeVolume();
 
     // search step
