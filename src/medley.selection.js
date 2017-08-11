@@ -125,7 +125,6 @@ MEDLEY.selectToCreateEmbeddables = function (info) {
                 else MEDLEY._select2dPatch(embeddable, info);
                 break;
             case 3:
-                // var isLoop = MEDLEY._isLoop(info);
                 if (info.isLoop || MEDLEY.shiftPressed) MEDLEY._select3dPatch(embeddable, info);
                 else MEDLEY._select2dPatch(embeddable, info);
                 // else MEDLEY._select3dStrip(embeddable, info, embeddable._baseWidth, false);
@@ -133,6 +132,8 @@ MEDLEY.selectToCreateEmbeddables = function (info) {
         }
 
         MEDLEY.embeddables.push(embeddable);
+
+        embeddable._eventCache = MEDLEY.paintInput._eventCache.clone();
     }
 
     // reset sidedness of object
