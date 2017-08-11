@@ -116,7 +116,13 @@ MEDLEY.MatObj.prototype.getInfoCard = function (parent) {
                         object.geometry = new THREE.Geometry().fromBufferGeometry(object.geometry);
 
                     this._mesh = object;
-                    this._paxis = XAC.findPrincipalAxis(this._mesh.geometry.vertices);
+                    // this._paxis = XAC.findPrincipalAxis(this._mesh.geometry.vertices).multiplyScalar(-1);
+                    // // this._paxis = XAC.findPrincipalAxis(XAC.getBoundingBoxMesh(this._mesh).geometry.vertices);
+                    var convexGeometry = new THREE.ConvexGeometry(this._mesh.geometry.vertices);
+                    convexGeometry.center();
+                    this._paxis = XAC.findPrincipalAxis(convexGeometry.vertices);
+                    // XAC.tmpadd(addAnArrow(object.position, this._paxis, 10, 0xff0000))
+                    // XAC.tmpadd(object);
                     this._mesh.geometry.center();
                     time('loaded embeddable mesh for ' + this._name);
                 }.bind(this));
