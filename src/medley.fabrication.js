@@ -114,7 +114,7 @@ MEDLEY.fixFaces = function (mesh) {
 //
 //
 //
-MEDLEY.findInPrintInsertion = function (embeddable) {
+MEDLEY.findInPrintInsertion = function (embeddable, noSearch) {
     switch (embeddable._dim) {
         case 1:
             var info = MEDLEY._searchInPrintBendingInsertion(embeddable);
@@ -123,7 +123,7 @@ MEDLEY.findInPrintInsertion = function (embeddable) {
         case 0:
         case 2:
         case 3:
-            MEDLEY._searchInPrintUnbendingInsertion(embeddable);
+            MEDLEY._searchInPrintUnbendingInsertion(embeddable, noSearch);
             break;
     }
 }
@@ -131,7 +131,7 @@ MEDLEY.findInPrintInsertion = function (embeddable) {
 //
 //  find insertion point externally (supposed to be for 1d only)
 //
-MEDLEY.findPostPrintInsertion = function (embeddable) {
+MEDLEY.findPostPrintInsertion = function (embeddable, noSearch) {
     switch (embeddable._dim) {
         case 1:
             // compute end points and tangents
@@ -152,7 +152,7 @@ MEDLEY.findPostPrintInsertion = function (embeddable) {
         case 0:
         case 2:
         case 3:
-            MEDLEY._searchPostPrintUnbendingInsertion(embeddable);
+            MEDLEY._searchPostPrintUnbendingInsertion(embeddable, noSearch);
             break;
     }
 };
@@ -502,9 +502,9 @@ MEDLEY._searchPostPrintBendingInsertion = function (p, v, embeddable) {
 //
 //  search for post-print unbending insertion (anything but 1d)
 //
-MEDLEY._searchPostPrintUnbendingInsertion = function (embeddable) {
+MEDLEY._searchPostPrintUnbendingInsertion = function (embeddable, noSearch) {
     // var mesh = MEDLEY._getConvexIntersection(embeddable);
-    
+
     // hack
     // var scaleFactor = 1.1;
     // mesh.geometry.scale(scaleFactor, scaleFactor, scaleFactor);
@@ -548,6 +548,8 @@ MEDLEY._searchPostPrintUnbendingInsertion = function (embeddable) {
             }
             if (tooClose) continue;
             visitedDirections.push(dirInsertion);
+
+            if (noSearch) dirInsertion = embeddable._info.normal;
 
             // compute the stack of bounding boxes along the insertion direction
             var angleToRotate = -MEDLEY.YUP.angleTo(dirInsertion);
@@ -615,11 +617,12 @@ MEDLEY._searchPostPrintUnbendingInsertion = function (embeddable) {
 
                 MEDLEY.showInfo(minVolsDirection.toArray().trim(3).concat(XAC.trim(sumVols, 3)));
             }
-            // break;
+
+            if (noSearch) break;
         }
-        // break;
+        if (noSearch) break;
     }
-    
+
     MEDLEY.showInfo('searched for closest insertion point')
     embeddable._object.material.side = THREE.FrontSide;
 

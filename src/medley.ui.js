@@ -78,19 +78,19 @@ $(document).ready(function () {
                 for (object of selected) {
                     if (object.embeddable != undefined && !object.embeddable._removed)
                         embeddables.push(object.embeddable);
-                        // object.embeddable.setDepth(value);
+                    // object.embeddable.setDepth(value);
                 }
 
                 var n = embeddables.length;
                 var delta = 0.1;
-                for(var i=0; i<n; i++) {
+                for (var i = 0; i < n; i++) {
                     var depth = value;
-                    if(MEDLEY.shiftPressed) {
-                        depth = Math.max(0, Math.min(1, 0.5 + (i-n/2) * depth));
+                    if (MEDLEY.shiftPressed) {
+                        depth = Math.max(0, Math.min(1, 0.5 + (i - n / 2) * depth));
                     }
                     embeddables[i].setDepth(depth);
                 }
-                
+
             }
         });
 
@@ -147,12 +147,13 @@ $(document).ready(function () {
         $('#btnMakeEmbeddable').button();
         $('#btnMakeEmbeddable').click(function (e) {
             var selecteds = XAC._selecteds.clone();
+            var noSearch = MEDLEY.shiftPressed;
             for (object of selecteds) {
                 if (object.embeddable != undefined && !object.embeddable._removed) {
                     if ($('#rbInprint')[0].checked)
-                        MEDLEY.findInPrintInsertion(object.embeddable);
+                        MEDLEY.findInPrintInsertion(object.embeddable, noSearch);
                     else
-                        MEDLEY.findPostPrintInsertion(object.embeddable);
+                        MEDLEY.findPostPrintInsertion(object.embeddable, noSearch);
                 }
             }
         });
@@ -227,7 +228,18 @@ $(document).ready(function () {
     // preventing 3d scene scrolling on panel
     $(document.body).on('mousemove', function (e) {
         XAC.wheelDisabled = e.clientX <= MEDLEY.WIDTHPANEL;
-    })
+    });
+
+    // keyboard shortcuts
+    XAC.on(XAC.SHIFT, function () {
+        MEDLEY.shiftPressed = true;
+    });
+    XAC.on(XAC.KEYUP, function () {
+        MEDLEY.shiftPressed = false;
+    });
+    XAC.on(XAC.ESC, function () {
+        for (elm of XAC._tempElements) XAC.scene.remove(elm);
+    });
 
     return;
 });
