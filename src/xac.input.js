@@ -144,6 +144,7 @@ XAC._dispatchInputEvents = function (e, type) {
     }
 
     // objects currently being manipulated
+    var selectionAdded = false;
     for (hit of XAC._activeHits) {
         // attached handlers
         switch (type) {
@@ -156,8 +157,10 @@ XAC._dispatchInputEvents = function (e, type) {
 
                 // only take the first hit - avoid selecting multiple objects in one click
                 var hitObject = hit.object.object3d || hit.object;
-                if (XAC._selecteds.indexOf(hitObject) < 0)
+                if (XAC._selecteds.indexOf(hitObject) < 0 && selectionAdded == false) {
                     XAC._selecteds.push(hitObject);
+                    if (!MEDLEY.shiftPressed) selectionAdded = true;
+                }
 
                 break;
             case XAC.MOUSEMOVE:
