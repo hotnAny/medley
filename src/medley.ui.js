@@ -74,10 +74,23 @@ $(document).ready(function () {
                 var value = (ui.value * 1.0 - min) / (max - min);
 
                 var selected = XAC._selecteds.clone();
+                var embeddables = [];
                 for (object of selected) {
-                    if (object.embeddable != undefined) object.embeddable.setDepth(
-                        value);
+                    if (object.embeddable != undefined && !object.embeddable._removed)
+                        embeddables.push(object.embeddable);
+                        // object.embeddable.setDepth(value);
                 }
+
+                var n = embeddables.length;
+                var delta = 0.1;
+                for(var i=0; i<n; i++) {
+                    var depth = value;
+                    if(MEDLEY.shiftPressed) {
+                        depth = Math.max(0, Math.min(1, 0.5 + (i-n/2) * depth));
+                    }
+                    embeddables[i].setDepth(depth);
+                }
+                
             }
         });
 
@@ -161,11 +174,13 @@ $(document).ready(function () {
             var meshReady; // = embeddable._object;
             var counter = 0;
             var selecteds = XAC._selecteds.clone();
-            for (selcted of selecteds) {
-                if (selcted.embeddable == undefined) continue;
-                meshReady = meshReady || selcted.embeddable._object;
-                meshReady = MEDLEY.getFabReady(meshReady, selcted.embeddable);
-                MEDLEY.getInstructions(selcted.embeddable, counter++);
+
+            for (selected of selecteds) {
+                if (selected.embeddable == undefined || selected.embeddable._removed) continue;
+                meshReady = meshReady || selected.embeddable._object;
+
+                meshReady = MEDLEY.getFabReady(meshReady, selected.embeddable);
+                MEDLEY.getInstructions(selected.embeddable, counter++);
             }
             time('merged all embeddable components');
 
@@ -208,6 +223,11 @@ $(document).ready(function () {
             }
         }
     });
+
+    // preventing 3d scene scrolling on panel
+    $(document.body).on('mousemove', function (e) {
+        XAC.wheelDisabled = e.clientX <= MEDLEY.WIDTHPANEL;
+    })
 
     return;
 });
