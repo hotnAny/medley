@@ -3,7 +3,7 @@
 //  medley placement
 //      - automatically placing embeddables based on user input
 //
-//  by xiangchen@acm.org, v0.3, 04/2017
+//  by xiangchen@acm.org, v0.4, 08/2017
 //
 //	........................................................................................................
 
@@ -13,11 +13,13 @@ var MEDLEY = MEDLEY || {};
 //  select part of an object to create embeddables based on the painting technique (xac.input.painting.js)
 //
 MEDLEY.selectToCreateEmbeddables = function (info) {
-    if (MEDLEY._matobjSelected == undefined) return;
+    // if (MEDLEY._matobjSelected == undefined) return;
 
+    // record the design object's transformation
     info.object.updateMatrixWorld();
     info.matrixWorld = info.object.matrixWorld.clone();
 
+    // prevent single clicks triggering action
     var epsFootprint = 2.5;
     if (info.footprint < epsFootprint) return;
 
@@ -42,17 +44,9 @@ MEDLEY.selectToCreateEmbeddables = function (info) {
     for (p of toRemovePoints) info.points.remove(p);
     for (n of toRemoveNormals) info.normals.remove(n);
 
-    // hack
-    // var q0 = info.points[0].clone().sub(info.points[1].clone().sub(info.points[0]));
-    // info.points[0] = q0;
-    // var q1 = info.points.last().clone().add(info.points.last().clone().sub(info.points.lastBut(1)));
-    // info.points.last(q1);
-
     info.center = new THREE.Vector3();
     for (p of info.points) info.center.add(p);
     info.center.divideScalar(info.points.length);
-
-    // log('# of points: ' + info.points.length);
 
     // compute summary info about user input
     var diagnal = info.maxPoint.distanceTo(info.minPoint);

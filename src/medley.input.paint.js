@@ -6,7 +6,7 @@
 
 var MEDLEY = MEDLEY || {};
 
-MEDLEY.PaintInput = function(scene) {
+MEDLEY.PaintInput = function (scene) {
     this._info = 'medley paint input';
     this._radiusPaint = 0.5;
     this._colorPaint = 0xfffa90;
@@ -18,11 +18,11 @@ MEDLEY.PaintInput.prototype = {
     constructor: MEDLEY.PaintInput
 };
 
-MEDLEY.PaintInput.prototype.addSubscriber = function(callback) {
+MEDLEY.PaintInput.prototype.addSubscriber = function (callback) {
     this._callbacks.push(callback);
 }
 
-MEDLEY.PaintInput.prototype.mousedown = function(e, hit) {
+MEDLEY.PaintInput.prototype.mousedown = function (e, hit) {
     if (e.which != LEFTMOUSE || this._isDown) {
         return false;
     }
@@ -41,17 +41,78 @@ MEDLEY.PaintInput.prototype.mousedown = function(e, hit) {
     this._geometry.computeVertexNormals();
     this._geometry.computeFaceNormals();
 
+    this._doPaint(e);
+    this._eventCache = [e];
+
     return true;
 };
 
-MEDLEY.PaintInput.prototype.mousemove = function(e) {
+MEDLEY.PaintInput.prototype.mousemove = function (e) {
     if (!this._isDown) {
         return;
     }
 
+    this._doPaint(e);
+    this._eventCache.push(e);
+};
+
+MEDLEY.PaintInput.prototype.mouseup = function (e) {
+    if (!this._isDown) {
+        return;
+    }
+
+    this._doPaint(e);
+    this._eventCache.push(e);
+
+    this._isDown = false;
+
+    if (this._points.length <= 0) {
+        return;
+    }
+
+    var info = {
+        object: this._object,
+        points: this._points,
+        faces: this._faces,
+        normals: this._normals,
+        minPoint: this._minPoint,
+        maxPoint: this._maxPoint,
+        footprint: this._footprint
+    };
+
+    for (callback of this._callbacks) {
+        callback(info);
+    }
+
+    removeBalls();
+};
+
+MEDLEY.PaintInput.prototype._doPaint = function (e, toSnap) {
     var hits = rayCast(e.clientX, e.clientY, [this._object]);
     if (hits.length > 0) {
         var hit = hits[0];
+
+        if (toSnap) {
+            var vertices = hit.object.geometry.vertices;
+            var indices = [hit.face.a, hit.face.b, hit.face.c];
+            var minDistSnap = Number.MAX_VALUE;
+            var snapPoint = hit.point;
+            for (var i = 0; i < indices.length; i++) {
+                var p = vertices[indices[i]];
+                var q = vertices[indices[(i + 1) % indices.length]];
+                var v = hit.point.clone();
+                var qsubp = new THREE.Vector3().subVectors(q, p);
+                var t = v.clone().sub(p).dot(qsubp) / Math.pow(qsubp.length(), 2);
+                var vhat = p.clone().add(qsubp.multiplyScalar(t));
+                var distSnap = vhat.distanceTo(v);
+                if (distSnap < minDistSnap) {
+                    minDistSnap = distSnap;
+                    snapPoint = vhat;
+                }
+            }
+            hit.point = snapPoint;
+            _balls.remove(addABall(snapPoint, 0xff0000, 0.5));
+        }
 
         if (this._points.length > 0) {
             this._footprint += hits[0].point.distanceTo(this._points.last());
@@ -103,32 +164,4 @@ MEDLEY.PaintInput.prototype.mousemove = function(e) {
 
         this._normals.push(n.normalize());
     }
-};
-
-MEDLEY.PaintInput.prototype.mouseup = function(e) {
-    if (!this._isDown) {
-        return;
-    }
-
-    this._isDown = false;
-
-    if (this._points.length <= 0) {
-        return;
-    }
-
-    var info = {
-        object: this._object,
-        points: this._points,
-        faces: this._faces,
-        normals: this._normals,
-        minPoint: this._minPoint,
-        maxPoint: this._maxPoint,
-        footprint: this._footprint
-    };
-
-    for (callback of this._callbacks) {
-        callback(info);
-    }
-
-    removeBalls();
-};
+}
