@@ -29,7 +29,7 @@ MEDLEY.selectToCreateEmbeddables = function (info) {
     var toRemoveNormals = [];
     var eps = 2;
     var p0 = info.points[0];
-    for (var i = 1; i < info.points.length; i++) {
+    for (var i = 1; i < info.points.length - 1; i++) {
         var p1 = info.points[i];
         if (p1.distanceTo(p0) < eps) {
             toRemovePoints.push(p1);
@@ -41,6 +41,12 @@ MEDLEY.selectToCreateEmbeddables = function (info) {
 
     for (p of toRemovePoints) info.points.remove(p);
     for (n of toRemoveNormals) info.normals.remove(n);
+
+    // hack
+    // var q0 = info.points[0].clone().sub(info.points[1].clone().sub(info.points[0]));
+    // info.points[0] = q0;
+    // var q1 = info.points.last().clone().add(info.points.last().clone().sub(info.points.lastBut(1)));
+    // info.points.last(q1);
 
     info.center = new THREE.Vector3();
     for (p of info.points) info.center.add(p);
@@ -92,6 +98,9 @@ MEDLEY.selectToCreateEmbeddables = function (info) {
         info.projNormalPlane.push(proj.clone());
     }
 
+    // find out if it is a loop
+    info.isLoop = MEDLEY._isLoop(info);
+
     // sampling based on material's dimension
     if (MEDLEY._matobjSelected != undefined) {
         // remove all active embeddables to focus on this new one
@@ -116,8 +125,8 @@ MEDLEY.selectToCreateEmbeddables = function (info) {
                 else MEDLEY._select2dPatch(embeddable, info);
                 break;
             case 3:
-                var isLoop = MEDLEY._isLoop(info);
-                if (isLoop) MEDLEY._select3dPatch(embeddable, info);
+                // var isLoop = MEDLEY._isLoop(info);
+                if (info.isLoop || MEDLEY.shiftPressed) MEDLEY._select3dPatch(embeddable, info);
                 else MEDLEY._select2dPatch(embeddable, info);
                 // else MEDLEY._select3dStrip(embeddable, info, embeddable._baseWidth, false);
                 break;
@@ -137,7 +146,16 @@ MEDLEY.selectToCreateEmbeddables = function (info) {
 //  specify the placement of embeddable objects (dof=0)
 //
 MEDLEY._specifyObjectPlacement = function (embeddable, info) {
-    info.paxis = XAC.findPrincipalAxis(info.points);
+    if (info.isLoop) {
+        info.paxis = XAC.findPrincipalAxis(info.points);
+    } else {
+        info.paxis = new THREE.Vector3();
+        for (var i = 1; i < info.points.length; i++) {
+            info.paxis.add(info.points[i].clone().sub(info.points[0]));
+        }
+        info.paxis.divideScalar(info.points.length - 1);
+    }
+
     var angle = embeddable._matobj._paxis.angleTo(info.paxis);
     var axis = embeddable._matobj._paxis.clone().cross(info.paxis).normalize();
     var mr = new THREE.Matrix4();
@@ -555,8 +573,8 @@ MEDLEY._select3dPatch = function (embeddable, info) {
                 if (triangulation.length == 0) continue;
 
                 if (triangulation.length / 3 != face.points.length - 2) {
-                    color = 0xff0000; // XXX
-                    __debugFace(face);
+                    // color = 0xff0000; // XXX
+                    // __debugFace(face);
                 }
 
                 for (var j = 0; j + 2 < triangulation.length; j += 3) {
@@ -611,7 +629,7 @@ MEDLEY._select3dPatch = function (embeddable, info) {
             } else {
                 toRemove.push(vs);
                 vertices1 = [];
-                addAnArrow(v, nml, 5, 0xff0000);
+                // addAnArrow(v, nml, 5, 0xff0000);
                 break;
             }
         }
