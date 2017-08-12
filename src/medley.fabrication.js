@@ -530,6 +530,8 @@ MEDLEY._searchPostPrintUnbendingInsertion = function (embeddable, noSearch) {
     var visitedDirections = [];
 
     MEDLEY.showInfo();
+    // var centerGeom = embeddable._mesh.geometry.computeCenterOfVertices();
+    // XAC.tmpadd(addABall(centerGeom.add(embeddable._mesh.position), 0xff0000, 2));
     for (var phi = Math.PI / 2; phi >= -Math.PI / 2; phi -= phiStep) {
         var x = Math.abs(Math.sin(phi));
         for (var theta = 0; theta < Math.PI * 2; theta += thetaStep) {
@@ -577,13 +579,21 @@ MEDLEY._searchPostPrintUnbendingInsertion = function (embeddable, noSearch) {
                 // find this layer's max dist to the object's surface
                 var maxDistLayer = 0;
                 for (p of minPoints) {
-                    var centerOriginal = p.clone().applyAxisAngle(axisToRotate, -angleToRotate)
+                    var q = p.clone().applyAxisAngle(axisToRotate, -angleToRotate)
                         .add(mesh.position);
-                    rayCaster.ray.set(centerOriginal, dirInsertion);
+
+                    //  could be buggy!
+                    q.add(embeddable._meshes.position);
+                    //
+
+                    XAC.tmpadd(addABall(q, 0x00ffff, 0.5));
+                    rayCaster.ray.set(q, dirInsertion);
                     embeddable._object.material.side = THREE.DoubleSide;
                     var hitsDouble = rayCaster.intersectObjects([embeddable._object]);
                     embeddable._object.material.side = THREE.BackSide;
                     var hitsBack = rayCaster.intersectObjects([embeddable._object]);
+
+                    for (hit of hitsDouble) XAC.tmpadd(addABall(hit.point, 0xff00ff, 0.5));
 
                     // to make sure the first hit is from the inside
                     if (hitsDouble.length > 0 && hitsBack.length > 0 &&
@@ -633,6 +643,7 @@ MEDLEY._searchPostPrintUnbendingInsertion = function (embeddable, noSearch) {
 
     // re-generate bounding boxes with higher resolution (smaller layer height)
     var minBboxes = MEDLEY._getBoundingBoxes(mesh, minVolsDirection, MEDLEY.LAYERHEIGHT);
+    log('minMaxDist: ' + minMaxDist)
     var minCutoff = MEDLEY._generateCutoff(minBboxes, minVolsDirection,
         center, minMaxDist);
     minCutoff = XAC.intersect(minCutoff, embeddable._object, minCutoff.material);
