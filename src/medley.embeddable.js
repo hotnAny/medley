@@ -35,7 +35,7 @@ MEDLEY.Embeddable = function (object, matobj) {
     this.bendRadius = matobj._bendRadius == undefined ? MEDLEY.MAXBENDRADIUS : matobj._bendRadius;
 
     // design parameters of an embeddable
-    this.DEPTHEPS = 0.02; // small depth pertubation to avoid z fighting
+    this.DEPTHEPS = 0.1; // small depth pertubation to avoid z fighting
     this._depthRatio = 0;
     this._thicknessRatio = 0; // starting thickness ratio for 3d embeddable
     this._baseThickness = matobj._thickness; // starting width for xsec embeddable
