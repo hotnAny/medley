@@ -245,6 +245,8 @@ MEDLEY._select2dPatch = function (embeddable, info) {
             embeddable.points1.push(hits[0].point);
             centroid.add(embeddable.points0[i]);
             centroid.add(embeddable.points1[i]);
+
+            // XAC.tmpadd(addABall(hits[0].point, 0xff0000, 0.2));
         }
     }
     centroid.divideScalar(embeddable.points0.length + embeddable.points1.length);

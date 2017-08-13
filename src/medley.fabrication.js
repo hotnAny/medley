@@ -586,14 +586,13 @@ MEDLEY._searchPostPrintUnbendingInsertion = function (embeddable, noSearch) {
                     q.add(embeddable._meshes.position);
                     //
 
-                    XAC.tmpadd(addABall(q, 0x00ffff, 0.5));
                     rayCaster.ray.set(q, dirInsertion);
                     embeddable._object.material.side = THREE.DoubleSide;
                     var hitsDouble = rayCaster.intersectObjects([embeddable._object]);
                     embeddable._object.material.side = THREE.BackSide;
                     var hitsBack = rayCaster.intersectObjects([embeddable._object]);
 
-                    for (hit of hitsDouble) XAC.tmpadd(addABall(hit.point, 0xff00ff, 0.5));
+                    // for (hit of hitsDouble) XAC.tmpadd(addABall(hit.point, 0xff00ff, 0.5));
 
                     // to make sure the first hit is from the inside
                     if (hitsDouble.length > 0 && hitsBack.length > 0 &&
@@ -643,7 +642,7 @@ MEDLEY._searchPostPrintUnbendingInsertion = function (embeddable, noSearch) {
 
     // re-generate bounding boxes with higher resolution (smaller layer height)
     var minBboxes = MEDLEY._getBoundingBoxes(mesh, minVolsDirection, MEDLEY.LAYERHEIGHT);
-    log('minMaxDist: ' + minMaxDist)
+    // log('minMaxDist: ' + minMaxDist)
     var minCutoff = MEDLEY._generateCutoff(minBboxes, minVolsDirection,
         center, minMaxDist);
     minCutoff = XAC.intersect(minCutoff, embeddable._object, minCutoff.material);
